@@ -19,6 +19,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	}
 
 	isAdmin := order.Role == types.ADMIN
+	isBot := order.Role == types.BOT
 	e.UM.Lock()
 	user, exists := e.User[order.UserId]
 	if !exists {
@@ -40,26 +41,31 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 			order.Price = 10.0
 		}
 		totalCost := order.Price * float64(order.Quantity)
+		totalCostWithFee := totalCost * 1.0025 // Include 0.25% trading fee
 		if !isAdmin {
-			// Check Position Limit (Max 5000 shares = ₹50k exposure)
+			// Check Position Limit (Users: 5000, Bot: 20000)
+			positionLimit := 5000
+			if isBot {
+				positionLimit = 20000
+			}
 			stock := user.Balance.StockBalance[order.Symbol]
 			currentShares := stock.Yes
 			if order.Side == types.No {
 				currentShares = stock.No
 			}
-			if currentShares+order.Quantity > 5000 {
+			if currentShares+order.Quantity > positionLimit {
 				e.UM.Unlock()
-				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "position limit exceeded (max 5000 shares)", Data: currentShares}
+				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "position limit exceeded", Data: currentShares}
 				return
 			}
 
-			if user.Balance.WalletBalance.Amount < totalCost {
+			if user.Balance.WalletBalance.Amount < totalCostWithFee {
 				e.UM.Unlock()
-				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "insufficient balance", Data: user.Balance.WalletBalance.Amount}
+				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "insufficient balance (includes 0.25% fee)", Data: user.Balance.WalletBalance.Amount}
 				return
 			}
-			user.Balance.WalletBalance.Amount -= totalCost
-			user.Balance.WalletBalance.Locked += totalCost
+			user.Balance.WalletBalance.Amount -= totalCostWithFee
+			user.Balance.WalletBalance.Locked += totalCostWithFee
 		}
 	} else { // SELL
 		if isMarketOrder {

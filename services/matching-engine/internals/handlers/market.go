@@ -396,3 +396,49 @@ func ResolveMarket(payload types.QueuePayload) types.QueueResponse {
 		Message:    "Failed to resolve market",
 	}
 }
+
+// GetActiveMarkets returns all open markets with basic live state.
+// Used by the Probi bot to discover which markets to provide liquidity on.
+
+func GetActiveMarkets(payload types.QueuePayload) types.QueueResponse {
+	engine.EngineInstance.MM.RLock()
+	defer engine.EngineInstance.MM.RUnlock()
+
+	type MarketInfo struct {
+		MarketId        string  `json:"marketId"`
+		Symbol          string  `json:"symbol"`
+		Title           string  `json:"title"`
+		YesPrice        float32 `json:"yesPrice"`
+		NoPrice         float32 `json:"noPrice"`
+		Volume          float64 `json:"volume"`
+		NumberOfTraders int16   `json:"numberOfTraders"`
+		EndDate         string  `json:"endDate"`
+		Status          string  `json:"status"`
+	}
+
+	var markets []MarketInfo
+
+	for _, market := range engine.EngineInstance.Market {
+		if market.Status == types.Close {
+			continue
+		}
+		markets = append(markets, MarketInfo{
+			MarketId:        market.MarketId,
+			Symbol:          market.Symbol,
+			Title:           market.Title,
+			YesPrice:        market.YesPrice,
+			NoPrice:         market.NoPrice,
+			Volume:          market.Volume,
+			NumberOfTraders: market.NumberOfTraders,
+			EndDate:         market.Overview.EndDate.Format("2006-01-02T15:04:05Z07:00"),
+			Status:          string(market.Status),
+		})
+	}
+
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     types.Success,
+		Message:    fmt.Sprintf("Found %d active markets", len(markets)),
+		Data:       markets,
+	}
+}

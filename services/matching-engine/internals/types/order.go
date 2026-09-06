@@ -25,6 +25,7 @@ const (
 const (
 	USER  Role = "USER"
 	ADMIN Role = "ADMIN"
+	BOT   Role = "BOT"
 )
 
 type Order struct {

@@ -50,6 +50,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "SELL_ORDER":
 		return handlers.SellOrder(payload)
 
+	case "GET_ACTIVE_MARKETS":
+		return handlers.GetActiveMarkets(payload)
+
 	case "CANCEL_ORDER":
 		return handlers.CancelOrder(payload)
 
