@@ -17,7 +17,7 @@ import defaultThumbnail from '@/assets/images/logo.avif';
 import OrderbookLadder from '@/components/OrderbookLadder';
 import LiveMarketTracker from '@/components/LiveMarketTracker';
 import PriceAlertModal from '@/components/modals/PriceAlertModal';
-import { Bookmark, Share2, RefreshCcw, BellRing, UserX } from 'lucide-react';
+import { Bookmark, Share2, RefreshCcw, BellRing, UserX, Loader2 } from 'lucide-react';
 
 interface TradeExecutedEvent {
 	marketId: string;
@@ -313,7 +313,16 @@ export default function EventDetails() {
 		}
 	};
 
-	if (loading) return <p className="p-4 text-foreground">Loading...</p>;
+	if (loading) {
+		return (
+			<div className="w-full bg-background min-h-screen flex items-center justify-center">
+				<div className="flex flex-col items-center gap-4">
+					<Loader2 className="w-10 h-10 animate-spin text-primary" />
+					<p className="text-muted-foreground font-medium animate-pulse">Loading market data...</p>
+				</div>
+			</div>
+		);
+	}
 	if (!market) return <p className="p-4 text-foreground">Market not found.</p>;
 
 	const calculateOrderbookDisplay = (outcome: 'Yes' | 'No') => {

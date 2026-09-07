@@ -1,13 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
-import { usePlaceOrderMutation } from '@/hooks/mutations/order';
-import { useSplitSharesMutation, useMergeSharesMutation } from '@/hooks/mutations/event';
-import { useBalanceQuery } from '@/hooks/queries/balance';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { useAuthStore } from '@/store/auth';
+import { useState, useRef, useEffect } from 'react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { usePlaceOrderMutation } from '@/hooks/mutations/order';
+import { useSplitSharesMutation, useMergeSharesMutation } from '@/hooks/mutations/event';
 
 interface PlaceOrderProps {
 	yPrice: number;
@@ -44,8 +43,6 @@ export default function PlaceOrder({
 	const [shares, setShares] = useState<number | string>(0);
 
 	const queryClient = useQueryClient();
-	const { data: balanceData } = useBalanceQuery();
-	const availableBalance = Number(balanceData?.data?.balance || 0);
 
 	const placeOrder = usePlaceOrderMutation();
 	const splitShares = useSplitSharesMutation();
@@ -215,12 +212,6 @@ export default function PlaceOrder({
 		}
 	};
 
-	const setPrice = (val: number) => {
-		if (val < 0.5) val = 0.5;
-		if (val > 9.5) val = 9.5;
-		activeTab === 'YES' ? setYesOrderPrice(val.toFixed(1)) : setNoOrderPrice(val.toFixed(1));
-	};
-
 	const orderTypeLabel =
 		orderType === 'MARKET'
 			? 'Market'
@@ -233,8 +224,7 @@ export default function PlaceOrder({
 	const hasInput = isMarket ? numAmount > 0 : numShares > 0;
 
 	return (
-		<div className="bg-card border border-border rounded-2xl p-5 w-full">
-			{/* Header: Thumbnail + Title */}
+		<div className="bg-card dark:bg-[#111827] rounded-2xl p-5 w-full">
 			{title && (
 				<div className="flex items-start gap-3 mb-5">
 					<div className="w-10 h-10 shrink-0 rounded-md overflow-hidden bg-muted">
@@ -249,14 +239,13 @@ export default function PlaceOrder({
 						/>
 					</div>
 					<div className="min-w-0 flex-1">
-						<p className="text-[15px] text-muted-foreground font-medium leading-tight line-clamp-2">
+						<p className="text-[15px] text-black dark:text-white font-medium leading-tight line-clamp-2">
 							{title}
 						</p>
 					</div>
 				</div>
 			)}
 
-			{/* Buy / Sell tabs + Order Type dropdown */}
 			{!isSplitMerge && (
 				<div className="flex items-center justify-between mb-5">
 					<div className="flex gap-1">
@@ -392,20 +381,16 @@ export default function PlaceOrder({
 				<div className="flex gap-2 mb-6">
 					<button
 						onClick={() => setActiveTab('YES')}
-						className={`flex-1 py-3 text-sm font-medium rounded-md transition-all cursor-pointer ${
-							activeTab === 'YES'
-								? 'bg-green-600 text-white'
-								: 'bg-muted text-muted-foreground hover:bg-accent'
+						className={`flex-1 py-3 text-sm font-medium rounded-md cursor-pointer text-white transition-opacity duration-200 bg-[#22c55e] ${
+							activeTab === 'YES' ? 'opacity-100' : 'opacity-40'
 						}`}
 					>
 						Yes ₹{yPrice.toFixed(1)}
 					</button>
 					<button
 						onClick={() => setActiveTab('NO')}
-						className={`flex-1 py-3 text-sm font-medium rounded-md transition-all cursor-pointer ${
-							activeTab === 'NO'
-								? 'bg-red-600 text-white'
-								: 'bg-muted text-muted-foreground hover:bg-accent'
+						className={`flex-1 py-3 text-sm font-medium rounded-md cursor-pointer text-white transition-opacity duration-200 bg-[#ef4444] ${
+							activeTab === 'NO' ? 'opacity-100' : 'opacity-40'
 						}`}
 					>
 						No ₹{nPrice.toFixed(1)}
@@ -432,22 +417,16 @@ export default function PlaceOrder({
 						</div>
 					</div>
 
-					<div className="flex gap-2 mt-4">
+					<div className="flex items-center gap-1.5 mt-3 justify-start">
 						{[50, 100, 500].map((v) => (
 							<button
 								key={v}
-								onClick={() => setAmount(v)}
-								className="flex-1 py-2 text-xs font-medium text-muted-foreground bg-muted rounded-md hover:bg-accent hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
+								onClick={() => setAmount(numAmount + v)}
+								className="py-1 px-2 text-[12px] font-medium text-black dark:text-white bg-gray-300/50 dark:bg-gray-700 rounded-lg hover:bg-red-200 hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
 							>
-								₹{v}
+								+₹{v}
 							</button>
 						))}
-						<button
-							onClick={() => setAmount(availableBalance > 0 ? Math.floor(availableBalance) : 0)}
-							className="flex-1 py-2 text-xs font-semibold text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors whitespace-nowrap cursor-pointer"
-						>
-							Max
-						</button>
 					</div>
 				</div>
 			)}
@@ -459,7 +438,7 @@ export default function PlaceOrder({
 						<p className="text-[15px] font-medium text-foreground">Limit price</p>
 						<div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden">
 							<button
-								onClick={() => setPrice(Number(activePrice) - 0.5)}
+								onClick={() => setYesOrderPrice(Number(activePrice) - 0.5)}
 								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
 							>
 								−
@@ -468,7 +447,7 @@ export default function PlaceOrder({
 								₹{Number(activePrice).toFixed(1)}
 							</div>
 							<button
-								onClick={() => setPrice(Number(activePrice) + 0.5)}
+								onClick={() => setYesOrderPrice(Number(activePrice) + 0.5)}
 								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
 							>
 								+
@@ -478,68 +457,70 @@ export default function PlaceOrder({
 
 					<div className="flex items-center justify-between">
 						<p className="text-[15px] font-medium text-foreground">Shares</p>
-						<div className="bg-muted rounded-md overflow-hidden">
-							<input
-								type="number"
-								value={shares}
-								onChange={(e) => setShares(e.target.value)}
-								placeholder="0"
-								className="w-24 py-2 text-sm text-right font-medium bg-transparent border-none focus:outline-none focus:ring-0 pr-3 text-foreground placeholder:text-muted-foreground [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-								min="0"
-							/>
+						<div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden">
+							<button
+								onClick={() => setShares(Math.max(0, Number(shares) - 1))}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+							>
+								−
+							</button>
+							<div className="px-3 py-2 text-sm font-medium text-foreground min-w-15 text-center">
+								{Number(shares)}
+							</div>
+							<button
+								onClick={() => setShares(Number(shares) + 1)}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+							>
+								+
+							</button>
 						</div>
 					</div>
 
-					<div className="flex gap-2">
+					<div className="flex items-center gap-1.5 mt-2 justify-start">
 						{[10, 50, 100, 500].map((v) => (
 							<button
 								key={v}
-								onClick={() => setShares(v)}
-								className="flex-1 py-2 text-xs font-medium text-muted-foreground bg-muted rounded-md hover:bg-accent hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
+								onClick={() => setShares(numShares + v)}
+								className="py-1 px-2 text-[12px] font-medium text-black dark:text-white bg-gray-300/50 dark:bg-gray-700 rounded-lg hover:bg-red-200 hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
 							>
-								{v}
+								+{v}
 							</button>
 						))}
-						<button
-							onClick={() => {
-								const limitPrice = Number(activePrice) || 0;
-								if (limitPrice > 0 && availableBalance > 0) {
-									setShares(Math.floor(availableBalance / limitPrice));
-								}
-							}}
-							className="flex-1 py-2 text-xs font-semibold text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors whitespace-nowrap cursor-pointer"
-						>
-							Max
-						</button>
 					</div>
 				</div>
 			)}
 
-			{/* Split/Merge: Shares input */}
 			{isSplitMerge && (
 				<div className="space-y-5 mb-5">
 					<div className="flex items-center justify-between">
 						<p className="text-[15px] font-medium text-foreground">Shares</p>
-						<div className="bg-muted rounded-md overflow-hidden">
-							<input
-								type="number"
-								value={shares}
-								onChange={(e) => setShares(e.target.value)}
-								placeholder="0"
-								className="w-24 py-2 text-sm text-right font-medium bg-transparent border-none focus:outline-none focus:ring-0 pr-3 text-foreground placeholder:text-muted-foreground [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-								min="0"
-							/>
+						<div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden">
+							<button
+								onClick={() => setShares(Math.max(0, Number(shares) - 1))}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+							>
+								−
+							</button>
+							<div className="px-3 py-2 text-sm font-medium text-foreground min-w-15 text-center">
+								{Number(shares)}
+							</div>
+							<button
+								onClick={() => setShares(Number(shares) + 1)}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+							>
+								+
+							</button>
 						</div>
 					</div>
 
-					<div className="flex gap-2">
+					<div className="flex items-center gap-1.5 mt-2 justify-start">
 						{[10, 50, 100, 500].map((v) => (
 							<button
 								key={v}
-								onClick={() => setShares(v)}
-								className="flex-1 py-2 text-xs font-medium text-muted-foreground bg-muted rounded-md hover:bg-accent hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
+								onClick={() => setShares(numShares + v)}
+								className="py-1 px-2 text-[12px] font-medium text-black dark:text-white bg-gray-300/50 dark:bg-gray-700 rounded-lg hover:bg-red-200 hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
 							>
-								{v}
+								+{v}
 							</button>
 						))}
 					</div>
@@ -572,21 +553,16 @@ export default function PlaceOrder({
 				</div>
 			)}
 
-			{/* Action Button */}
 			<button
 				onClick={handleAction}
 				disabled={
 					isActionPending ||
 					(isMarket ? numAmount <= 0 : isSplitMerge ? numShares <= 0 : numShares <= 0)
 				}
-				className={`w-full py-3.5 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+				className={`w-full py-3.5 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
 					isActionPending || (isMarket ? numAmount <= 0 : numShares <= 0)
-						? 'bg-muted text-muted-foreground cursor-not-allowed'
-						: isSplitMerge
-							? 'bg-primary text-primary-foreground hover:brightness-110'
-							: activeTab === 'YES'
-								? 'bg-green-600 hover:bg-green-500 text-white'
-								: 'bg-red-600 hover:bg-red-500 text-white'
+						? 'bg-black text-white dark:bg-white dark:text-black opacity-30 cursor-not-allowed'
+						: 'bg-black text-white dark:bg-white dark:text-black opacity-90 hover:opacity-100 cursor-pointer'
 				}`}
 			>
 				{isActionPending && <Loader2 size={16} className="animate-spin" />}
