@@ -33,23 +33,28 @@ func aggregateOrders(orders types.OrderHeap, isAscending bool) []types.PriceQuan
 }
 
 func AggregateOrderBook(ob *types.OrderBook) types.AggregatedOrderBook {
-	// For the frontend, Yes orderbook is typically the YES Bids (Buy Yes) and YES Asks (Sell Yes).
-	// To keep it simple, we aggregate the YesBids and YesAsks.
-	// Wait, the frontend usually expects 'Yes' and 'No' to represent the available liquidity TO BUY.
-	// That means 'Yes' in the response should be YesAsks (what people are selling, so you can buy).
-	// But let's just return what they expect. Originally it just returned Yes and No orders.
-	// For now, let's aggregate Yes Bids and Asks into one? The struct types.AggregatedOrderBook has Yes and No arrays.
-	// Actually, the frontend probably expects Bids and Asks for the whole market.
-	// The struct AggregatedOrderBook has `Yes` and `No`. We'll just put YesBids/YesAsks into Yes, NoBids/NoAsks into No for now.
-	// Let's preserve the original behavior: returning all Yes orders in `Yes`, all No orders in `No`.
+	if ob == nil {
+		return types.AggregatedOrderBook{
+			Yes: []types.PriceQuantity{},
+			No:  []types.PriceQuantity{},
+		}
+	}
 
 	var yesOrders types.OrderHeap
-	yesOrders = append(yesOrders, ob.YesBids.OrderHeap...)
-	yesOrders = append(yesOrders, ob.YesAsks.OrderHeap...)
+	if ob.YesBids != nil {
+		yesOrders = append(yesOrders, ob.YesBids.OrderHeap...)
+	}
+	if ob.YesAsks != nil {
+		yesOrders = append(yesOrders, ob.YesAsks.OrderHeap...)
+	}
 
 	var noOrders types.OrderHeap
-	noOrders = append(noOrders, ob.NoBids.OrderHeap...)
-	noOrders = append(noOrders, ob.NoAsks.OrderHeap...)
+	if ob.NoBids != nil {
+		noOrders = append(noOrders, ob.NoBids.OrderHeap...)
+	}
+	if ob.NoAsks != nil {
+		noOrders = append(noOrders, ob.NoAsks.OrderHeap...)
+	}
 
 	return types.AggregatedOrderBook{
 		Yes: aggregateOrders(yesOrders, false), // Descending for orderbook
