@@ -1272,8 +1272,17 @@ export const getMarketLiveStatus = async (c: Context) => {
 
 		// Instant auto-resolution from frontend has been removed for security and reliability.
 		// All market resolution is now handled exclusively by the secure backend cron job.
-		// Cache for 5 seconds to strictly protect upstream API limits
-		await client.set(cacheKey, JSON.stringify(liveData), 'EX', 5);
+		// Cache dynamically to strictly protect upstream API limits
+		let cacheExpiry = 12; // default 12 seconds
+		if (liveData?.status === 'UPCOMING') {
+			cacheExpiry = 60; // 1 minute cache for upcoming matches
+		} else if (liveData?.type === 'SPORTS' && liveData?.isLive) {
+			cacheExpiry = 12; // 12 seconds for live sports (5 requests / min)
+		} else if (liveData?.type === 'CRYPTO') {
+			cacheExpiry = 5; // crypto can be fast
+		}
+
+		await client.set(cacheKey, JSON.stringify(liveData), 'EX', cacheExpiry);
 
 		return c.json({
 			success: true,

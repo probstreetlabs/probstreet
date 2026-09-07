@@ -389,7 +389,7 @@ export default function LiveMarketTracker({
 					</div>
 				</div>
 
-				<div className="flex flex-col sm:flex-row items-center justify-center p-6 sm:p-10 gap-6 sm:gap-12 relative">
+				<div className="flex flex-col sm:flex-row items-center justify-center p-6 sm:p-10 gap-6 sm:gap-20 relative">
 					<div className="flex flex-col items-center gap-3 z-10 w-24 sm:w-32 text-center relative">
 						<div className={cn('w-16 h-16')}>
 							<img
@@ -415,12 +415,25 @@ export default function LiveMarketTracker({
 							{liveData.isLive && <span className="animate-pulse mr-1.5">●</span>}
 							{liveData.status === 'LIVE' ? (m.minute ? m.minute + "'" : 'LIVE') : liveData.status}
 						</div>
-
-						<div className="text-3xl font-bold text-foreground flex items-center gap-3">
-							<span>{m.homeTeam.score}</span>
-							<span className="text-muted-foreground text-2xl">-</span>
-							<span>{m.awayTeam.score}</span>
-						</div>
+						{liveData.status === 'UPCOMING' && m.startTime ? (
+							<div className="text-center mt-1">
+								<div className="text-lg font-semibold text-foreground">
+									{new Date(m.startTime).toLocaleTimeString([], {
+										hour: '2-digit',
+										minute: '2-digit',
+									})}
+								</div>
+								<div className="text-xs text-muted-foreground mt-0.5">
+									{new Date(m.startTime).toLocaleDateString([], { month: 'long', day: 'numeric' })}
+								</div>
+							</div>
+						) : (
+							<div className="text-3xl font-bold text-foreground flex items-center gap-3">
+								<span>{m.homeTeam.score}</span>
+								<span className="text-muted-foreground text-2xl">-</span>
+								<span>{m.awayTeam.score}</span>
+							</div>
+						)}
 					</div>
 
 					<div className="flex flex-col items-center gap-3 z-10 w-24 sm:w-32 text-center relative">

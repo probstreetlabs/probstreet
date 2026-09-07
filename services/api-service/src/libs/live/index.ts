@@ -197,6 +197,7 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 							sport: 'football',
 							league: json.competition?.name || 'Football Match',
 							minute,
+							startTime: config?.scheduledStartTime,
 							homeTeam: {
 								name: homeTeam,
 								shortName: homeShort,
