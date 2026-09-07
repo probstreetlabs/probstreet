@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '@/config/axios';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useState, useEffect, useRef } from 'react';
@@ -60,9 +60,7 @@ export default function SearchInput() {
 	const fetchResults = async (q: string) => {
 		setIsLoading(true);
 		try {
-			const res = await axios.get(`http://localhost:3000/api/v1/market/search?q=${q}&limit=6`, {
-				withCredentials: true,
-			});
+			const res = await api.get(`/market/search?q=${q}&limit=6`);
 			if (res.data?.success) {
 				setResults(res.data.data);
 			}

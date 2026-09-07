@@ -1,5 +1,5 @@
+import api from '@/config/axios';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 
 interface NewsItem {
 	title: string;
@@ -22,7 +22,7 @@ export default function MarketNews({ symbol }: MarketNewsProps) {
 		const fetchNews = async () => {
 			setLoading(true);
 			try {
-				const response = await axios.get(`http://localhost:3000/api/v1/capi/market/${symbol}/news`);
+				const response = await api.get(`/market/${symbol}/news`);
 				if (response.data.success && response.data.data && response.data.data.length > 0) {
 					setNewsList(response.data.data.slice(0, 3));
 				} else {

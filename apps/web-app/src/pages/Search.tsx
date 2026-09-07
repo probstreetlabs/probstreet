@@ -1,6 +1,6 @@
+import api from '@/config/axios';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 export default function Search() {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -24,11 +24,8 @@ export default function Search() {
 
 		setIsLoading(true);
 		try {
-			const res = await axios.get(
-				`http://localhost:3000/api/v1/market/search?q=${searchQuery}&page=${pageNum}&limit=10`,
-				{
-					withCredentials: true,
-				},
+			const res = await api.get(
+				`/market/search?q=${searchQuery}&page=${pageNum}&limit=10`
 			);
 			if (res.data?.success) {
 				setResults((prev) => (append ? [...prev, ...res.data.data] : res.data.data));
