@@ -17,7 +17,8 @@ import defaultThumbnail from '@/assets/images/logo.avif';
 import OrderbookLadder from '@/components/OrderbookLadder';
 import LiveMarketTracker from '@/components/LiveMarketTracker';
 import PriceAlertModal from '@/components/modals/PriceAlertModal';
-import { Bookmark, Share2, RefreshCcw, BellRing } from 'lucide-react';
+import { Bookmark, Share2, RefreshCcw, BellRing, UserX } from 'lucide-react';
+
 interface TradeExecutedEvent {
 	marketId: string;
 	makerId: string;
@@ -350,7 +351,7 @@ export default function EventDetails() {
 
 	return (
 		<div className="w-full bg-background min-h-screen flex items-start justify-center text-foreground transition-colors">
-			<div className="flex gap-8 max-w-7xl mx-auto w-full px-6 pt-4 md:pt-8 flex-col lg:flex-row relative">
+			<div className="flex gap-1 max-w-7xl justify-between mx-auto w-full px-12 pt-4 md:pt-8 flex-col lg:flex-row relative">
 				<div className="w-full lg:w-[65%] pb-20">
 					{!isCryptoMarket && (
 						<div className="flex justify-between items-start mb-8 gap-4">
@@ -437,7 +438,7 @@ export default function EventDetails() {
 						noPrice={market.noPrice}
 					/>
 
-					<div className="mb-8 border border-border rounded-xl shadow-sm bg-card overflow-hidden">
+					<div className="mb-6 rounded-xl bg-card dark:bg-[#111827] overflow-hidden">
 						<div className="flex border-b border-border bg-muted/30">
 							{['Orderbook', 'Activity'].map((tab) => (
 								<button
@@ -457,7 +458,7 @@ export default function EventDetails() {
 							))}
 						</div>
 
-						<div className="p-5 md:p-6 h-162.5 flex flex-col">
+						<div className="p-5 md:p-6 h-145 flex flex-col">
 							{activeBoxTab === 'orderbook' && (
 								<div className="flex flex-col h-full min-h-0">
 									<div className="flex justify-between items-center mb-4 border-b border-border w-full shrink-0">
@@ -485,14 +486,14 @@ export default function EventDetails() {
 										<div className="flex items-center gap-2">
 											<button
 												onClick={() => setResetScrollToken((prev) => prev + 1)}
-												className="flex items-center cursor-pointer justify-center p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50 border border-transparent transition-colors"
+												className="flex items-center cursor-pointer justify-center p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-black/5 dark:hover:bg-white/5 border border-transparent transition-colors"
 												title="Re-centre Spread"
 											>
 												<RefreshCcw className="w-4 h-4" />
 											</button>
 											<button
 												onClick={() => setIsOrderbookLocked(!isOrderbookLocked)}
-												className={`flex items-center cursor-pointer justify-center p-1.5 rounded-md transition-colors border ${isOrderbookLocked ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50'}`}
+												className={`flex items-center cursor-pointer justify-center p-1.5 rounded-md transition-colors border ${isOrderbookLocked ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
 												title={isOrderbookLocked ? 'Unlock Scroll' : 'Lock Scroll (Center Spread)'}
 											>
 												<svg
@@ -560,7 +561,7 @@ export default function EventDetails() {
 													return (
 														<div
 															key={idx}
-															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors rounded-lg"
+															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-lg"
 														>
 															<div
 																className={`w-8 h-8 rounded-full bg-linear-to-tr ${color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
@@ -597,11 +598,11 @@ export default function EventDetails() {
 											</div>
 										) : (
 											<div className="flex flex-col items-center justify-center h-full text-center py-12">
-												<span className="text-muted-foreground/50 text-4xl mb-3">⚬</span>
-												<div className="text-sm font-medium text-muted-foreground">
+												<UserX />
+												<div className="text-sm font-medium text-muted-foreground mt-2.5">
 													No activities yet
 												</div>
-												<div className="text-xs text-muted-foreground/70 mt-1">
+												<div className="text-xs text-muted-foreground/80 mt-1">
 													Trades will appear here in real-time
 												</div>
 											</div>
@@ -613,7 +614,7 @@ export default function EventDetails() {
 						</div>
 					</div>
 
-					<div className="mb-8 bg-card p-6 border border-border rounded-xl shadow-sm">
+					<div className="mb-6 bg-card dark:bg-[#111827] p-6 rounded-xl">
 						<h2 className="text-lg font-bold mb-5 text-foreground">About the Event</h2>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-sm">
 							<div className="flex flex-col gap-1.5 min-w-0">
@@ -748,10 +749,10 @@ export default function EventDetails() {
 					<Trollbox symbol={market.symbol} />
 				</div>
 
-				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden lg:sticky lg:top-32 self-start max-h-[calc(100vh-130px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none pb-10">
+				<div className="w-[33%] max-[1160px]:w-[35%] max-[970px]:hidden lg:sticky lg:top-32 self-start max-h-[calc(100vh-130px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none pb-10">
 					{['CLOSED', 'CLOSE'].includes((market.status || '').toUpperCase()) ? (
 						<div className="space-y-6">
-							<div className="bg-card border border-border rounded-2xl p-6 shadow-sm overflow-hidden relative">
+							<div className="bg-card dark:bg-[#111827] rounded-2xl p-6 overflow-hidden relative">
 								<div className="flex items-center justify-between pb-4 border-b border-border">
 									<div className="flex items-center gap-2">
 										<span className="text-xs font-semibold uppercase tracking-wide text-black dark:text-white">
@@ -807,7 +808,7 @@ export default function EventDetails() {
 					) : (
 						<>
 							<div className="space-y-6">
-								<div className="w-full bg-[#EDEDED] dark:bg-gray-800 mt-3 rounded-xl flex p-5 border border-border">
+								<div className="w-full bg-[#EDEDED] dark:bg-[#111827] mt-3 rounded-xl flex p-5">
 									<div className="flex flex-col w-[65%] justify-center pr-3">
 										<div className="inline-flex items-center gap-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-500 text-xs font-bold px-2.5 py-1 rounded-full mb-3 w-max">
 											<span>🎁</span> LIMITED TIME OFFER
@@ -835,7 +836,7 @@ export default function EventDetails() {
 										/>
 									</div>
 								</div>
-								<div className="flex bg-card p-4 w-full gap-3 rounded-xl border border-border shadow-sm">
+								<div className="flex bg-card dark:bg-[#111827] p-4 w-full gap-3 rounded-xl">
 									<button
 										onClick={openOnboardModal}
 										className="text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900 cursor-pointer bg-green-50 dark:bg-green-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-green-100 dark:hover:bg-green-900/50"
@@ -855,7 +856,6 @@ export default function EventDetails() {
 				</div>
 			</div>
 
-			{/* Mobile Bottom Order Bar (Opens PlaceOrder or Signin) */}
 			{['CLOSED', 'CLOSE'].includes((market.status || '').toUpperCase()) ? (
 				<div className="hidden max-[970px]:flex items-center justify-between px-6 py-4 bg-card border-t border-border bottom-0 fixed w-full z-50">
 					<div className="flex items-center gap-2">
@@ -912,7 +912,6 @@ export default function EventDetails() {
 				</div>
 			)}
 
-			{/* Mobile Order Popup/Drawer */}
 			{isMobileOrderOpen && (
 				<div
 					className="fixed inset-0 z-60 flex flex-col justify-end bg-black/60 backdrop-blur-sm"

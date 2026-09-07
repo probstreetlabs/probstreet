@@ -70,7 +70,7 @@ const OrderRow = React.memo(
 				: 'border-b border-dashed border-green-500/50'
 			: 'border-t border-b border-transparent';
 
-		const highlightBg = isHighlighted ? 'bg-zinc-200/80 dark:bg-zinc-800' : 'bg-transparent';
+		const highlightBg = isHighlighted ? 'bg-zinc-200/80 dark:bg-white/10' : 'bg-transparent';
 
 		const highlightDepth = isHighlighted
 			? isAsk
@@ -90,7 +90,7 @@ const OrderRow = React.memo(
 				onMouseEnter={onHover}
 				onMouseLeave={onLeave}
 				onClick={onClick}
-				className={`relative grid grid-cols-3 items-center h-7.5 px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} z-10 hover:z-20 ${!isHighlighted ? 'hover:bg-muted/50' : ''}`}
+				className={`relative grid grid-cols-3 items-center h-7.5 px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} z-10 hover:z-20 ${!isHighlighted ? 'hover:bg-black/5 dark:hover:bg-white/5' : ''}`}
 			>
 				{/* Cumulative Depth Bar */}
 				<div
@@ -127,10 +127,6 @@ export default function OrderbookLadder({
 
 	const askScrollRef = useRef<HTMLDivElement>(null);
 	const bidScrollRef = useRef<HTMLDivElement>(null);
-
-	// ROW_HEIGHT must match the h-[30px] on OrderRow
-	const ROW_HEIGHT = 30;
-	const VISIBLE_ROWS = 7;
 
 	// Scroll ask section to bottom (so best asks are visible near spread)
 	const scrollAsksToBottom = (smooth = false) => {
@@ -221,59 +217,57 @@ export default function OrderbookLadder({
 			</div>
 			<div
 				ref={scrollRef}
-				className="flex flex-col flex-1 min-h-0"
+				className="flex flex-col flex-1 min-h-0 justify-center"
 				onMouseLeave={() => {
 					setHoveredAskIndex(null);
 					setHoveredBidIndex(null);
 				}}
 			>
 				{/* Asks Section */}
-				<div className="flex flex-col justify-end relative flex-1">
+				<div className="flex flex-col justify-end relative flex-1 min-h-0">
 					{processedAsks.length === 0 ? (
-						<div
-							className="flex items-center justify-center text-xs text-muted-foreground opacity-50"
-							style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}
-						>
+						<div className="flex items-center justify-center text-xs text-muted-foreground opacity-50 h-full">
 							No asks available
 						</div>
 					) : (
 						<div
 							ref={askScrollRef}
-							className={`${isLocked ? 'overflow-hidden' : 'overflow-y-auto'} scrollbar-hide`}
-							style={{ maxHeight: VISIBLE_ROWS * ROW_HEIGHT }}
+							className={`${isLocked ? 'overflow-hidden' : 'overflow-y-auto'} scrollbar-hide h-full flex flex-col`}
 						>
-							<AnimatePresence initial={false}>
-								{processedAsks.map((ask, idx) => {
-									const isHighlighted = hoveredAskIndex !== null && idx >= hoveredAskIndex;
-									const isHovered = hoveredAskIndex === idx;
-									const isBoundary = hoveredAskIndex === idx;
+							<div className="mt-auto flex flex-col">
+								<AnimatePresence initial={false}>
+									{processedAsks.map((ask, idx) => {
+										const isHighlighted = hoveredAskIndex !== null && idx >= hoveredAskIndex;
+										const isHovered = hoveredAskIndex === idx;
+										const isBoundary = hoveredAskIndex === idx;
 
-									return (
-										<OrderRow
-											key={`ask-${ask.price}`}
-											type="ask"
-											order={ask}
-											cumulative={ask.cumulative}
-											maxCum={maxCum}
-											isHovered={isHovered}
-											isHighlighted={isHighlighted}
-											isBoundary={isBoundary}
-											onHover={() => setHoveredAskIndex(idx)}
-											onLeave={() => setHoveredAskIndex(null)}
-											onClick={() => onPriceSelect(ask.price, ask.cumulative)}
-										/>
-									);
-								})}
-							</AnimatePresence>
+										return (
+											<OrderRow
+												key={`ask-${ask.price}`}
+												type="ask"
+												order={ask}
+												cumulative={ask.cumulative}
+												maxCum={maxCum}
+												isHovered={isHovered}
+												isHighlighted={isHighlighted}
+												isBoundary={isBoundary}
+												onHover={() => setHoveredAskIndex(idx)}
+												onLeave={() => setHoveredAskIndex(null)}
+												onClick={() => onPriceSelect(ask.price, ask.cumulative)}
+											/>
+										);
+									})}
+								</AnimatePresence>
+							</div>
 						</div>
 					)}
-					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">
+					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50 dark:bg-white/5">
 						ASKS
 					</div>
 				</div>
 
 				{/* Spread / Mid Market */}
-				<div className="spread-row flex items-center justify-between py-2.5 bg-card/95 backdrop-blur-sm border-y border-border/50 shadow-[0_0_10px_rgba(0,0,0,0.05)] px-4 shrink-0">
+				<div className="spread-row flex items-center justify-between py-2.5 bg-card/95 dark:bg-[#111827]/95 backdrop-blur-sm border-y border-border/50 shadow-[0_0_10px_rgba(0,0,0,0.05)] px-4 shrink-0">
 					<span className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
 						SPREAD
 					</span>
@@ -281,22 +275,18 @@ export default function OrderbookLadder({
 				</div>
 
 				{/* Bids Section */}
-				<div className="flex flex-col justify-start relative flex-1">
-					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">
+				<div className="flex flex-col justify-start relative flex-1 min-h-0">
+					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50 dark:bg-white/5">
 						BIDS
 					</div>
 					{processedBids.length === 0 ? (
-						<div
-							className="flex items-center justify-center text-xs text-muted-foreground opacity-50"
-							style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}
-						>
+						<div className="flex items-center justify-center text-xs text-muted-foreground opacity-50 h-full">
 							No bids available
 						</div>
 					) : (
 						<div
 							ref={bidScrollRef}
-							className={`${isLocked ? 'overflow-hidden' : 'overflow-y-auto'} scrollbar-hide`}
-							style={{ maxHeight: VISIBLE_ROWS * ROW_HEIGHT }}
+							className={`${isLocked ? 'overflow-hidden' : 'overflow-y-auto'} scrollbar-hide h-full`}
 						>
 							<AnimatePresence initial={false}>
 								{processedBids.map((bid, idx) => {

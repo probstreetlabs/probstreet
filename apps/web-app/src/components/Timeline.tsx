@@ -1,10 +1,11 @@
 import { api } from '@/lib/axios';
+import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
+import { ArrowRightLeft, Clock, Users, Settings2 } from 'lucide-react';
 import { createChart, ColorType, AreaSeries } from 'lightweight-charts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowRightLeft, Clock, Users, TrendingUp, Settings2 } from 'lucide-react';
 
 interface TimelineProps {
 	symbol: string;
@@ -68,8 +69,15 @@ export default function TimelineChart({
 				if (seriesRef.current) {
 					seriesRef.current.setData(data);
 
-					// Important: Fit content so it scales properly to view
-					chartRef.current?.timeScale().fitContent();
+					// Set default zoom to recent candles to avoid everything looking squished
+					if (data.length > 60) {
+						chartRef.current?.timeScale().setVisibleLogicalRange({
+							from: data.length - 60,
+							to: data.length,
+						});
+					} else {
+						chartRef.current?.timeScale().fitContent();
+					}
 				}
 			}
 		} catch (error) {
@@ -106,6 +114,9 @@ export default function TimelineChart({
 			layout: {
 				background: { type: ColorType.Solid, color: 'transparent' },
 				textColor: textColor,
+				fontFamily: 'Inter, system-ui, sans-serif',
+				fontSize: 10,
+				attributionLogo: false,
 			},
 			grid: {
 				vertLines: { visible: showGridX, color: gridColor },
@@ -283,7 +294,7 @@ export default function TimelineChart({
 	};
 
 	return (
-		<Card className="bg-white dark:bg-[#090C1A] rounded-2xl border shadow-none relative overflow-hidden group">
+		<Card className="bg-white dark:bg-[#111827] py-5 rounded-xl border-none relative overflow-hidden group shadow-none">
 			<div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-border to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
 			<div className="flex items-center justify-between py-1 px-4">
@@ -326,7 +337,7 @@ export default function TimelineChart({
 				<div className="flex flex-col md:flex-row items-center justify-between mt-2 pt-4 border-t border-border/40 gap-4">
 					<div className="flex items-center gap-5 text-xs font-medium w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
-							<TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+							Vol.
 							<span className="text-foreground">₹{(volume || 0).toLocaleString()}</span>
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
@@ -342,13 +353,26 @@ export default function TimelineChart({
 					</div>
 
 					<div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-						<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
+						<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-sm border border-border/50 relative">
 							{(['1m', '5m', '15m', '1h', '4h', '1d'] as Timeframe[]).map((tf) => (
 								<button
 									key={tf}
 									onClick={() => setTimeframe(tf)}
-									className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all duration-200 cursor-pointer ${timeframe === tf ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${
+										timeframe === tf
+											? 'text-black'
+											: 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+									}`}
 								>
+									{timeframe === tf && (
+										<motion.div
+											layoutId="sports-timeframe-active"
+											className="absolute inset-0 bg-white rounded-md shadow-sm ring-1 ring-black/5"
+											initial={false}
+											transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+											style={{ zIndex: -1 }}
+										/>
+									)}
 									{tf.toUpperCase()}
 								</button>
 							))}

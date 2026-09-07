@@ -41,7 +41,6 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 	const { user, isAuthenticated } = useAuthStore();
 	const { openOnboardModal } = useModalStore();
 
-	// Fetch initial message history
 	useEffect(() => {
 		const fetchHistory = async () => {
 			try {
@@ -58,7 +57,6 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 		fetchHistory();
 	}, [symbol]);
 
-	// Subscribe to real-time chat events
 	useEffect(() => {
 		const handleChatMessage = (msg: ChatMessage) => {
 			setMessages((prev) => {
@@ -112,7 +110,7 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 	};
 
 	return (
-		<div className="mb-12 bg-card p-6 border border-border rounded-xl shadow-sm">
+		<div className="bg-card dark:bg-[#111827] p-6 rounded-xl">
 			<h2 className="text-lg font-bold mb-6 text-foreground">Comments</h2>
 			<div className="flex gap-4 items-start mb-8">
 				<img
@@ -126,7 +124,7 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 						onChange={(e) => setInput(e.target.value.slice(0, 280))}
 						placeholder={isAuthenticated ? 'Add a comment...' : 'Sign in to add a comment...'}
 						disabled={sending}
-						className="w-full bg-background border border-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none text-foreground placeholder:text-muted-foreground disabled:opacity-50"
+						className="w-full bg-background border border-border rounded-xl p-4 text-sm focus:outline-none resize-none text-foreground placeholder:text-muted-foreground disabled:opacity-50"
 						rows={2}
 					/>
 					<div className="flex justify-between items-center mt-3">
@@ -134,7 +132,7 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 						<button
 							onClick={isAuthenticated ? handleSend : openOnboardModal}
 							disabled={sending || (isAuthenticated && !input.trim())}
-							className="bg-foreground text-background font-bold text-sm px-6 py-2 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+							className="bg-foreground text-background cursor-pointer font-semibold text-sm px-6 py-2 rounded-md hover:opacity-90 transition disabled:opacity-50"
 						>
 							{sending ? 'Posting...' : 'Post'}
 						</button>

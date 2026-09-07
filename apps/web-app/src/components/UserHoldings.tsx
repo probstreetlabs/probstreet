@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/axios';
-import { TrendingUp, TrendingDown, Package, Loader2, X } from 'lucide-react';
-import { useAuthStore } from '@/store/auth';
-import { cancelOrder } from '@/api/order';
 import { toast } from 'sonner';
+import { api } from '@/lib/axios';
 import { socket } from '@/socket';
+import { cancelOrder } from '@/api/order';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/auth';
+import { TrendingUp, TrendingDown, Package, Loader2, X } from 'lucide-react';
 
 interface Position {
 	yesQuantity: number;
@@ -123,7 +123,7 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 	const noPnL = noCurrentValue - noInvested;
 
 	return (
-		<div className="mb-6 bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+		<div className="mb-6 bg-card rounded-xl overflow-hidden">
 			<div className="px-5 py-3.5 border-b border-border bg-muted/30">
 				<div className="flex items-center gap-2">
 					<Package size={14} className="text-muted-foreground" />

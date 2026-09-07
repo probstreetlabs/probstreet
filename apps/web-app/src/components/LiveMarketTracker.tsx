@@ -1,5 +1,6 @@
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { getMarketLiveStatus, getMarketProxyKlines } from '@/api/market';
 import {
 	createChart,
 	ColorType,
@@ -9,6 +10,7 @@ import {
 	type IChartApi,
 	type ISeriesApi,
 } from 'lightweight-charts';
+import { getMarketLiveStatus, getMarketProxyKlines } from '@/api/market';
 import { Bookmark, Share2, BellRing, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface LiveMarketTrackerProps {
@@ -58,6 +60,7 @@ interface LiveMarketResponse {
 		yesProbability: number;
 		noProbability: number;
 	};
+	targetOutcome?: string;
 }
 
 type Timeframe = '10m' | '1h' | '1d' | '1w' | '1m' | 'All';
@@ -152,7 +155,7 @@ export default function LiveMarketTracker({
 	const [liveData, setLiveData] = useState<LiveMarketResponse | null>(null);
 	const [_loading, setLoading] = useState(false);
 	const [countdown, setCountdown] = useState<string | null>(() => formatCountdown(endTime));
-	const [timeframe, setTimeframe] = useState<Timeframe>('1h');
+	const [timeframe, setTimeframe] = useState<Timeframe>('1d');
 	const [currentPrice, setCurrentPrice] = useState<number | null>(null);
 	const [currentChange, setCurrentChange] = useState<number | null>(null);
 	const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -160,7 +163,6 @@ export default function LiveMarketTracker({
 	const chartContainerRef = useRef<HTMLDivElement>(null);
 	const chartRef = useRef<IChartApi | null>(null);
 	const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
-	const targetPriceLineRef = useRef<any>(null);
 
 	const isResolved = ['RESOLVED', 'CLOSED', 'CLOSE'].includes((marketStatus || '').toUpperCase());
 
@@ -236,12 +238,11 @@ export default function LiveMarketTracker({
 			chartRef.current.remove();
 			chartRef.current = null;
 			seriesRef.current = null;
-			targetPriceLineRef.current = null;
 		}
 
 		const chartColors = isDark
 			? {
-					background: '#0C0F1D',
+					background: 'transparent',
 					gridLines: '#1F2937',
 					textColor: '#9CA3AF',
 					lineColor: '#FFFFFF',
@@ -249,9 +250,9 @@ export default function LiveMarketTracker({
 					bottomColor: 'rgba(255,255,255,0.0)',
 				}
 			: {
-					background: '#FFFFFF',
+					background: 'transparent',
 					gridLines: '#E5E7EB',
-					textColor: '#374151',
+					textColor: '#6B7280',
 					lineColor: '#111827',
 					topColor: 'rgba(17,24,39,0.15)',
 					bottomColor: 'rgba(17,24,39,0.0)',
@@ -260,18 +261,23 @@ export default function LiveMarketTracker({
 		const chart = createChart(chartContainerRef.current, {
 			localization: {
 				timeFormatter: (timestamp: number) => {
-					return new Date(timestamp * 1000).toLocaleString('en-IN', {
+					const d = new Date(timestamp * 1000);
+					return d.toLocaleString('en-IN', {
 						timeZone: 'Asia/Kolkata',
+						day: 'numeric',
+						month: 'short',
 						hour: '2-digit',
 						minute: '2-digit',
 					});
 				},
+				priceFormatter: (price: number) => price.toFixed(2),
 			},
 			layout: {
-				background: { type: ColorType.Solid, color: chartColors.background },
+				background: { type: ColorType.Solid, color: 'rgba(0,0,0,0)' },
 				textColor: chartColors.textColor,
 				fontFamily: 'Inter, system-ui, sans-serif',
-				fontSize: 11,
+				fontSize: 10,
+				attributionLogo: false,
 			},
 			grid: {
 				vertLines: { visible: false },
@@ -285,8 +291,17 @@ export default function LiveMarketTracker({
 				borderColor: 'transparent',
 				timeVisible: true,
 				secondsVisible: false,
-				tickMarkFormatter: (time: number) => {
-					return new Date(time * 1000).toLocaleString('en-IN', {
+				tickMarkFormatter: (time: number, tickMarkType: number) => {
+					const d = new Date(time * 1000);
+					if (tickMarkType < 3) {
+						// Year, Month, DayOfMonth
+						return d.toLocaleString('en-IN', {
+							timeZone: 'Asia/Kolkata',
+							day: 'numeric',
+							month: 'short',
+						});
+					}
+					return d.toLocaleString('en-IN', {
 						timeZone: 'Asia/Kolkata',
 						hour: '2-digit',
 						minute: '2-digit',
@@ -313,7 +328,6 @@ export default function LiveMarketTracker({
 			lastValueVisible: true,
 			priceLineColor: chartColors.lineColor,
 			priceLineStyle: LineStyle.Dotted,
-			crosshairMarkerVisible: true,
 			crosshairMarkerRadius: 3,
 			lastPriceAnimation: LastPriceAnimationMode.Continuous,
 		});
@@ -332,7 +346,6 @@ export default function LiveMarketTracker({
 			chart.remove();
 			chartRef.current = null;
 			seriesRef.current = null;
-			targetPriceLineRef.current = null;
 		};
 	}, [isDark, isCrypto]);
 
@@ -351,33 +364,6 @@ export default function LiveMarketTracker({
 					}));
 					// Set data
 					seriesRef.current?.setData(points);
-
-					// Remove previous target line before adding a new one to prevent duplicates
-					if (targetPriceLineRef.current && seriesRef.current) {
-						seriesRef.current.removePriceLine(targetPriceLineRef.current);
-						targetPriceLineRef.current = null;
-					}
-
-					const linePrice =
-						cryptoMarketType === 'DIRECTION' ? startPrice : liveData?.crypto?.targetValue;
-					if (linePrice !== undefined && linePrice !== null && !isNaN(Number(linePrice))) {
-						if (!targetPriceLineRef.current && seriesRef.current) {
-							targetPriceLineRef.current = seriesRef.current.createPriceLine({
-								price: Number(linePrice),
-								color: (currentChange ?? 0) >= 0 ? '#10B981' : '#EF4444',
-								lineWidth: 2,
-								lineStyle: LineStyle.Dotted,
-								axisLabelVisible: true,
-								title: cryptoMarketType === 'DIRECTION' ? 'Open Price' : 'Target',
-							});
-						} else if (targetPriceLineRef.current) {
-							targetPriceLineRef.current.applyOptions({
-								price: Number(linePrice),
-								color: (currentChange ?? 0) >= 0 ? '#10B981' : '#EF4444',
-								title: cryptoMarketType === 'DIRECTION' ? 'Open Price' : 'Target',
-							});
-						}
-					}
 					chartRef.current?.timeScale().fitContent();
 
 					// Set initial current price from last candle
@@ -396,7 +382,7 @@ export default function LiveMarketTracker({
 		if (!m) return null;
 
 		return (
-			<div className="mb-6 w-full overflow-hidden bg-card rounded-xl border border-border shadow-sm">
+			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
 				<div className="flex items-center justify-between px-4 pt-4">
 					<div className="flex items-center gap-1.5 text-sm font-medium">
 						<span className="text-muted-foreground">Sports</span>
@@ -515,8 +501,8 @@ export default function LiveMarketTracker({
 	const isPositive = displayChange >= 0;
 
 	return (
-		<div className="mb-6 w-full overflow-hidden bg-card rounded-xl">
-			<div className="flex items-center justify-between px-4 pt-4">
+		<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
+			<div className="flex items-center justify-between px-5 pt-3">
 				<div className="flex items-center gap-1.5 text-sm font-medium">
 					<span>Crypto</span>
 					<span className="opacity-50">•</span>
@@ -547,7 +533,7 @@ export default function LiveMarketTracker({
 				</div>
 			</div>
 
-			<div className="flex items-start justify-between gap-4 px-4 pt-3 pb-4">
+			<div className="flex items-start justify-between gap-4 px-5 pt-3 pb-4">
 				<div className="flex items-center gap-4 min-w-0">
 					<div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
 						{logoUrl ? (
@@ -577,7 +563,7 @@ export default function LiveMarketTracker({
 				</div>
 
 				{countdown && (
-					<div className="flex flex-col items-end shrink-0">
+					<div className="flex flex-col items-end mr-1 shrink-0">
 						<span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
 							Time Left
 						</span>
@@ -588,8 +574,8 @@ export default function LiveMarketTracker({
 				)}
 			</div>
 
-			<div className="px-4 pb-5 space-y-4">
-				<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+			<div className="px-5 pb-5 space-y-4">
+				<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 mb-6">
 					<div className="flex flex-wrap items-end gap-x-8 gap-y-2">
 						{(c.targetValue !== undefined || startPrice !== undefined) && (
 							<div>
@@ -649,28 +635,34 @@ export default function LiveMarketTracker({
 							</strong>
 						</span>
 
-						<div className="flex items-center gap-0.5 bg-muted/60 border border-border rounded-xl p-1">
+						<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-sm border border-border/50">
 							{(Object.keys(TIMEFRAME_MAP) as Timeframe[]).map((tf) => (
 								<button
 									key={tf}
 									onClick={() => setTimeframe(tf)}
-									className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${
 										timeframe === tf
-											? 'bg-foreground text-background shadow-sm'
-											: 'text-muted-foreground hover:text-foreground'
+											? 'text-black'
+											: 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
 									}`}
 								>
-									{tf}
+									{timeframe === tf && (
+										<motion.div
+											layoutId="crypto-timeframe-active"
+											className="absolute inset-0 bg-white rounded-sm shadow-sm ring-1 ring-black/5"
+											initial={false}
+											transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+											style={{ zIndex: -1 }}
+										/>
+									)}
+									{tf.toUpperCase()}
 								</button>
 							))}
 						</div>
 					</div>
 				</div>
 
-				<div
-					ref={chartContainerRef}
-					className="w-full h-52 sm:h-64 rounded-2xl overflow-hidden border border-border"
-				/>
+				<div ref={chartContainerRef} className="w-full h-52 sm:h-72 rounded-2xl overflow-hidden" />
 			</div>
 		</div>
 	);
