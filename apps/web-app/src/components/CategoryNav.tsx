@@ -1,3 +1,4 @@
+import { Archive } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getAllCategoary } from '@/api/category';
 import { useSearchParams } from 'react-router-dom';
@@ -53,6 +54,23 @@ export default function CategoryNav() {
 							)}
 						</button>
 					))}
+
+					<div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1 shrink-0" />
+
+					<button
+						onClick={() => handleCategoryChange('Resolved Events')}
+						className={`relative h-full flex items-center gap-2 md:text-[15px] text-sm whitespace-nowrap transition-colors duration-300 cursor-pointer shrink-0 ${
+							selectedCategoryName === 'Resolved Events'
+								? 'text-black dark:text-white font-semibold'
+								: 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+						}`}
+					>
+						<Archive size={16} />
+						Resolved Events
+						{selectedCategoryName === 'Resolved Events' && (
+							<span className="absolute left-0 right-0 bottom-0 h-0.5 bg-black dark:bg-white transition-colors" />
+						)}
+					</button>
 				</div>
 			</div>
 		</div>

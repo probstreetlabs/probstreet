@@ -24,9 +24,7 @@ export default function Search() {
 
 		setIsLoading(true);
 		try {
-			const res = await api.get(
-				`/market/search?q=${searchQuery}&page=${pageNum}&limit=10`
-			);
+			const res = await api.get(`/market/search?q=${searchQuery}&page=${pageNum}&limit=10`);
 			if (res.data?.success) {
 				setResults((prev) => (append ? [...prev, ...res.data.data] : res.data.data));
 				setTotal(res.data.total);

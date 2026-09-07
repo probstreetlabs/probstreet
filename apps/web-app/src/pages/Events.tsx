@@ -28,9 +28,11 @@ export default function EventsPage() {
 	useEffect(() => {
 		const fetchEvents = async () => {
 			try {
-				let url = '/market';
-				if (selectedCategoryName !== 'All Events') {
-					url = `/market/category/${selectedCategoryName}`;
+				let url = '/market?status=OPEN';
+				if (selectedCategoryName === 'Resolved Events') {
+					url = '/market?status=CLOSED';
+				} else if (selectedCategoryName !== 'All Events') {
+					url = `/market/category/${selectedCategoryName}?status=OPEN`;
 				}
 				const response = await api.get(url);
 				setEvents(response.data.data);

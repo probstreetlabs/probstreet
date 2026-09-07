@@ -347,9 +347,17 @@ export const addLiquidity = async (c: Context) => {
 
 export const getAllMarket = async (c: Context) => {
 	try {
+		const statusParam = c.req.query('status') || 'OPEN';
+		let statusFilter: any = { equals: 'OPEN' };
+		if (statusParam === 'CLOSED') {
+			statusFilter = 'CLOSED';
+		} else if (statusParam === 'ALL') {
+			statusFilter = { in: ['OPEN', 'CLOSED', 'RESOLVING'] };
+		}
+
 		const rawMarkets = await prisma.market.findMany({
 			where: {
-				status: { in: ['OPEN', 'CLOSED'] },
+				status: statusFilter,
 			},
 			orderBy: {
 				createdAt: 'desc',
@@ -455,10 +463,18 @@ export const getMarketsByCategory = async (c: Context) => {
 			);
 		}
 
+		const statusParam = c.req.query('status') || 'OPEN';
+		let statusFilter: any = { equals: 'OPEN' };
+		if (statusParam === 'CLOSED') {
+			statusFilter = 'CLOSED';
+		} else if (statusParam === 'ALL') {
+			statusFilter = { in: ['OPEN', 'CLOSED', 'RESOLVING'] };
+		}
+
 		const rawMarkets = await prisma.market.findMany({
 			where: {
 				categoryId: category.id,
-				status: { in: ['OPEN', 'CLOSED'] },
+				status: statusFilter,
 			},
 			orderBy: {
 				createdAt: 'desc',
