@@ -1,4 +1,4 @@
-import api from '@/config/axios';
+import api, { adminApi } from '@/config/axios';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -107,8 +107,8 @@ const CreateEvent = () => {
 		if (!sportsDateFrom || !sportsDateTo) return;
 		setIsSearchingSports(true);
 		try {
-			const res = await api.get(
-				`/aapi/sports/fixtures?dateFrom=${sportsDateFrom}&dateTo=${sportsDateTo}`,
+			const res = await adminApi.get(
+				`/sports/fixtures?dateFrom=${sportsDateFrom}&dateTo=${sportsDateTo}`,
 			);
 			if (res.data?.success) {
 				setSportsFixtures(res.data.data);
