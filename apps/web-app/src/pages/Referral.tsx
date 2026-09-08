@@ -76,7 +76,7 @@ export default function ReferralPage() {
 
 	return (
 		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:pt-10 pt-6 pb-24 md:pb-12 transition-colors">
-			<div className="w-full max-w-[910px] px-4 md:px-6 flex flex-col gap-6">
+			<div className="w-full max-w-227.5 px-4 md:px-6 flex flex-col gap-6">
 				<div>
 					<h1 className="text-2xl md:text-3xl font-medium text-gray-900 dark:text-white tracking-tight">
 						Refer & Rewards
@@ -86,26 +86,28 @@ export default function ReferralPage() {
 					</p>
 				</div>
 
-				<div className="grid grid-cols-3 gap-3">
-					<div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1 shadow-sm">
-						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Earned</span>
-						<span className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+							Earned
+						</span>
+						<span className="text-2xl font-bold text-gray-900 dark:text-white">
 							₹{formatAmount(info?.totalEarnings || 0)}
 						</span>
 					</div>
-					<div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1 shadow-sm">
-						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 							Invited
 						</span>
-						<span className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+						<span className="text-2xl font-bold text-gray-900 dark:text-white">
 							{info?.totalInvited || 0}
 						</span>
 					</div>
-					<div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1 shadow-sm">
-						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 							Claimed
 						</span>
-						<span className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+						<span className="text-2xl font-bold text-gray-900 dark:text-white">
 							{info?.completedCount || 0}
 						</span>
 					</div>
@@ -137,7 +139,7 @@ export default function ReferralPage() {
 									title="Copy referral link"
 								>
 									{copied ? (
-										<Check size={16} className="text-emerald-600 dark:text-emerald-400" />
+										<Check size={16} className="text-gray-900 dark:text-white" />
 									) : (
 										<Copy size={16} className="text-gray-500 dark:text-gray-400" />
 									)}
@@ -162,14 +164,14 @@ export default function ReferralPage() {
 						<div className="flex gap-3">
 							<button
 								onClick={handleWhatsAppShare}
-								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-semibold transition-colors cursor-pointer"
+								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 text-xs font-semibold transition-opacity cursor-pointer"
 							>
 								<MessageSquare size={15} />
 								WhatsApp
 							</button>
 							<button
 								onClick={handleTelegramShare}
-								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#0088cc] hover:bg-[#0077b5] text-white text-xs font-semibold transition-colors cursor-pointer"
+								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 text-xs font-semibold transition-opacity cursor-pointer"
 							>
 								<Send size={15} />
 								Telegram
@@ -192,9 +194,9 @@ export default function ReferralPage() {
 					</p>
 
 					{info?.hasAppliedReferral ? (
-						<div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
-							<CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-							<span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+						<div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+							<CheckCircle2 size={15} className="text-gray-900 dark:text-white shrink-0" />
+							<span className="text-xs font-medium text-gray-900 dark:text-white">
 								Referral code already applied to your account
 							</span>
 						</div>
@@ -210,7 +212,7 @@ export default function ReferralPage() {
 							<button
 								type="submit"
 								disabled={submitReferralMutation.isPending}
-								className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm shadow-blue-500/20"
+								className="px-5 py-2.5 rounded-lg bg-black dark:bg-white text-white dark:text-black font-semibold text-xs transition-opacity hover:opacity-90 shrink-0 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
 							>
 								{submitReferralMutation.isPending ? (
 									<Loader2 size={14} className="animate-spin" />
@@ -244,7 +246,7 @@ export default function ReferralPage() {
 									<h4 className="text-sm font-semibold text-gray-900 dark:text-white">
 										{task.title}
 									</h4>
-									<span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+									<span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black dark:bg-white text-white dark:text-black">
 										Claimed
 									</span>
 								</div>
@@ -279,7 +281,7 @@ export default function ReferralPage() {
 													{task.title}
 												</h4>
 												{task.status === 'COMPLETED' && (
-													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-black dark:bg-white text-white dark:text-black">
 														Done
 													</span>
 												)}
@@ -354,7 +356,7 @@ export default function ReferralPage() {
 													{task.title}
 												</h4>
 												{task.status === 'COMPLETED' && (
-													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-black dark:bg-white text-white dark:text-black">
 														Done
 													</span>
 												)}
@@ -383,8 +385,8 @@ export default function ReferralPage() {
 					<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">How It Works</h3>
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<div className="flex items-start gap-3">
-							<div className="w-7 h-7 rounded-full bg-[#f4f4f5] dark:bg-[#090C1A] border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0">
-								<span className="text-xs font-semibold text-gray-900 dark:text-white">1</span>
+							<div className="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shrink-0">
+								<span className="text-xs font-semibold">1</span>
 							</div>
 							<div>
 								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
@@ -396,8 +398,8 @@ export default function ReferralPage() {
 							</div>
 						</div>
 						<div className="flex items-start gap-3">
-							<div className="w-7 h-7 rounded-full bg-[#f4f4f5] dark:bg-[#090C1A] border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0">
-								<span className="text-xs font-semibold text-gray-900 dark:text-white">2</span>
+							<div className="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shrink-0">
+								<span className="text-xs font-semibold">2</span>
 							</div>
 							<div>
 								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
@@ -409,8 +411,8 @@ export default function ReferralPage() {
 							</div>
 						</div>
 						<div className="flex items-start gap-3">
-							<div className="w-7 h-7 rounded-full bg-[#f4f4f5] dark:bg-[#090C1A] border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0">
-								<span className="text-xs font-semibold text-gray-900 dark:text-white">3</span>
+							<div className="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shrink-0">
+								<span className="text-xs font-semibold">3</span>
 							</div>
 							<div>
 								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
@@ -535,7 +537,7 @@ export default function ReferralPage() {
 										</div>
 										<div className="shrink-0">
 											{friend.status === 'COMPLETED' ? (
-												<span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+												<span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-black dark:bg-white text-white dark:text-black">
 													<CheckCircle2 size={11} />
 													+₹{friend.amount || 10}
 												</span>
