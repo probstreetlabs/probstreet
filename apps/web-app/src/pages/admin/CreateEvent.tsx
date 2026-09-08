@@ -1,7 +1,7 @@
-import api, { adminApi } from '@/config/axios';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
+import api, { adminApi } from '@/config/axios';
 import { useNavigate } from 'react-router-dom';
 import { getAllCategoary } from '@/api/category';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,6 +18,7 @@ import {
 	Trophy,
 	Search,
 	ChevronRight,
+	TrendingUp,
 } from 'lucide-react';
 import {
 	Select,
@@ -33,13 +34,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 const steps = ['Basic Info', 'Timeline & Resolution', 'Thumbnail'];
 
 const SUPPORTED_CRYPTO = [
-	{ id: 'bitcoin', name: 'Bitcoin (BTC)' },
-	{ id: 'ethereum', name: 'Ethereum (ETH)' },
-	{ id: 'solana', name: 'Solana (SOL)' },
-	{ id: 'ripple', name: 'XRP (Ripple)' },
-	{ id: 'dogecoin', name: 'Dogecoin (DOGE)' },
-	{ id: 'binancecoin', name: 'BNB (Binance Coin)' },
-	{ id: 'cardano', name: 'Cardano (ADA)' },
+	{ id: 'BTC', name: 'Bitcoin (BTC)' },
+	{ id: 'ETH', name: 'Ethereum (ETH)' },
+	{ id: 'SOL', name: 'Solana (SOL)' },
+	{ id: 'XRP', name: 'XRP (Ripple)' },
+	{ id: 'DOGE', name: 'Dogecoin (DOGE)' },
+	{ id: 'BNB', name: 'BNB (Binance Coin)' },
+	{ id: 'ADA', name: 'Cardano (ADA)' },
 ];
 
 const CreateEvent = () => {
@@ -54,14 +55,21 @@ const CreateEvent = () => {
 	});
 
 	const [resolutionType, setResolutionType] = useState<
-		'MANUAL' | 'CRYPTO_PRICE' | 'AI_SEARCH' | 'CUSTOM_API' | 'SPORTS_MATCH'
+		'MANUAL' | 'CRYPTO_PRICE' | 'STOCK_PRICE' | 'AI_SEARCH' | 'CUSTOM_API' | 'SPORTS_MATCH'
 	>('MANUAL');
 
 	// Crypto Price Resolver state
-	const [cryptoAsset, setCryptoAsset] = useState('bitcoin');
+	const [cryptoAsset, setCryptoAsset] = useState('BTC');
 	const [cryptoCondition, setCryptoCondition] = useState<'gt' | 'lt'>('gt');
 	const [cryptoTargetPrice, setCryptoTargetPrice] = useState('');
 	const [cryptoMarketType, setCryptoMarketType] = useState<'TOUCH' | 'DIRECTION'>('TOUCH');
+
+	// Stock Price Resolver state
+	const [stockSymbol, setStockSymbol] = useState('');
+	const [stockCondition, setStockCondition] = useState<'gt' | 'lt'>('gt');
+	const [stockTargetPrice, setStockTargetPrice] = useState<string>('');
+	const [stockCurrency, setStockCurrency] = useState<'USD' | 'INR'>('USD');
+	const [stockMarketType, setStockMarketType] = useState<'TOUCH' | 'DIRECTION'>('TOUCH');
 
 	// Custom API state
 	const [customApiUrl, setCustomApiUrl] = useState('');
@@ -70,18 +78,10 @@ const CreateEvent = () => {
 	const [customCondition, setCustomCondition] = useState<'gt' | 'lt' | 'eq'>('gt');
 	const [customTargetValue, setCustomTargetValue] = useState('');
 
-	// Sports Match state
-	const [sportsDateFrom, setSportsDateFrom] = useState(() => {
-		const d = new Date();
-		return d.toISOString().split('T')[0];
-	});
-	const [sportsDateTo, setSportsDateTo] = useState(() => {
-		const d = new Date();
-		d.setDate(d.getDate() + 7);
-		return d.toISOString().split('T')[0];
-	});
 	const [sportsFixtures, setSportsFixtures] = useState<any[]>([]);
-	const [isSearchingSports, setIsSearchingSports] = useState(false);
+	const [selectedSport, setSelectedSport] = useState<string>('football');
+	const [isLoadingFixtures, setIsLoadingFixtures] = useState(false);
+	const [_isSearchingSports, setIsSearchingSports] = useState(false);
 	const [selectedSportsFixture, setSelectedSportsFixture] = useState<any>(null);
 	const [sportsCondition, setSportsCondition] = useState<'home_win' | 'away_win' | 'draw'>(
 		'home_win',
@@ -103,20 +103,27 @@ const CreateEvent = () => {
 		fetchCategories();
 	}, []);
 
-	const searchSportsFixtures = async () => {
-		if (!sportsDateFrom || !sportsDateTo) return;
-		setIsSearchingSports(true);
+	const fetchFixtures = async () => {
 		try {
+			setIsLoadingFixtures(true);
+			const today = new Date();
+			const nextWeek = new Date();
+			nextWeek.setDate(today.getDate() + 7);
+
+			const from = today.toISOString().split('T')[0];
+			const to = nextWeek.toISOString().split('T')[0];
+
 			const res = await adminApi.get(
-				`/sports/fixtures?dateFrom=${sportsDateFrom}&dateTo=${sportsDateTo}`,
+				`/sports/fixtures?dateFrom=${from}&dateTo=${to}&sport=${selectedSport}`,
 			);
-			if (res.data?.success) {
+			if (res.data.success) {
 				setSportsFixtures(res.data.data);
 			}
 		} catch (err) {
 			console.error('Failed to fetch sports fixtures', err);
 		} finally {
 			setIsSearchingSports(false);
+			setIsLoadingFixtures(false);
 		}
 	};
 
@@ -169,11 +176,20 @@ const CreateEvent = () => {
 				sourceOfTruth = `https://api.binance.com/api/v3/ticker/price?symbol=${cryptoAsset}USDT`;
 				oracleConfig = {
 					resolver: 'crypto_price',
-					resultPath: `${cryptoAsset}.usd`, // legacy field, not really used in our new crons since we use binance direct
+					resultPath: `${cryptoAsset}.usd`,
 					condition: cryptoCondition,
 					targetValue: Number(cryptoTargetPrice),
 				};
 				selectedCryptoMarketType = cryptoMarketType;
+			} else if (resolutionType === 'STOCK_PRICE') {
+				resolutionMode = 'AUTOMATIC';
+				sourceOfTruth = `https://finnhub.io/api/v1/quote?symbol=${stockSymbol.toUpperCase()}`;
+				oracleConfig = {
+					resolver: 'stock_price',
+					condition: stockCondition,
+					targetValue: Number(stockTargetPrice),
+				};
+				selectedCryptoMarketType = stockMarketType;
 			} else if (resolutionType === 'AI_SEARCH') {
 				resolutionMode = 'AUTOMATIC';
 				sourceOfTruth = '';
@@ -193,9 +209,12 @@ const CreateEvent = () => {
 				}
 			} else if (resolutionType === 'SPORTS_MATCH' && selectedSportsFixture) {
 				resolutionMode = 'AUTOMATIC';
-				sourceOfTruth = `https://api.football-data.org/v4/matches/${selectedSportsFixture.id}`;
+				sourceOfTruth =
+					selectedSportsFixture._sourceOfTruth ||
+					`https://api.football-data.org/v4/matches/${selectedSportsFixture.id}`;
 				oracleConfig = {
 					resolver: 'sports_match',
+					eventId: selectedSportsFixture.id,
 					statusPath: 'status',
 					finishedStatus: 'FINISHED',
 					homePath: 'score.fullTime.home',
@@ -367,35 +386,36 @@ const CreateEvent = () => {
 											icon: UserCheck,
 											label: 'Manual Admin',
 											desc: 'Admin resolves manually',
-											color: 'text-foreground',
 										},
 										{
 											id: 'CRYPTO_PRICE',
 											icon: Coins,
 											label: 'Crypto Price',
 											desc: 'Deterministic Binance API',
-											color: 'text-amber-500',
+										},
+										{
+											id: 'STOCK_PRICE',
+											icon: TrendingUp,
+											label: 'Stock Price',
+											desc: 'Deterministic Finnhub API',
 										},
 										{
 											id: 'SPORTS_MATCH',
 											icon: Trophy,
 											label: 'Sports Match',
-											desc: 'Football-Data.org Pipeline',
-											color: 'text-emerald-500',
+											desc: 'ESPN / Football-Data',
 										},
 										{
 											id: 'AI_SEARCH',
 											icon: Sparkles,
 											label: 'AI Web Search',
 											desc: 'Tavily + Groq evaluation',
-											color: 'text-blue-500',
 										},
 										{
 											id: 'CUSTOM_API',
 											icon: Code2,
 											label: 'Custom API',
 											desc: 'Provide JSON endpoint',
-											color: 'text-purple-500',
 										},
 									].map((opt) => (
 										<button
@@ -405,12 +425,12 @@ const CreateEvent = () => {
 											className={cn(
 												'p-4 rounded-xl border text-left transition flex flex-col justify-between gap-2',
 												resolutionType === opt.id
-													? 'border-primary bg-primary/5'
-													: 'border-border bg-background hover:bg-accent',
+													? 'border-primary bg-primary/5 shadow-sm'
+													: 'border-border bg-background hover:bg-muted/50',
 											)}
 										>
 											<div className="flex items-center gap-2.5">
-												<opt.icon className={cn('w-5 h-5', opt.color)} />
+												<opt.icon className="w-5 h-5 text-foreground" />
 												<span className="font-semibold text-sm text-foreground">{opt.label}</span>
 											</div>
 											<p className="text-xs text-muted-foreground">{opt.desc}</p>
@@ -420,51 +440,45 @@ const CreateEvent = () => {
 
 								{/* Sports Match */}
 								{resolutionType === 'SPORTS_MATCH' && (
-									<div className="p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-5 animate-in fade-in duration-300">
-										<div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
+									<div className="p-5 rounded-xl border border-border bg-secondary/30 space-y-4 animate-in fade-in duration-300">
+										<div className="flex items-center gap-2 text-foreground font-semibold text-sm">
 											<Trophy className="w-5 h-5" />
-											<span>Football Match Configuration</span>
+											<span>Sports Match Parameters</span>
 										</div>
 
 										{!selectedSportsFixture ? (
 											<div className="space-y-4">
-												<div className="grid grid-cols-2 gap-3">
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 													<div>
 														<label className="block text-xs font-semibold mb-1.5 text-foreground">
-															Date From
+															Select Sport
 														</label>
-														<input
-															type="date"
-															value={sportsDateFrom}
-															onChange={(e) => setSportsDateFrom(e.target.value)}
-															className="w-full p-2.5 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 text-foreground"
-														/>
+														<Select value={selectedSport} onValueChange={setSelectedSport}>
+															<SelectTrigger className="w-full bg-background border-border rounded-lg text-foreground h-11">
+																<SelectValue />
+															</SelectTrigger>
+															<SelectContent className="bg-popover border-border">
+																<SelectItem value="football">Football (Soccer)</SelectItem>
+															</SelectContent>
+														</Select>
 													</div>
-													<div>
-														<label className="block text-xs font-semibold mb-1.5 text-foreground">
-															Date To
-														</label>
-														<input
-															type="date"
-															value={sportsDateTo}
-															onChange={(e) => setSportsDateTo(e.target.value)}
-															className="w-full p-2.5 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 text-foreground"
-														/>
+													<div className="flex items-end">
+														<button
+															type="button"
+															onClick={fetchFixtures}
+															disabled={isLoadingFixtures}
+															className="h-11 px-4 w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
+														>
+															{isLoadingFixtures ? (
+																<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+															) : (
+																<Search className="w-4 h-4" />
+															)}
+															Fetch Upcoming Fixtures
+														</button>
 													</div>
 												</div>
-												<button
-													type="button"
-													onClick={searchSportsFixtures}
-													disabled={isSearchingSports}
-													className="w-full p-3 bg-emerald-500/10 text-emerald-500 font-semibold rounded-lg hover:bg-emerald-500/20 transition flex items-center justify-center gap-2 text-sm"
-												>
-													{isSearchingSports ? (
-														<Loader2 className="w-4 h-4 animate-spin" />
-													) : (
-														<Search className="w-4 h-4" />
-													)}
-													Search Fixtures
-												</button>
+
 												{sportsFixtures.length > 0 && (
 													<div className="max-h-75 overflow-y-auto space-y-2 mt-4 custom-scrollbar">
 														{sportsFixtures.map((fixture) => (
@@ -493,7 +507,7 @@ const CreateEvent = () => {
 											<div className="space-y-4">
 												<div className="p-4 bg-background border border-border rounded-lg flex items-center justify-between">
 													<div>
-														<div className="text-xs text-emerald-500 font-semibold mb-1">
+														<div className="text-xs text-muted-foreground font-semibold mb-1">
 															Selected Match
 														</div>
 														<div className="font-bold text-foreground text-sm">
@@ -529,7 +543,9 @@ const CreateEvent = () => {
 															<SelectItem value="away_win">
 																{selectedSportsFixture.awayTeam.name} Wins
 															</SelectItem>
-															<SelectItem value="draw">Match is a Draw</SelectItem>
+															{selectedSport === 'football' && (
+																<SelectItem value="draw">Match is a Draw</SelectItem>
+															)}
 														</SelectContent>
 													</Select>
 												</div>
@@ -540,8 +556,8 @@ const CreateEvent = () => {
 
 								{/* Crypto Price */}
 								{resolutionType === 'CRYPTO_PRICE' && (
-									<div className="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-4 animate-in fade-in duration-300">
-										<div className="flex items-center gap-2 text-amber-500 font-semibold text-sm">
+									<div className="p-5 rounded-xl border border-border bg-secondary/30 space-y-4 animate-in fade-in duration-300">
+										<div className="flex items-center gap-2 text-foreground font-semibold text-sm">
 											<Coins className="w-5 h-5" />
 											<span>Crypto Price Parameters</span>
 										</div>
@@ -606,8 +622,93 @@ const CreateEvent = () => {
 													placeholder="e.g. 100000"
 													value={cryptoTargetPrice}
 													onChange={(e) => setCryptoTargetPrice(e.target.value)}
-													className="w-full p-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground"
+													className="w-full p-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground shadow-sm"
 												/>
+											</div>
+										</div>
+									</div>
+								)}
+
+								{/* Stock Price */}
+								{resolutionType === 'STOCK_PRICE' && (
+									<div className="p-5 rounded-xl border border-border bg-secondary/30 space-y-4 animate-in fade-in duration-300">
+										<div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+											<TrendingUp className="w-5 h-5" />
+											<span>Stock Price Parameters</span>
+										</div>
+										<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+											<div>
+												<label className="block text-xs font-semibold mb-1.5 text-foreground">
+													Stock Symbol (e.g. AAPL, RELIANCE.NS)
+												</label>
+												<input
+													type="text"
+													value={stockSymbol}
+													onChange={(e) => setStockSymbol(e.target.value.toUpperCase())}
+													placeholder="AAPL"
+													className="w-full bg-background border border-border text-foreground rounded-lg p-2.5 h-11 focus:outline-none focus:ring-2 focus:ring-primary/20 transition shadow-sm"
+												/>
+											</div>
+											<div>
+												<label className="block text-xs font-semibold mb-1.5 text-foreground">
+													Market Type
+												</label>
+												<Select
+													value={stockMarketType}
+													onValueChange={(v: 'TOUCH' | 'DIRECTION') => setStockMarketType(v)}
+												>
+													<SelectTrigger className="w-full bg-background border-border rounded-lg text-foreground h-11">
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent className="bg-popover border-border">
+														<SelectItem value="TOUCH">Touch (Hit Target)</SelectItem>
+														<SelectItem value="DIRECTION">Direction (At Expiry)</SelectItem>
+													</SelectContent>
+												</Select>
+											</div>
+											<div>
+												<label className="block text-xs font-semibold mb-1.5 text-foreground">
+													Condition
+												</label>
+												<Select
+													value={stockCondition}
+													onValueChange={(v: 'gt' | 'lt') => setStockCondition(v)}
+												>
+													<SelectTrigger className="w-full bg-background border-border rounded-lg text-foreground h-11">
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent className="bg-popover border-border">
+														<SelectItem value="gt">Greater Than / Equals (≥)</SelectItem>
+														<SelectItem value="lt">Less Than / Equals (≤)</SelectItem>
+													</SelectContent>
+												</Select>
+											</div>
+											<div>
+												<label className="block text-xs font-semibold mb-1.5 text-foreground">
+													Target Price
+												</label>
+												<div className="flex relative">
+													<Select
+														value={stockCurrency}
+														onValueChange={(v: 'USD' | 'INR') => setStockCurrency(v)}
+													>
+														<SelectTrigger className="w-20 rounded-r-none bg-background border-border text-foreground h-11 focus:ring-primary/20">
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent className="bg-popover border-border">
+															<SelectItem value="USD">$</SelectItem>
+															<SelectItem value="INR">₹</SelectItem>
+														</SelectContent>
+													</Select>
+													<input
+														type="number"
+														step="0.01"
+														value={stockTargetPrice}
+														onChange={(e) => setStockTargetPrice(e.target.value)}
+														className="w-full bg-background border border-l-0 border-border text-foreground rounded-r-lg p-2.5 h-11 focus:outline-none focus:ring-2 focus:ring-primary/20 transition shadow-sm"
+														placeholder="0.00"
+													/>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -615,8 +716,8 @@ const CreateEvent = () => {
 
 								{/* AI Search */}
 								{resolutionType === 'AI_SEARCH' && (
-									<div className="p-5 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-3 animate-in fade-in duration-300">
-										<div className="flex items-center gap-2 text-blue-500 font-semibold text-sm">
+									<div className="p-5 rounded-xl border border-border bg-secondary/30 space-y-3 animate-in fade-in duration-300">
+										<div className="flex items-center gap-2 text-foreground font-semibold text-sm">
 											<Sparkles className="w-5 h-5" />
 											<span>Automated Web Search & AI Decision</span>
 										</div>
@@ -631,7 +732,7 @@ const CreateEvent = () => {
 
 								{/* Custom API */}
 								{resolutionType === 'CUSTOM_API' && (
-									<div className="p-5 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-4 animate-in fade-in duration-300">
+									<div className="p-5 rounded-xl border border-border bg-secondary/30 space-y-4 animate-in fade-in duration-300">
 										<div>
 											<label className="block text-xs font-semibold mb-1.5 text-foreground">
 												Source of Truth API URL

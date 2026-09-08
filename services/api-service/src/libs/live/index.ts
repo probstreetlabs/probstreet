@@ -75,7 +75,13 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 	};
 
 	// 1. Check if it is a Crypto Market
-	const coin = detectCryptoCoin(title, market.symbol);
+	let coinFromSource = null;
+	if (market.sourceOfTruth?.includes('api.binance.com')) {
+		const match = market.sourceOfTruth.match(/symbol=([A-Z]+)USDT/);
+		if (match) coinFromSource = match[1];
+	}
+
+	const coin = coinFromSource || detectCryptoCoin(title, market.symbol);
 	const isCryptoCategory =
 		categoryName.includes('crypto') ||
 		categoryName.includes('bitcoin') ||
@@ -83,9 +89,11 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 		oracleConfig.resolver === 'crypto_price' ||
 		!!coin;
 
-	if (isCryptoCategory && coin) {
+	const effectiveCoin = coin || (isCryptoCategory ? 'BTC' : null);
+
+	if (isCryptoCategory || effectiveCoin) {
 		try {
-			const binancePair = `${coin}USDT`;
+			const binancePair = `${effectiveCoin}USDT`;
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -111,7 +119,7 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 					status: market.status,
 					title: market.title,
 					crypto: {
-						coin,
+						coin: effectiveCoin,
 						name: coinInfo.name,
 						symbol: binancePair,
 						price: currentPrice,
@@ -126,7 +134,10 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 				};
 			}
 		} catch (err: any) {
-			logger.warn({ coin, err: err.message }, 'Failed to fetch Binance crypto live ticker');
+			logger.warn(
+				{ coin: effectiveCoin, err: err.message },
+				'Failed to fetch Binance crypto live ticker',
+			);
 		}
 	}
 
@@ -154,7 +165,7 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 			if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
 				const json = (await res.json()) as any;
 
-				// Parse Football-Data.org or standard sports API response
+				// Parse Football-Data.org response
 				const homeTeam =
 					json.homeTeam?.name || json.home?.name || json.team1 || json.matches?.[0]?.team1 || '';
 				const awayTeam =
@@ -224,7 +235,66 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 		}
 	}
 
-	// 3. Fallback for title-based sports match (e.g. "Dortmund vs Hamburg")
+	// 3. Check if it is a STOCKS Market
+	if (
+		categoryName.includes('stocks') ||
+		categoryName.includes('finance') ||
+		oracleConfig.resolver === 'stock_price'
+	) {
+		try {
+			if (ENV.FINNHUB_API_KEY) {
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+				let finnhubSymbol = 'AAPL'; // default fallback
+				if (market.sourceOfTruth?.includes('finnhub.io')) {
+					const urlObj = new URL(market.sourceOfTruth);
+					finnhubSymbol = urlObj.searchParams.get('symbol') || finnhubSymbol;
+				} else {
+					// Fallback: try to extract from title (e.g. "Will TSLA go up?")
+					const match = title.match(/\b([A-Z]{2,5}(?:\.[A-Z]{2})?)\b/);
+					if (match) finnhubSymbol = match[1];
+				}
+
+				const url = `https://finnhub.io/api/v1/quote?symbol=${finnhubSymbol}&token=${ENV.FINNHUB_API_KEY}`;
+
+				const res = await fetch(url, { signal: controller.signal });
+				clearTimeout(timeoutId);
+
+				if (res.ok) {
+					const data = (await res.json()) as any;
+					if (data && data.c !== 0 && data.c !== undefined) {
+						return {
+							type: 'STOCKS',
+							isLive: market.status === 'OPEN',
+							status: market.status,
+							title: market.title,
+							stock: {
+								symbol: finnhubSymbol,
+								price: data.c,
+								change: data.d,
+								changePercent: data.dp,
+								high: data.h,
+								low: data.l,
+								targetValue: oracleConfig.targetValue
+									? Number(oracleConfig.targetValue)
+									: undefined,
+								targetCondition: oracleConfig.condition,
+							},
+							odds: defaultOdds,
+						};
+					}
+				}
+			}
+		} catch (err: any) {
+			logger.warn(
+				{ symbol: market.symbol, err: err.message },
+				'Failed to fetch Finnhub live ticker',
+			);
+		}
+	}
+
+	// 4. Check if it is a Football / Sports Market title-based match
 	const isSports =
 		categoryName.includes('sport') ||
 		categoryName.includes('football') ||

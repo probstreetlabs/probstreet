@@ -132,7 +132,11 @@ export const createMarket = async (c: Context) => {
 			},
 		});
 
-		const coinPair = resolveBinanceSymbol(newMarket.title, newMarket.symbol);
+		const coinPair = resolveBinanceSymbol(
+			newMarket.title,
+			newMarket.symbol,
+			newMarket.sourceOfTruth,
+		);
 		const isCryptoMarket =
 			!!coinPair ||
 			category.categoryName.toLowerCase().includes('crypto') ||
@@ -168,6 +172,49 @@ export const createMarket = async (c: Context) => {
 				logger.warn(
 					{ err: err.message, symbol: coinPair },
 					'Failed to fetch start price from Binance',
+				);
+			}
+		}
+
+		const isStocksMarket = (data.oracleConfig as any)?.resolver === 'stock_price';
+		if (isStocksMarket && ENV.FINNHUB_API_KEY) {
+			try {
+				// The URL we set in frontend is `https://finnhub.io/api/v1/quote?symbol=AAPL`
+				// We can extract the symbol from newMarket.sourceOfTruth or assume it's in the oracleConfig (actually it's in sourceOfTruth)
+				const urlObj = new URL(newMarket.sourceOfTruth || '');
+				const finnhubSymbol = urlObj.searchParams.get('symbol');
+
+				if (finnhubSymbol) {
+					const controller = new AbortController();
+					const timeoutId = setTimeout(() => controller.abort(), 4000);
+					const finnhubRes = await fetch(
+						`https://finnhub.io/api/v1/quote?symbol=${finnhubSymbol}&token=${ENV.FINNHUB_API_KEY}`,
+						{ signal: controller.signal },
+					);
+					clearTimeout(timeoutId);
+
+					if (finnhubRes.ok) {
+						const finnhubData = (await finnhubRes.json()) as any;
+						if (finnhubData && finnhubData.c !== 0 && finnhubData.c !== undefined) {
+							const startPrice = parseFloat(finnhubData.c);
+							let marketType = data.cryptoMarketType || 'DIRECTION';
+
+							await prisma.market.update({
+								where: { id: newMarket.id },
+								data: {
+									cryptoMarketType: marketType,
+									startPrice,
+									trackedHigh: startPrice,
+									trackedLow: startPrice,
+								},
+							});
+						}
+					}
+				}
+			} catch (err: any) {
+				logger.warn(
+					{ err: err.message, id: newMarket.id },
+					'Failed to fetch start price from Finnhub',
 				);
 			}
 		}
@@ -1296,6 +1343,8 @@ export const getMarketLiveStatus = async (c: Context) => {
 			cacheExpiry = 12; // 12 seconds for live sports (5 requests / min)
 		} else if (liveData?.type === 'CRYPTO') {
 			cacheExpiry = 5; // crypto can be fast
+		} else if (liveData?.type === 'STOCKS') {
+			cacheExpiry = 15; // 15 seconds for stocks (finnhub is 60 req/min)
 		}
 
 		await client.set(cacheKey, JSON.stringify(liveData), 'EX', cacheExpiry);
@@ -1338,7 +1387,16 @@ const COIN_SYMBOL_MAP: Record<string, string> = {
 	POLKADOT: 'DOTUSDT',
 };
 
-function resolveBinanceSymbol(marketTitle: string, marketSymbol: string): string | null {
+function resolveBinanceSymbol(
+	marketTitle: string,
+	marketSymbol: string,
+	sourceOfTruth?: string | null,
+): string | null {
+	if (sourceOfTruth?.includes('api.binance.com')) {
+		const match = sourceOfTruth.match(/symbol=([A-Z]+)USDT/);
+		if (match) return `${match[1]}USDT`;
+	}
+
 	const text = `${marketTitle} ${marketSymbol}`.toUpperCase();
 	for (const [keyword, pair] of Object.entries(COIN_SYMBOL_MAP)) {
 		if (text.includes(keyword)) return pair;
@@ -1375,20 +1433,99 @@ export const getMarketProxyKlines = async (c: Context) => {
 	try {
 		const market = await prisma.market.findUnique({
 			where: { symbol },
-			select: { title: true, symbol: true, status: true },
+			select: { title: true, symbol: true, status: true, sourceOfTruth: true, oracleConfig: true },
 		});
 
 		if (!market) {
 			return c.json({ success: false, message: 'Market not found' }, 404);
 		}
 
-		const binancePair = resolveBinanceSymbol(market.title, market.symbol);
-		if (!binancePair) {
-			return c.json({ success: false, message: 'No crypto asset detected for this market' }, 422);
-		}
+		const isStock =
+			(market.oracleConfig as any)?.resolver === 'stock_price' ||
+			market.sourceOfTruth?.includes('finnhub.io');
 
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+		if (isStock) {
+			let finnhubSymbol = 'AAPL';
+			if (market.sourceOfTruth?.includes('finnhub.io')) {
+				const urlObj = new URL(market.sourceOfTruth);
+				finnhubSymbol = urlObj.searchParams.get('symbol') || finnhubSymbol;
+			}
+
+			const mapRes: Record<string, string> = {
+				'1m': '1',
+				'3m': '1',
+				'5m': '5',
+				'15m': '15',
+				'30m': '30',
+				'1h': '60',
+				'2h': '60',
+				'4h': '60',
+				'6h': '60',
+				'12h': '60',
+				'1d': 'D',
+				'1w': 'W',
+			};
+			const resStr = mapRes[interval] || 'D';
+
+			const mapSecs: Record<string, number> = {
+				'1m': 60,
+				'3m': 180,
+				'5m': 300,
+				'15m': 900,
+				'30m': 1800,
+				'1h': 3600,
+				'2h': 7200,
+				'4h': 14400,
+				'6h': 21600,
+				'12h': 43200,
+				'1d': 86400,
+				'1w': 604800,
+			};
+			const secs = mapSecs[interval] || 86400;
+
+			const to = Math.floor(Date.now() / 1000);
+			const from = to - limit * secs;
+
+			const url = `https://finnhub.io/api/v1/stock/candle?symbol=${finnhubSymbol}&resolution=${resStr}&from=${from}&to=${to}&token=${ENV.FINNHUB_API_KEY}`;
+			const res = await fetch(url, { signal: controller.signal });
+			clearTimeout(timeoutId);
+
+			if (!res.ok) {
+				logger.warn({ finnhubSymbol, interval, status: res.status }, 'Finnhub klines fetch failed');
+				return c.json({ success: false, message: 'Failed to fetch klines from upstream' }, 502);
+			}
+
+			const raw = (await res.json()) as any;
+			if (raw.s !== 'ok' || !raw.c) {
+				return c.json({ success: true, data: [], coin: finnhubSymbol });
+			}
+
+			const klines = [];
+			for (let i = 0; i < raw.t.length; i++) {
+				klines.push({
+					time: raw.t[i] * 1000,
+					open: raw.o[i],
+					high: raw.h[i],
+					low: raw.l[i],
+					close: raw.c[i],
+					volume: raw.v[i],
+				});
+			}
+
+			return c.json({
+				success: true,
+				data: klines,
+				coin: finnhubSymbol,
+			});
+		}
+
+		const binancePair = resolveBinanceSymbol(market.title, market.symbol, market.sourceOfTruth);
+		if (!binancePair) {
+			return c.json({ success: false, message: 'No crypto asset detected for this market' }, 422);
+		}
 
 		const res = await fetch(
 			`https://api.binance.com/api/v3/klines?symbol=${binancePair}&interval=${interval}&limit=${limit}`,

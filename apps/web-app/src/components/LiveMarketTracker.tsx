@@ -46,13 +46,22 @@ interface CryptoData {
 	logoUrl?: string;
 }
 
+interface StockData {
+	symbol: string;
+	price: number;
+	changePercent: number;
+	targetValue?: number;
+	targetCondition?: string;
+}
+
 interface LiveMarketResponse {
-	type: 'CRYPTO' | 'SPORTS' | 'GENERAL';
+	type: 'CRYPTO' | 'SPORTS' | 'GENERAL' | 'STOCKS';
 	isLive: boolean;
 	status: string;
 	title?: string;
 	category?: string;
 	crypto?: CryptoData;
+	stock?: StockData;
 	match?: any;
 	odds?: {
 		yes: number;
@@ -194,7 +203,7 @@ export default function LiveMarketTracker({
 			if (res.data?.success && res.data.data) {
 				const data: LiveMarketResponse = res.data.data;
 				setLiveData(data);
-				if (data.type === 'CRYPTO') onCryptoDetected?.();
+				if (data.type === 'CRYPTO' || data.type === 'STOCKS') onCryptoDetected?.();
 				if (
 					!isResolved &&
 					['CLOSED', 'RESOLVED', 'CLOSE'].includes(data.status?.toUpperCase() || '')
@@ -447,6 +456,146 @@ export default function LiveMarketTracker({
 						<span className="font-semibold text-foreground text-sm mt-1">
 							{m.awayTeam.name || m.awayTeam.shortName}
 						</span>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (liveData.type === 'STOCKS' && liveData.stock) {
+		const s = liveData.stock;
+		const displayPrice = s.price;
+		const displayChange = s.changePercent;
+		const isPositive = displayChange >= 0;
+		const isIndianStock = s.symbol.endsWith('.NS') || s.symbol.endsWith('.BO');
+		const currencySymbol = isIndianStock ? '₹' : '$';
+
+		return (
+			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
+				<div className="flex items-center justify-between px-5 pt-3">
+					<div className="flex items-center gap-1.5 text-sm font-medium">
+						<span>Stocks</span>
+						<span className="opacity-50">•</span>
+						<span className="font-semibold">{s.symbol}</span>
+					</div>
+					<div className="flex items-center gap-1">
+						<button
+							onClick={onToggleBookmark}
+							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+							title="Bookmark"
+						>
+							<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+						</button>
+						<button
+							onClick={onShare}
+							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+							title="Share"
+						>
+							<Share2 size={18} />
+						</button>
+						<button
+							onClick={onPriceAlert}
+							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+							title="Price Alert"
+						>
+							<BellRing size={18} />
+						</button>
+					</div>
+				</div>
+
+				<div className="flex items-start justify-between gap-4 px-5 pt-3 pb-4">
+					<div className="flex items-center gap-4 min-w-0">
+						<div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+							{thumbnail && !thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png') ? (
+								<img src={thumbnail} alt={s.symbol} className="w-full h-full object-cover" />
+							) : (
+								<span className="text-xl font-black text-foreground">{s.symbol[0]}</span>
+							)}
+						</div>
+						<div className="min-w-0">
+							<h1 className="text-lg sm:text-2xl font-semibold text-foreground line-clamp-2">
+								{fallbackTitle || s.symbol}
+							</h1>
+							<div className="flex items-center gap-2 mt-1.5">
+								<span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 dark:text-red-400">
+									<span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+									{isResolved ? 'Ended' : 'Live'}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					{countdown && (
+						<div className="flex flex-col items-end mr-1 shrink-0">
+							<span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+								Time Left
+							</span>
+							<span className="text-lg sm:text-xl font-black text-foreground font-mono tracking-tighter tabular-nums">
+								{countdown}
+							</span>
+						</div>
+					)}
+				</div>
+
+				<div className="px-5 pb-5 space-y-4">
+					<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 mb-2">
+						<div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+							{(s.targetValue !== undefined || startPrice !== undefined) && (
+								<div>
+									<p className="text-xs font-medium text-muted-foreground mb-0.5">Target Price</p>
+									<p className="text-xl sm:text-2xl font-black text-foreground font-mono tracking-tight">
+										{currencySymbol}
+										{(s.targetValue ?? Number(startPrice)).toLocaleString('en-US', {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
+									</p>
+								</div>
+							)}
+
+							<div>
+								<div className="flex items-center gap-2 mb-0.5">
+									<p className="text-xs font-medium text-muted-foreground">Current Price</p>
+									<span
+										className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
+											isPositive
+												? 'text-emerald-500 dark:text-emerald-400'
+												: 'text-red-500 dark:text-red-400'
+										}`}
+									>
+										{isPositive ? (
+											<TrendingUp className="w-3 h-3" />
+										) : (
+											<TrendingDown className="w-3 h-3" />
+										)}
+										{isPositive ? '+' : ''}
+										{displayChange.toFixed(2)}%
+									</span>
+								</div>
+								<p
+									className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+										isPositive
+											? 'text-emerald-500 dark:text-emerald-400'
+											: 'text-red-500 dark:text-red-400'
+									}`}
+								>
+									{currencySymbol}
+									{displayPrice.toLocaleString('en-US', {
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2,
+									})}
+								</p>
+							</div>
+						</div>
+
+						<div className="flex flex-wrap items-center gap-8">
+							<span className="text-sm text-muted-foreground font-medium">
+								Vol.{' '}
+								<strong className="text-foreground">
+									{typeof volume === 'number' ? volume.toLocaleString() : volume}
+								</strong>
+							</span>
+						</div>
 					</div>
 				</div>
 			</div>
