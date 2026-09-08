@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { client as redis } from '@/libs/redis/connection';
 
 const CRYPTO_LOGOS: Record<string, { name: string; logo: string }> = {
 	BTC: {
@@ -60,7 +61,7 @@ function detectCryptoCoin(title: string, symbol: string): string | null {
 	return null;
 }
 
-export async function fetchLiveMarketData(market: any): Promise<any> {
+async function _fetchLiveMarketData(market: any): Promise<any> {
 	const categoryName = market.category?.categoryName?.toLowerCase() || '';
 	const title = market.title || '';
 	const oracleConfig = (market.oracleConfig as any) || {};
@@ -342,4 +343,31 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 		category: market.category?.categoryName || 'General',
 		odds: defaultOdds,
 	};
+}
+
+export async function fetchLiveMarketData(market: any): Promise<any> {
+	if (!market || !market.symbol) return _fetchLiveMarketData(market);
+
+	const cacheKey = `market:live:${market.symbol}`;
+	try {
+		const cached = await redis.get(cacheKey);
+		if (cached) {
+			return JSON.parse(cached);
+		}
+	} catch (e: any) {
+		logger.warn({ error: e.message }, 'Live market cache read error');
+	}
+
+	const result = await _fetchLiveMarketData(market);
+
+	try {
+		if (result) {
+			// Cache for 10 seconds to throttle heavy loads
+			await redis.set(cacheKey, JSON.stringify(result), 'EX', 10);
+		}
+	} catch (e: any) {
+		logger.warn({ error: e.message }, 'Live market cache write error');
+	}
+
+	return result;
 }
