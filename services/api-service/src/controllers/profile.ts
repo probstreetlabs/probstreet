@@ -131,13 +131,27 @@ export const getWatchlist = async (c: Context) => {
 						thumbnail: true,
 						symbol: true,
 						status: true,
+						volume: true,
+						numberOfTraders: true,
+						endTime: true,
+						result: true,
+						category: {
+							select: { categoryName: true },
+						},
 					},
 				},
 			},
 			orderBy: { createdAt: 'desc' },
 		});
 
-		return c.json({ success: true, data: watchlist.map((w) => w.market) });
+		return c.json({
+			success: true,
+			data: watchlist.map((w) => ({
+				...w.market,
+				volume: Number(w.market.volume || 0),
+				category: w.market.category?.categoryName || 'Unknown',
+			})),
+		});
 	} catch (error: any) {
 		logger.error({ context: 'GET_WATCHLIST', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);

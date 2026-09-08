@@ -36,6 +36,7 @@ interface TradeExecutedEvent {
 }
 
 interface Market {
+	id: string;
 	symbol: string;
 	marketId: string;
 	title: string;
@@ -271,7 +272,7 @@ export default function EventDetails() {
 			.then((res) => {
 				setMarket(res.data.data);
 				if (isAuthenticated && res.data.data) {
-					checkBookmark(res.data.data.marketId);
+					checkBookmark(res.data.data.id || res.data.data.marketId);
 				}
 			})
 			.catch((err) => console.error('Error fetching market details:', err))
@@ -301,11 +302,12 @@ export default function EventDetails() {
 		}
 		if (!market) return;
 		try {
+			const targetId = market.id || market.marketId;
 			if (isBookmarked) {
-				await api.delete(`/profile/watchlist/${market.marketId}`);
+				await api.delete(`/profile/watchlist/${targetId}`);
 				setIsBookmarked(false);
 			} else {
-				await api.post('/profile/watchlist', { marketId: market.marketId });
+				await api.post('/profile/watchlist', { marketId: targetId });
 				setIsBookmarked(true);
 			}
 		} catch (error) {

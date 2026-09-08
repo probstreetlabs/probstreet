@@ -1,8 +1,7 @@
+import { socket } from '@/socket';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
-import { socket } from '@/socket';
-import { getNotifications, markNotificationsAsRead } from '@/api/notifications';
 import {
 	Menu,
 	Gift,
@@ -14,7 +13,6 @@ import {
 	Trophy,
 	Moon,
 	Activity,
-	Bookmark,
 } from 'lucide-react';
 import SearchInput from './SearchInput';
 import CategoryNav from './CategoryNav';
@@ -32,8 +30,8 @@ import darkLogo from '@/assets/images/dark-logo.avif';
 import HowItWorksModal from './modals/HowItWorksModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBalanceQuery } from '@/hooks/queries/balance';
-
 import notificationSound from '@/assets/audio/notification.wav';
+import { getNotifications, markNotificationsAsRead } from '@/api/notifications';
 
 function timeAgo(dateInput: string | Date) {
 	const date = new Date(dateInput);
@@ -513,13 +511,6 @@ export default function Navbar() {
 															>
 																<Briefcase size={16} className="text-black dark:text-white" />{' '}
 																{t('Portfolio')}
-															</Link>
-															<Link
-																to="/wishlist"
-																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
-															>
-																<Bookmark size={16} className="text-black dark:text-white" />{' '}
-																{t('Wishlist')}
 															</Link>
 															<Link
 																to="/leaderboard"

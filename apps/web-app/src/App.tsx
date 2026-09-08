@@ -19,7 +19,7 @@ import WithdrawPage from '@/pages/Withdraw';
 import SettingsPage from '@/pages/Settings';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
-import WishlistPage from '@/pages/Wishlist';
+
 import ReferralPage from '@/pages/Referral';
 import AdminUsers from '@/pages/admin/Users';
 import EventDetails from '@/pages/EventDetails';
@@ -80,7 +80,7 @@ function AppContent() {
 							<Route path="control-centre" element={<ControlCentrePage />} />
 						</Route>
 						<Route path="/portfolio" element={<Portfolio />} />
-						<Route path="/wishlist" element={<WishlistPage />} />
+
 						<Route path="/settings" element={<SettingsPage />} />
 						<Route path="/profile/:username" element={<ProfilePage />} />
 						<Route path="/profile" element={<Navigate to="/settings" replace />} />

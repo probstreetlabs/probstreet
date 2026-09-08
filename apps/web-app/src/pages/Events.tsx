@@ -31,11 +31,17 @@ export default function EventsPage() {
 				let url = '/market?status=OPEN';
 				if (selectedCategoryName === 'Resolved Events') {
 					url = '/market?status=CLOSED';
+				} else if (selectedCategoryName === 'Wishlist') {
+					url = '/profile/watchlist';
 				} else if (selectedCategoryName !== 'All Events') {
 					url = `/market/category/${selectedCategoryName}?status=OPEN`;
 				}
 				const response = await api.get(url);
-				setEvents(response.data.data);
+				setEvents(
+					selectedCategoryName === 'Wishlist'
+						? response.data.data.map((m: any) => ({ ...m, isBookmarked: true }))
+						: response.data.data,
+				);
 			} catch (err) {
 				console.error('Error fetching events:', err);
 			}
