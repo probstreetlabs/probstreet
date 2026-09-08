@@ -51,50 +51,56 @@ async function resolveSportsMarkets() {
 				}
 
 				const json: any = await response.json();
-				const status = json.status;
 
-				if (status === 'FINISHED') {
-					const homeScore = json.score.fullTime.home;
-					const awayScore = json.score.fullTime.away;
+				{
+					const status = json.status;
 
-					let result = 'NO';
-					if (config.condition === 'home_win' && homeScore > awayScore) result = 'YES';
-					else if (config.condition === 'away_win' && awayScore > homeScore) result = 'YES';
-					else if (config.condition === 'draw' && homeScore === awayScore) result = 'YES';
+					if (status === 'FINISHED') {
+						const homeScore = json.score.fullTime.home;
+						const awayScore = json.score.fullTime.away;
 
-					logger.info({ marketId: market.id, result }, 'Sports market resolved deterministically');
+						let result = 'NO';
+						if (config.condition === 'home_win' && homeScore > awayScore) result = 'YES';
+						else if (config.condition === 'away_win' && awayScore > homeScore) result = 'YES';
+						else if (config.condition === 'draw' && homeScore === awayScore) result = 'YES';
 
-					await prisma.market.update({
-						where: { id: market.id },
-						data: {
-							oracleStatus: 'RESOLVED',
-							oracleLastChecked: new Date(),
-						},
-					});
+						logger.info(
+							{ marketId: market.id, result },
+							'Sports market resolved deterministically',
+						);
 
-					await pushToQueue(EVENTS.RESOLVE_MARKET, {
-						symbol: market.symbol,
-						result,
-					});
-				} else if (status === 'POSTPONED' || status === 'CANCELLED') {
-					logger.warn({ marketId: market.id, status }, 'Sports match postponed or cancelled');
-					await prisma.market.update({
-						where: { id: market.id },
-						data: {
-							oracleStatus: 'FAILED',
-							oracleLastChecked: new Date(),
-						},
-					});
-				} else {
-					// Just update last checked so we don't spam
-					await prisma.market.update({
-						where: { id: market.id },
-						data: { oracleLastChecked: new Date() },
-					});
+						await prisma.market.update({
+							where: { id: market.id },
+							data: {
+								oracleStatus: 'RESOLVED',
+								oracleLastChecked: new Date(),
+							},
+						});
+
+						await pushToQueue(EVENTS.RESOLVE_MARKET, {
+							symbol: market.symbol,
+							result,
+						});
+					} else if (status === 'POSTPONED' || status === 'CANCELLED') {
+						logger.warn({ marketId: market.id, status }, 'Sports match postponed or cancelled');
+						await prisma.market.update({
+							where: { id: market.id },
+							data: {
+								oracleStatus: 'FAILED',
+								oracleLastChecked: new Date(),
+							},
+						});
+					} else {
+						// Just update last checked so we don't spam
+						await prisma.market.update({
+							where: { id: market.id },
+							data: { oracleLastChecked: new Date() },
+						});
+					}
+
+					// Wait 6 seconds before next iteration to respect 10 req/min limit
+					await new Promise((r) => setTimeout(r, 6000));
 				}
-
-				// Wait 6 seconds before next iteration to respect 10 req/min limit
-				await new Promise((r) => setTimeout(r, 6000));
 			} catch (err) {
 				logger.error({ marketId: market.id, err }, 'Failed to process sports market');
 			}

@@ -26,7 +26,19 @@ const COIN_MAP: Record<string, string> = {
 	POLKADOT: 'DOTUSDT',
 };
 
-function detectCoinAndPair(title: string, symbol: string): { coin: string; pair: string } | null {
+function detectCoinAndPair(
+	title: string,
+	symbol: string,
+	sourceOfTruth?: string | null,
+): { coin: string; pair: string } | null {
+	if (sourceOfTruth?.includes('api.binance.com')) {
+		const match = sourceOfTruth.match(/symbol=([A-Z]+)USDT/);
+		if (match) {
+			const coin = match[1];
+			return { coin, pair: `${coin}USDT` };
+		}
+	}
+
 	const text = `${title} ${symbol}`.toUpperCase();
 	for (const [key, pair] of Object.entries(COIN_MAP)) {
 		if (text.includes(key)) {
@@ -77,7 +89,7 @@ export async function checkAndResolveCryptoMarkets() {
 		});
 
 		for (const market of markets) {
-			const detected = detectCoinAndPair(market.title, market.symbol);
+			const detected = detectCoinAndPair(market.title, market.symbol, market.sourceOfTruth);
 			const isCrypto =
 				!!detected ||
 				(market.category?.categoryName || '').toLowerCase().includes('crypto') ||
