@@ -1,12 +1,11 @@
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
 	Gift,
 	Copy,
 	Check,
 	Users,
-	Send,
-	MessageSquare,
 	ArrowRight,
 	Loader2,
 	Clock,
@@ -14,6 +13,7 @@ import {
 	Wallet,
 	Target,
 	TrendingUp,
+	ChevronRight,
 } from 'lucide-react';
 import { formatAmount } from '@/lib/format';
 import { useReferralQuery, useSubmitReferralMutation } from '@/hooks/queries/referral';
@@ -33,19 +33,6 @@ export default function ReferralPage() {
 		setCopied(true);
 		toast.success('Referral link copied!');
 		setTimeout(() => setCopied(false), 2000);
-	};
-
-	const handleWhatsAppShare = () => {
-		const text = `Join Probstreet using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge! Start here: ${shareLink}`;
-		window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-	};
-
-	const handleTelegramShare = () => {
-		const text = `Join Probstreet using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge!`;
-		window.open(
-			`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`,
-			'_blank',
-		);
 	};
 
 	const handleSubmitCode = (e: React.FormEvent) => {
@@ -75,19 +62,31 @@ export default function ReferralPage() {
 	const promoTasks = info?.rewardTasks?.filter((t: any) => t.type === 'PROMOTIONAL') || [];
 
 	return (
-		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:pt-10 pt-6 pb-24 md:pb-12 transition-colors">
-			<div className="w-full max-w-227.5 px-4 md:px-6 flex flex-col gap-6">
+		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:pt-8 pt-4 pb-24 md:pb-12 transition-colors">
+			<div className="w-full max-w-236 px-6 flex flex-col gap-6">
+				<nav className="md:text-base text-sm mt-4 md:mb-6 mb-2">
+					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
+						<li>
+							<Link to="/" className="hover:underline">
+								Home
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li className="text-gray-900 dark:text-white font-medium">Refer & Rewards</li>
+					</ol>
+				</nav>
+
 				<div>
-					<h1 className="text-2xl md:text-3xl font-medium text-gray-900 dark:text-white tracking-tight">
+					<h1 className="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
 						Refer & Rewards
 					</h1>
-					<p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+					<p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-1">
 						Invite friends, complete milestones, and earn real cash rewards.
 					</p>
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+					<div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
 						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 							Earned
 						</span>
@@ -95,7 +94,7 @@ export default function ReferralPage() {
 							₹{formatAmount(info?.totalEarnings || 0)}
 						</span>
 					</div>
-					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+					<div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
 						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 							Invited
 						</span>
@@ -103,7 +102,7 @@ export default function ReferralPage() {
 							{info?.totalInvited || 0}
 						</span>
 					</div>
-					<div className="bg-white dark:bg-[#090C1A] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
+					<div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-white/10 flex flex-col gap-1.5 shadow-sm">
 						<span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 							Claimed
 						</span>
@@ -114,7 +113,7 @@ export default function ReferralPage() {
 				</div>
 
 				{/* Referral Code + Share Card */}
-				<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+				<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
 					<div className="p-5 md:p-6 flex flex-col gap-4">
 						<div className="flex items-center justify-between">
 							<div>
@@ -146,42 +145,11 @@ export default function ReferralPage() {
 								</button>
 							</div>
 						</div>
-
-						{/* Share URL */}
-						<div className="flex items-center gap-2 bg-[#f4f4f5] dark:bg-[#090C1A] px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10">
-							<span className="text-[11px] text-gray-500 dark:text-gray-400 truncate flex-1 font-mono">
-								{shareLink}
-							</span>
-							<button
-								onClick={handleCopy}
-								className="px-3 py-1 text-[11px] font-semibold rounded-md bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
-							>
-								{copied ? 'Copied!' : 'Copy'}
-							</button>
-						</div>
-
-						{/* Share Buttons */}
-						<div className="flex gap-3">
-							<button
-								onClick={handleWhatsAppShare}
-								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 text-xs font-semibold transition-opacity cursor-pointer"
-							>
-								<MessageSquare size={15} />
-								WhatsApp
-							</button>
-							<button
-								onClick={handleTelegramShare}
-								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 text-xs font-semibold transition-opacity cursor-pointer"
-							>
-								<Send size={15} />
-								Telegram
-							</button>
-						</div>
 					</div>
 				</div>
 
 				{/* Have a Referral Code? */}
-				<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 p-5 md:p-6">
+				<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 p-5 md:p-6">
 					<div className="flex items-center gap-2 mb-1">
 						<Gift size={16} className="text-gray-900 dark:text-white" />
 						<h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -236,7 +204,7 @@ export default function ReferralPage() {
 					{promoTasks.map((task: any) => (
 						<div
 							key={task.id}
-							className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 p-4 flex items-center gap-4"
+							className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 p-4 flex items-center gap-4"
 						>
 							<div className="w-10 h-10 rounded-full bg-[#f4f4f5] dark:bg-[#090C1A] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white shrink-0">
 								<Gift size={18} />
@@ -262,7 +230,7 @@ export default function ReferralPage() {
 
 					{/* Deposit Tiers */}
 					{depositTasks.length > 0 && (
-						<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+						<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
 							<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-2">
 								<Wallet size={15} className="text-gray-900 dark:text-white" />
 								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
@@ -308,7 +276,7 @@ export default function ReferralPage() {
 
 					{/* Trading Milestones */}
 					{milestoneTasks.length > 0 && (
-						<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+						<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
 							<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-2">
 								<Target size={15} className="text-gray-900 dark:text-white" />
 								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
@@ -381,7 +349,7 @@ export default function ReferralPage() {
 				</div>
 
 				{/* How It Works */}
-				<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 p-5 md:p-6">
+				<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 p-5 md:p-6">
 					<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">How It Works</h3>
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<div className="flex items-start gap-3">
@@ -427,7 +395,7 @@ export default function ReferralPage() {
 				</div>
 
 				{/* Reward Tiers Table */}
-				<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+				<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
 					<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5">
 						<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
 							Reward Tiers
@@ -498,7 +466,7 @@ export default function ReferralPage() {
 						)}
 					</div>
 
-					<div className="bg-white dark:bg-[#090C1A] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+					<div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
 						{isLoading ? (
 							<div className="py-16 flex justify-center">
 								<Loader2 className="w-5 h-5 animate-spin text-gray-400" />

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useInitPaymentMutation } from '@/hooks/mutations/payment';
+import { Link } from 'react-router-dom';
+import { Loader2, ChevronRight } from 'lucide-react';
 // @ts-ignore
 import { load } from '@cashfreepayments/cashfree-js';
+import { useInitPaymentMutation } from '@/hooks/mutations/payment';
 
 export default function RechargePage() {
 	const [amount, setAmount] = useState<number | null>(null);
@@ -48,15 +49,33 @@ export default function RechargePage() {
 	};
 
 	return (
-		<div className="w-full flex justify-center bg-[#f4f4f5] dark:bg-[#090C1A] md:py-24 py-20 min-h-screen transition-colors">
-			<div className="max-w-227.5 w-full px-4">
-				<h1 className="text-4xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">
+		<div className="w-full flex justify-center bg-[#f4f4f5] dark:bg-[#090C1A] md:py-8 py-4 md:mb-8 mb-12 transition-colors">
+			<div className="max-w-232 w-full md:px-4 px-6">
+				<nav className="md:text-base text-sm mt-4 md:mb-12 mb-8">
+					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
+						<li>
+							<Link to="/" className="hover:underline">
+								Home
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li>
+							<Link to="/wallet" className="hover:underline">
+								Wallet
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li className="text-gray-900 dark:text-white font-medium">Recharge</li>
+					</ol>
+				</nav>
+
+				<h1 className="md:text-2xl text-xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">
 					Deposit
 				</h1>
 
-				<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 max-w-137.5 rounded-xl py-6 px-4 space-y-6 transition-colors shadow-sm">
+				<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 max-w-137.5 rounded-xl py-6 px-4 space-y-6 transition-colors shadow-sm">
 					<div className="space-y-2">
-						<div className="text-base font-semibold text-gray-900 dark:text-white">
+						<div className="text-base mb-4 font-semibold text-gray-900 dark:text-white">
 							Deposit amount
 						</div>
 						<input
@@ -87,7 +106,7 @@ export default function RechargePage() {
 						<button
 							onClick={handleSubmit}
 							disabled={!amount || amount <= 0 || isPending}
-							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${
+							className={`w-full mt-10 py-3 rounded-md text-sm md:font-semibold font-medium transition flex items-center justify-center ${
 								!amount || amount <= 0 || isPending
 									? 'bg-[#ABABAB] dark:bg-white/10 text-white dark:text-gray-500 cursor-not-allowed disabled:opacity-50'
 									: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'

@@ -12,6 +12,7 @@ import {
 	SlidersHorizontal,
 	Clock,
 	Zap,
+	ChevronRight,
 } from 'lucide-react';
 
 interface PriceAlert {
@@ -110,15 +111,33 @@ export default function ControlCentrePage() {
 	};
 
 	return (
-		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-4 md:pt-16 pt-16 pb-16 transition-colors min-h-screen">
+		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-6 md:px-4 md:pt-8 pt-4 pb-16 transition-colors min-h-screen">
 			<div className="w-full max-w-4xl flex flex-col gap-8">
+				<nav className="md:text-base text-sm mt-4">
+					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
+						<li>
+							<Link to="/" className="hover:underline">
+								Home
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li>
+							<Link to="/wallet" className="hover:underline">
+								Wallet
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li className="text-gray-900 dark:text-white font-medium">Control Centre</li>
+					</ol>
+				</nav>
+
 				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-gray-200 dark:border-white/10">
 					<div className="flex items-start gap-4">
 						<div>
-							<h1 className="text-3xl font-semibold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+							<h1 className="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
 								Control Centre
 							</h1>
-							<p className="text-sm text-gray-600 dark:text-gray-300 mt-1.5 max-w-lg leading-relaxed">
+							<p className="md:text-sm text-xs text-gray-600 dark:text-gray-300 mt-1.5 max-w-lg">
 								Manage active price alerts, configure your risk controls, and customize automated
 								system notifications all in one place.
 							</p>
@@ -134,7 +153,7 @@ export default function ControlCentrePage() {
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-					<div className="bg-white dark:bg-[#090C1A] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
+					<div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
 						<div className="space-y-1">
 							<p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">
 								Active Alerts
@@ -148,7 +167,7 @@ export default function ControlCentrePage() {
 						</div>
 					</div>
 
-					<div className="bg-white dark:bg-[#090C1A] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
+					<div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
 						<div className="space-y-1">
 							<p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">
 								Monitored Events
@@ -162,7 +181,7 @@ export default function ControlCentrePage() {
 						</div>
 					</div>
 
-					<div className="bg-white dark:bg-[#090C1A] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
+					<div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-gray-200 dark:border-white/10 flex items-start justify-between group hover:border-gray-300 dark:hover:border-white/10 transition-colors">
 						<div className="space-y-1">
 							<p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">
 								System Status
@@ -182,18 +201,18 @@ export default function ControlCentrePage() {
 					<div className="flex gap-2 p-1.5 bg-gray-200/50 dark:bg-[#111111] rounded-xl w-fit">
 						<button
 							onClick={() => setActiveTab('alerts')}
-							className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+							className={`px-5 py-2.5 md:text-sm text-xs md:font-semibold font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
 								activeTab === 'alerts'
 									? 'bg-white dark:bg-[#222222] text-gray-900 dark:text-white'
 									: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
 							}`}
 						>
 							<BellRing className="w-4 h-4" />
-							Price Alerts ({alerts.length})
+							Alerts ({alerts.length})
 						</button>
 						<button
 							onClick={() => setActiveTab('limits')}
-							className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+							className={`px-5 py-2.5 md:text-sm text-xs font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
 								activeTab === 'limits'
 									? 'bg-white dark:bg-[#222222] text-gray-900 dark:text-white'
 									: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -209,21 +228,21 @@ export default function ControlCentrePage() {
 						{activeTab === 'alerts' && (
 							<div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
 								{loading ? (
-									<div className="flex flex-col justify-center items-center h-64 bg-white dark:bg-[#090C1A] rounded-2xl border border-gray-200 dark:border-white/5">
+									<div className="flex flex-col justify-center items-center h-64 bg-white dark:bg-[#111827] rounded-2xl border border-gray-200 dark:border-white/5">
 										<div className="animate-spin rounded-full h-8 w-8 border-2 border-black dark:border-white border-t-transparent mb-4"></div>
 										<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
 											Syncing alerts...
 										</p>
 									</div>
 								) : alerts.length === 0 ? (
-									<div className="bg-white dark:bg-[#090C1A] rounded-2xl p-12 text-center border border-gray-200 dark:border-white/5 flex flex-col items-center justify-center min-h-100">
+									<div className="bg-white dark:bg-[#111827] rounded-2xl p-12 text-center border border-gray-200 dark:border-white/5 flex flex-col items-center justify-center min-h-100">
 										<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#090C1A] text-black dark:text-white flex items-center justify-center mb-6">
 											<BellRing className="w-8 h-8" />
 										</div>
 										<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
 											No Active Price Alerts
 										</h3>
-										<p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8 leading-relaxed">
+										<p className="text-sm text-gray-500 dark:text-gray-400 md:max-w-md max-w-lg mx-auto mb-8 leading-relaxed">
 											Never miss a trading opportunity. Set target price triggers on any market and
 											get instantly notified when the price hits your mark.
 										</p>
@@ -231,7 +250,7 @@ export default function ControlCentrePage() {
 											to="/events"
 											className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:scale-[1.02] active:scale-95 transition-all"
 										>
-											Explore Events to Setup Alerts
+											Explore Events
 										</Link>
 									</div>
 								) : (
@@ -243,7 +262,7 @@ export default function ControlCentrePage() {
 											return (
 												<div
 													key={alert.id}
-													className="bg-white dark:bg-[#090C1A] border border-gray-200 dark:border-white/5 rounded-2xl p-6 transition-all flex flex-col justify-between gap-6 group"
+													className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl p-6 transition-all flex flex-col justify-between gap-6 group"
 												>
 													<div className="flex justify-between items-start gap-4">
 														<div className="space-y-1.5 flex-1">
@@ -308,7 +327,7 @@ export default function ControlCentrePage() {
 
 						{activeTab === 'limits' && (
 							<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-5">
-								<div className="bg-white dark:bg-[#090C1A] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden">
+								<div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden">
 									<div className="p-8 border-b border-gray-100 dark:border-white/5">
 										<div className="flex items-start gap-4">
 											<div className="text-black dark:text-white shrink-0">

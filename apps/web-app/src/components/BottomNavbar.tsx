@@ -1,8 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useTranslation } from 'react-i18next';
-import { Home, Search, Menu } from 'lucide-react';
-import walletIcon from '@/assets/images/wallet.svg';
+import { Home, Search, Menu, WalletMinimal } from 'lucide-react';
 
 export default function BottomNavbar({
 	onOpenSearch,
@@ -46,7 +45,7 @@ export default function BottomNavbar({
 						`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
 					}
 				>
-					<img src={walletIcon} alt="Wallet" className="w-5.5 h-5.5 opacity-80" />
+					<WalletMinimal size={22} className="stroke-2" />
 					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">
 						{t('Wallet')}
 					</span>

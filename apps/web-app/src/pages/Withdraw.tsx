@@ -8,9 +8,10 @@ import {
 	XCircle,
 	Eye,
 	EyeOff,
-	ArrowRight,
 	Copy,
 	Check,
+	ChevronRight,
+	ArrowRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatAmount } from '@/lib/format';
@@ -40,7 +41,6 @@ export default function WithdrawPage() {
 	const withdrawalHistory =
 		transactionData?.data?.data?.transactions?.filter((tx: any) => tx.type === 'WITHDRAWAL') || [];
 
-	// Fee calculations: 0.25% min 5 max 100
 	const requestedAmount = amount || 0;
 	const fee = requestedAmount > 0 ? Math.min(Math.max(requestedAmount * 0.0025, 5), 100) : 0;
 	const totalDeduction = requestedAmount + fee;
@@ -159,20 +159,37 @@ export default function WithdrawPage() {
 	};
 
 	return (
-		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-4 md:py-24 py-20 transition-colors min-h-screen">
-			<div className="w-full max-w-227.5 flex flex-col gap-6">
-				{/* Top Header */}
+		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:px-4 px-6 md:py-8 py-4 transition-colors min-h-screen">
+			<div className="w-full max-w-4xl flex flex-col gap-6">
+				<nav className="md:text-base text-sm mt-4 md:mb-6 mb-4">
+					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
+						<li>
+							<Link to="/" className="hover:underline">
+								Home
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li>
+							<Link to="/wallet" className="hover:underline">
+								Wallet
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li className="text-gray-900 dark:text-white font-medium">Withdraw</li>
+					</ol>
+				</nav>
+
 				<div>
-					<h1 className="text-4xl font-semibold text-gray-900 dark:text-white">Withdraw</h1>
-					<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+					<h1 className="md:text-2xl text-xl font-semibold text-gray-900 dark:text-white">
+						Withdraw
+					</h1>
+					<p className="md:text-sm text-xs text-gray-600 dark:text-gray-300 mt-1">
 						Transfer your winnings directly to your verified bank account or UPI
 					</p>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-					{/* Left Column: Withdrawal Form & Payout Card */}
 					<div className="lg:col-span-7 space-y-6">
-						{/* Unverified Method Notice */}
 						{!isLoadingVerification && (!paymentMethod || !isMethodVerified) && (
 							<div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 flex items-start gap-3.5 text-amber-900 dark:text-amber-200">
 								<div className="space-y-1">
@@ -190,9 +207,8 @@ export default function WithdrawPage() {
 							</div>
 						)}
 
-						{/* Beneficiary / Destination Account Card */}
 						{paymentMethod && (
-							<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl p-5 shadow-xs relative overflow-hidden transition-colors">
+							<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl p-5 relative overflow-hidden transition-colors">
 								<div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3 mb-4">
 									<div>
 										<span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
@@ -204,7 +220,7 @@ export default function WithdrawPage() {
 									</div>
 
 									<div className="flex items-center gap-2">
-										{isMethodVerified ? (
+										{/* {isMethodVerified ? (
 											<span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
 												<CheckCircle2 className="w-3 h-3" /> Verified
 											</span>
@@ -212,7 +228,7 @@ export default function WithdrawPage() {
 											<span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
 												<Clock className="w-3 h-3" /> {paymentMethod.status}
 											</span>
-										)}
+										)} */}
 
 										<button
 											onClick={() => setShowSecret(!showSecret)}
@@ -258,7 +274,7 @@ export default function WithdrawPage() {
 									)}
 								</div>
 
-								<div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+								<div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
 									<span>Settlement Time: Instant (24x7)</span>
 									{paymentMethods.length > 1 && (
 										<select
@@ -285,10 +301,9 @@ export default function WithdrawPage() {
 							</div>
 						)}
 
-						{/* Amount Entry Card */}
-						<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-xs space-y-6 transition-colors">
+						<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl p-6 space-y-6 transition-colors">
 							<div>
-								<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center justify-between mb-4">
 									<label className="text-sm font-semibold text-gray-900 dark:text-white">
 										Withdrawal Amount
 									</label>
@@ -300,7 +315,6 @@ export default function WithdrawPage() {
 									</span>
 								</div>
 
-								{/* Large Currency Input */}
 								<div className="relative flex items-center">
 									<span className="absolute left-4 text-2xl font-bold text-gray-400 dark:text-gray-500">
 										₹
@@ -316,23 +330,19 @@ export default function WithdrawPage() {
 											const val = parseFloat(e.target.value);
 											setAmount(isNaN(val) ? null : val);
 										}}
-										className="w-full pl-10 pr-4 py-3.5 bg-gray-50 dark:bg-[#090C1A] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white font-bold text-2xl rounded-xl focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition disabled:opacity-60 disabled:cursor-not-allowed"
+										className="w-full pl-10 pr-4 py-1.5 bg-gray-50 dark:bg-[#090C1A] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white font-bold text-2xl rounded-xl focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition disabled:opacity-60 disabled:cursor-not-allowed"
 									/>
 								</div>
 
 								{isInsufficient && amount != null && amount > 0 && (
-									<p className="text-xs text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1 font-medium">
+									<p className="text-xs text-red-600 dark:text-red-400 mt-5 flex items-center gap-1 font-medium">
 										<AlertCircle className="w-3.5 h-3.5" />
 										Amount + fees (₹{totalDeduction.toFixed(2)}) exceeds your available balance.
 									</p>
 								)}
 							</div>
 
-							{/* Quick Preset Buttons */}
 							<div className="space-y-2">
-								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-									Quick Select
-								</span>
 								<div className="grid grid-cols-4 gap-2">
 									{[500, 1000, 2500].map((preset) => (
 										<button
@@ -340,7 +350,7 @@ export default function WithdrawPage() {
 											type="button"
 											disabled={isPending || !isMethodVerified || preset > currentWalletAmount}
 											onClick={() => handlePresetClick(preset)}
-											className={`py-2 text-xs font-semibold rounded-lg border transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+											className={`py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
 												amount === preset
 													? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
 													: 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -364,7 +374,6 @@ export default function WithdrawPage() {
 								</div>
 							</div>
 
-							{/* Confirm & Withdraw Button */}
 							<button
 								onClick={handleSubmit}
 								disabled={
@@ -375,14 +384,14 @@ export default function WithdrawPage() {
 									!paymentMethod ||
 									!isMethodVerified
 								}
-								className={`w-full py-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
+								className={`w-full py-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
 									!amount ||
 									amount <= 0 ||
 									isInsufficient ||
 									isPending ||
 									!paymentMethod ||
 									!isMethodVerified
-										? 'bg-gray-300 dark:bg-white/10 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+										? 'bg-gray-300 dark:bg-white/10 mt-8  text-gray-500 dark:text-gray-400 cursor-not-allowed'
 										: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
 								}`}
 							>
@@ -401,7 +410,7 @@ export default function WithdrawPage() {
 					{/* Right Column: Bank Slip Summary & Guidelines */}
 					<div className="lg:col-span-5 space-y-6">
 						{/* Transfer Summary (Bank Slip Style) */}
-						<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl p-5 shadow-xs space-y-4 transition-colors">
+						<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl p-5 space-y-4 transition-colors">
 							<div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
 								<h3 className="text-sm font-bold text-gray-900 dark:text-white">
 									Payout Breakdown
@@ -431,34 +440,15 @@ export default function WithdrawPage() {
 									</span>
 								</div>
 
-								<div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 rounded-lg flex items-center justify-between text-emerald-800 dark:text-emerald-300">
-									<span className="font-medium text-xs">Net Bank Credit</span>
-									<span className="font-bold text-base font-mono">
-										₹{requestedAmount.toFixed(2)}
-									</span>
+								<div className="flex items-center justify-between text-emerald-800 dark:text-emerald-300">
+									<span className="font-semibold text-sm">Net Bank Credit</span>
+									<span className="font-bold text-sm font-mono">₹{requestedAmount.toFixed(2)}</span>
 								</div>
 							</div>
-						</div>
-
-						{/* Security & Withdrawal Guidelines */}
-						<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl p-5 shadow-xs space-y-3 text-xs text-gray-600 dark:text-gray-400 transition-colors">
-							<h4 className="font-bold text-gray-900 dark:text-white text-xs uppercase tracking-wide">
-								Withdrawal Policy & Protection
-							</h4>
-							<ul className="space-y-2 list-disc list-inside leading-relaxed text-[11px]">
-								<li>Transfers are processed instantly 24x7 via IMPS / UPI.</li>
-								<li>Payouts are restricted strictly to your verified PAN-linked bank details.</li>
-								<li>
-									If a bank transfer fails or gets reversed, your full balance and fee are refunded
-									automatically.
-								</li>
-								<li>Minimum withdrawal limit is ₹10.00.</li>
-							</ul>
 						</div>
 					</div>
 				</div>
 
-				{/* Withdrawal History (Bank Statement Style) */}
 				<div className="mt-4 space-y-3">
 					<div className="flex items-center justify-between">
 						<div>
@@ -477,7 +467,7 @@ export default function WithdrawPage() {
 						</button>
 					</div>
 
-					<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl shadow-xs overflow-hidden transition-colors">
+					<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden transition-colors">
 						{withdrawalHistory.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-12 text-center px-4">
 								<Clock className="w-8 h-8 text-gray-400 dark:text-zinc-600 mb-2 opacity-50" />
