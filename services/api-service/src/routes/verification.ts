@@ -14,13 +14,13 @@ export const verificationRoutes = new Hono();
 verificationRoutes.get(
 	'/',
 	authorization,
-	rateLimiter({ points: 50, duration: 300 }),
+	rateLimiter({ points: 500, duration: 60 }),
 	getVerificationDetails,
 );
 verificationRoutes.get(
 	'/status',
 	authorization,
-	rateLimiter({ points: 50, duration: 300 }),
+	rateLimiter({ points: 500, duration: 60 }),
 	getVerificationStatus,
 );
 

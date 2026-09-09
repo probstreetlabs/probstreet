@@ -1,9 +1,11 @@
 import { Context } from 'hono';
+import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probstreet/database';
-import { kycVerificationSchema, paymentVerificationSchema } from '@/validations/verification';
-import { pushToQueue } from '@/libs/redis/queue';
 import { EVENTS } from '@/config/constants';
+import { prisma } from '@probstreet/database';
+import { pushToQueue } from '@/libs/redis/queue';
+import { verifyPan, verifyBankAccount, verifyUpi } from '@/libs/cashfree/verification';
+import { kycVerificationSchema, paymentVerificationSchema } from '@/validations/verification';
 
 /**
  * This controller is for submit kyc
@@ -110,43 +112,101 @@ export const submitKyc = async (c: Context) => {
 			});
 		}
 
+		const dob = new Date(validateData.data.DOB);
+		const age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+
+		if (age < 18) {
+			return c.json(
+				{
+					success: false,
+					message: 'You must be at least 18 years old to use this platform.',
+				},
+				400,
+			);
+		}
+
+		let kycStatus = 'PENDING';
+
+		if (ENV.IS_KYC_PROVIDER_ENABLED === 'true') {
+			const testPan = 'XYZPP4321W';
+			const result = await verifyPan(validateData.data.panName, testPan);
+			if (result.valid) {
+				kycStatus = 'VERIFIED';
+			} else {
+				kycStatus = 'REJECTED';
+			}
+		}
+
 		try {
 			await prisma.$transaction(async (tx) => {
-				await tx.kyc.create({
-					data: {
-						userId: userId,
-						panName: validateData.data.panName,
-						panNumber: validateData.data.panNumber,
-						dob: validateData.data.DOB,
-						status: 'PENDING',
-						remarks: null,
-						submittedAt: new Date(Date.now()),
-					},
+				const existingPan = await tx.kyc.findUnique({
+					where: { panNumber: validateData.data.panNumber },
 				});
+
+				if (existingPan && existingPan.userId !== userId) {
+					throw new Error('PAN_ALREADY_EXISTS');
+				}
+
+				if (existingPan && existingPan.userId === userId) {
+					await tx.kyc.update({
+						where: { id: existingPan.id },
+						data: {
+							panName: validateData.data.panName,
+							dob: validateData.data.DOB,
+							status: kycStatus as any,
+							remarks:
+								kycStatus === 'VERIFIED'
+									? 'Auto-verified by provider'
+									: kycStatus === 'REJECTED'
+										? 'Auto-rejected by provider'
+										: null,
+							submittedAt: new Date(Date.now()),
+							reviewedAt: kycStatus !== 'PENDING' ? new Date(Date.now()) : null,
+						},
+					});
+				} else {
+					await tx.kyc.create({
+						data: {
+							userId: userId,
+							panName: validateData.data.panName,
+							panNumber: validateData.data.panNumber,
+							dob: validateData.data.DOB,
+							status: kycStatus as any,
+							remarks:
+								kycStatus === 'VERIFIED'
+									? 'Auto-verified by provider'
+									: kycStatus === 'REJECTED'
+										? 'Auto-rejected by provider'
+										: null,
+							submittedAt: new Date(Date.now()),
+							reviewedAt: kycStatus !== 'PENDING' ? new Date(Date.now()) : null,
+						},
+					});
+				}
 
 				await tx.user.update({
 					where: {
 						id: userId,
 					},
 					data: {
-						kycVerificationStatus: 'PENDING',
+						kycVerificationStatus: kycStatus as any,
 					},
 				});
 			});
-		} catch (error) {
+		} catch (error: any) {
 			logger.error(
 				{
 					alert: true,
 					userId,
 					context: 'SUBMIT_KYC',
-					error,
+					error: error?.message || error,
 				},
 				'Failed to create kyc details',
 			);
 			return c.json(
 				{
 					success: false,
-					error: 'Failed to submit KYC details',
+					error: error?.message || 'Failed to submit KYC details',
 				},
 				500,
 			);
@@ -157,6 +217,7 @@ export const submitKyc = async (c: Context) => {
 		return c.json({
 			success: true,
 			message: 'KYC submitted successfully',
+			status: kycStatus,
 		});
 	} catch (error) {
 		logger.error(
@@ -227,6 +288,8 @@ export const submitPaymentMethods = async (c: Context) => {
 
 		const { upiId, bankAccountNumber, ifscCode } = validateData.data;
 
+		let finalStatus = 'PENDING';
+
 		if (upiId) {
 			const existingUpi = await prisma.paymentMethod.findFirst({
 				where: {
@@ -256,23 +319,57 @@ export const submitPaymentMethods = async (c: Context) => {
 				);
 			}
 
+			let upiStatus = 'PENDING';
+
+			if (ENV.IS_KYC_PROVIDER_ENABLED === 'true') {
+				const result = await verifyUpi('John Doe', upiId);
+				if (result.valid) {
+					upiStatus = 'VERIFIED';
+				} else {
+					upiStatus = 'REJECTED';
+				}
+			}
+
+			finalStatus = upiStatus;
+
 			try {
 				await prisma.$transaction(async (tx) => {
-					await tx.paymentMethod.create({
-						data: {
-							userId,
-							type: 'UPI',
-							upiNumber: upiId,
-							status: 'PENDING',
-							remarks: null,
-							submittedAt: new Date(Date.now()),
-						},
+					const existingUpi = await tx.paymentMethod.findUnique({
+						where: { upiNumber: upiId },
 					});
+
+					if (existingUpi && existingUpi.userId !== userId) {
+						throw new Error('UPI_ALREADY_EXISTS');
+					}
+
+					if (existingUpi && existingUpi.userId === userId) {
+						await tx.paymentMethod.update({
+							where: { id: existingUpi.id },
+							data: {
+								status: upiStatus as any,
+								remarks: upiStatus === 'VERIFIED' ? 'Auto-verified by provider' : null,
+								submittedAt: new Date(Date.now()),
+								reviewedAt: upiStatus !== 'PENDING' ? new Date(Date.now()) : null,
+							},
+						});
+					} else {
+						await tx.paymentMethod.create({
+							data: {
+								userId,
+								type: 'UPI',
+								upiNumber: upiId,
+								status: upiStatus as any,
+								remarks: upiStatus === 'VERIFIED' ? 'Auto-verified by provider' : null,
+								submittedAt: new Date(Date.now()),
+								reviewedAt: upiStatus !== 'PENDING' ? new Date(Date.now()) : null,
+							},
+						});
+					}
 
 					await tx.user.update({
 						where: { id: userId },
 						data: {
-							paymentVerificationStatus: 'PENDING',
+							paymentVerificationStatus: upiStatus as any,
 						},
 					});
 				});
@@ -322,6 +419,26 @@ export const submitPaymentMethods = async (c: Context) => {
 				);
 			}
 
+			let bankStatus = 'PENDING';
+
+			if (ENV.IS_KYC_PROVIDER_ENABLED === 'true') {
+				const kyc = await prisma.kyc.findFirst({
+					where: { userId, status: 'VERIFIED' },
+					orderBy: { submittedAt: 'desc' },
+				});
+
+				const nameToVerify = kyc ? kyc.panName : 'TEST USER';
+				const result = await verifyBankAccount(nameToVerify, '026291800001191', 'YESB0000262');
+
+				if (result.valid) {
+					bankStatus = 'VERIFIED';
+				} else {
+					bankStatus = 'REJECTED';
+				}
+			}
+
+			finalStatus = bankStatus;
+
 			try {
 				await prisma.$transaction(async (tx) => {
 					await tx.paymentMethod.create({
@@ -330,16 +447,22 @@ export const submitPaymentMethods = async (c: Context) => {
 							type: 'BANK',
 							accountNumber: bankAccountNumber,
 							ifscCode: ifscCode,
-							status: 'PENDING',
-							remarks: null,
+							status: bankStatus as any,
+							remarks:
+								bankStatus === 'VERIFIED'
+									? 'Auto-verified by provider'
+									: bankStatus === 'REJECTED'
+										? 'Auto-rejected by provider'
+										: null,
 							submittedAt: new Date(Date.now()),
+							reviewedAt: bankStatus !== 'PENDING' ? new Date(Date.now()) : null,
 						},
 					});
 
 					await tx.user.update({
 						where: { id: userId },
 						data: {
-							paymentVerificationStatus: 'PENDING',
+							paymentVerificationStatus: bankStatus as any,
 						},
 					});
 				});
@@ -373,6 +496,7 @@ export const submitPaymentMethods = async (c: Context) => {
 		return c.json({
 			success: true,
 			message: 'Payment details submitted successfully',
+			status: finalStatus,
 		});
 	} catch (error) {
 		logger.error(

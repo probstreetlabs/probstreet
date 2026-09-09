@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
+import { useState, useEffect, useRef } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
-import kycTitleIcon from '@/assets/images/kyc_title.avif';
+import { Loader2, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import kycTitleIcon from '@/assets/images/kyc_title.avif';
 import { VerificationPreview } from '@/components/VerificationPreview';
 import { useSubmitKycMutation, useSubmitPaymentMutation } from '@/hooks/mutations/verification';
 import { useGetVerificationStatus, useGetVerificationDetails } from '@/hooks/queries/verification';
@@ -11,12 +13,10 @@ import { useGetVerificationStatus, useGetVerificationDetails } from '@/hooks/que
 export default function KycVerificationPage() {
 	const queryClient = useQueryClient();
 
-	// kyc related states
 	const [panName, setPanName] = useState('');
 	const [panNumber, setPanNumber] = useState('');
 	const [DOB, setDOB] = useState<Date | null>(null);
 
-	// payment related states
 	const [ifscCode, setIfscCode] = useState('');
 	const [upiId, setUpiId] = useState('');
 	const [bankAccountNumber, setBankAccountNumber] = useState('');
@@ -28,14 +28,59 @@ export default function KycVerificationPage() {
 	const { mutate: submitKyc, isPending: kycPending } = useSubmitKycMutation();
 	const { mutate: submitPayment, isPending: paymentPending } = useSubmitPaymentMutation();
 
+	const prevKycStatus = useRef<string | null>(null);
+	const prevPaymentStatus = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (statusData?.data?.data) {
+			const currentKycStatus = statusData.data.data.kycVerificationStatus;
+			const currentPaymentStatus = statusData.data.data.paymentVerificationStatus;
+
+			if (prevKycStatus.current === 'PENDING' && currentKycStatus === 'VERIFIED') {
+				toast.success('KYC Verification Approved!');
+			} else if (prevKycStatus.current === 'PENDING' && currentKycStatus === 'REJECTED') {
+				toast.error('KYC Verification Rejected!');
+			}
+
+			if (prevPaymentStatus.current === 'PENDING' && currentPaymentStatus === 'VERIFIED') {
+				toast.success('Payment Method Verification Approved!');
+			} else if (prevPaymentStatus.current === 'PENDING' && currentPaymentStatus === 'REJECTED') {
+				toast.error('Payment Method Verification Rejected!');
+			}
+
+			prevKycStatus.current = currentKycStatus;
+			prevPaymentStatus.current = currentPaymentStatus;
+		}
+	}, [statusData]);
+
+	const isUserOfAge = (dob: Date | null) => {
+		if (!dob) return false;
+		const age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+		return age >= 18;
+	};
+
 	const handleSubmitKyc = () => {
 		if (!DOB) return;
+		if (!isUserOfAge(DOB)) {
+			toast.error('You must be at least 18 years old.');
+			return;
+		}
 		submitKyc(
 			{ panName, panNumber, DOB: DOB.toISOString().split('T')[0] },
 			{
-				onSuccess: () => {
+				onSuccess: (data: any) => {
+					if (data?.data?.status === 'VERIFIED') {
+						toast.success('KYC Verification Approved!');
+					} else if (data?.data?.status === 'REJECTED') {
+						toast.error('KYC Verification Rejected!');
+					} else {
+						toast.success('KYC details submitted successfully');
+					}
 					queryClient.invalidateQueries({ queryKey: ['verificationStatus'] });
 					queryClient.invalidateQueries({ queryKey: ['verificationDetails'] });
+				},
+				onError: (error: any) => {
+					toast.error(error.response?.data?.message || 'Failed to submit KYC details');
 				},
 			},
 		);
@@ -52,7 +97,14 @@ export default function KycVerificationPage() {
 				ifscCode,
 			},
 			{
-				onSuccess: () => {
+				onSuccess: (data: any) => {
+					if (data?.data?.status === 'VERIFIED') {
+						toast.success('Payment Method Verification Approved!');
+					} else if (data?.data?.status === 'REJECTED') {
+						toast.error('Payment Method Verification Rejected!');
+					} else {
+						toast.success('Payment method submitted successfully');
+					}
 					queryClient.invalidateQueries({ queryKey: ['verificationStatus'] });
 					queryClient.invalidateQueries({ queryKey: ['verificationDetails'] });
 					setShowPaymentForm(false);
@@ -60,16 +112,25 @@ export default function KycVerificationPage() {
 					setBankAccountNumber('');
 					setIfscCode('');
 				},
+				onError: (error: any) => {
+					toast.error(error.response?.data?.message || 'Failed to submit payment method');
+				},
 			},
 		);
 	};
 
 	const isValidPan = (pan: string) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
-	const isFormValid = panName.trim() !== '' && isValidPan(panNumber) && DOB !== null;
+	const isFormValid =
+		panName.trim() !== '' && isValidPan(panNumber) && DOB !== null && isUserOfAge(DOB);
+
+	const isPaymentFormValid =
+		paymentMethod === 'UPI'
+			? upiId.trim() !== ''
+			: bankAccountNumber.trim() !== '' && ifscCode.trim() !== '';
 
 	if (isLoadingStatus) {
 		return (
-			<div className="flex justify-center bg-[#f4f4f5] dark:bg-[#090C1A] items-center h-screen transition-colors">
+			<div className="flex justify-center bg-[#f4f4f5] dark:bg-[#090C1A] items-center py-72 transition-colors">
 				<Loader2 className="animate-spin w-6 h-6 text-gray-600 dark:text-gray-400" />
 			</div>
 		);
@@ -83,8 +144,26 @@ export default function KycVerificationPage() {
 	const isAllComplete = isKycComplete && isPaymentComplete;
 
 	return (
-		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center items-start text-gray-900 dark:text-white transition-colors pb-12">
-			<div className="max-w-237.5 flex flex-col items-start px-4 md:py-2 w-full pt-20 md:pt-22.5">
+		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center items-start text-gray-900 dark:text-white transition-colors pb-10">
+			<div className="max-w-232 flex flex-col items-start md:px-4 px-6 md:py-2 w-full pt-4 md:pt-8">
+				<nav className="md:text-base text-sm mt-4 mb-8">
+					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
+						<li>
+							<Link to="/" className="hover:underline">
+								Home
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li>
+							<Link to="/wallet" className="hover:underline">
+								Wallet
+							</Link>
+						</li>
+						<ChevronRight size={20} />
+						<li className="text-gray-900 dark:text-white font-medium">Verification</li>
+					</ol>
+				</nav>
+
 				<div className="flex items-center mb-6 gap-4">
 					<img
 						src={kycTitleIcon}
@@ -92,17 +171,19 @@ export default function KycVerificationPage() {
 						className="w-16 h-16 object-contain dark:invert"
 					/>
 					<div>
-						<h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+						<h2 className="md:text-2xl text-xl font-semibold text-gray-900 dark:text-white">
 							KYC verification
 						</h2>
-						<p className="text-gray-600 dark:text-gray-400 text-base">It takes up to 6 hours</p>
+						<p className="text-gray-600 dark:text-gray-400 md:text-base text-sm">
+							{isAllComplete ? 'Verification complete' : 'Instant verification via Cashfree'}
+						</p>
 					</div>
 				</div>
 
 				<div className="w-full rounded-xl">
 					{/* Step 1: KYC PAN Form (if not verified or rejected) */}
 					{(!isKycComplete || kycVerificationStatus === 'REJECTED') && (
-						<div className="w-full bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl py-6 px-6 shadow-sm transition-colors">
+						<div className="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl py-6 px-6 shadow-sm transition-colors">
 							<div className="text-sm max-w-89.25 rounded-lg mb-6">
 								<h3 className="text-[10px] mb-1.5 font-semibold text-red-600 dark:text-red-400 tracking-wide uppercase">
 									IMPORTANT
@@ -176,7 +257,7 @@ export default function KycVerificationPage() {
 					{/* Step 2: Payment Details Form */}
 					{isKycComplete &&
 						(!isPaymentComplete || paymentVerificationStatus === 'REJECTED' || showPaymentForm) && (
-							<div className="w-full rounded-xl bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 min-h-[40vh] py-6 px-6 shadow-sm transition-colors mb-6">
+							<div className="w-full rounded-xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 min-h-[40vh] py-6 px-6 shadow-sm transition-colors mb-6">
 								<div className="flex items-center justify-between mb-6">
 									<div className="text-sm max-w-89.25 rounded-lg">
 										<h3 className="text-[10px] mb-2 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
@@ -187,14 +268,6 @@ export default function KycVerificationPage() {
 											failed transactions.
 										</p>
 									</div>
-									{showPaymentForm && isPaymentComplete && (
-										<button
-											onClick={() => setShowPaymentForm(false)}
-											className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-										>
-											Cancel
-										</button>
-									)}
 								</div>
 
 								<div className="space-y-6 max-w-87.5">
@@ -212,14 +285,17 @@ export default function KycVerificationPage() {
 												/>
 												Bank Account
 											</label>
-											<label className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-gray-200">
+											<label
+												className="flex items-center gap-2 cursor-not-allowed opacity-50 text-gray-800 dark:text-gray-200"
+												title="Temporarily unavailable"
+											>
 												<input
 													type="radio"
+													disabled
 													checked={paymentMethod === 'UPI'}
-													onChange={() => setPaymentMethod('UPI')}
 													className="accent-black dark:accent-white"
 												/>
-												UPI ID
+												UPI ID (Disabled)
 											</label>
 										</div>
 									</div>
@@ -270,9 +346,9 @@ export default function KycVerificationPage() {
 
 									<button
 										onClick={handleSubmitPayment}
-										disabled={paymentPending}
+										disabled={!isPaymentFormValid || paymentPending}
 										className={`w-full py-3.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center ${
-											paymentPending
+											!isPaymentFormValid || paymentPending
 												? 'bg-gray-200 dark:bg-white/5 text-gray-400 dark:text-gray-500 cursor-not-allowed'
 												: 'bg-black dark:bg-white text-white dark:text-black cursor-pointer hover:opacity-90'
 										}`}
@@ -291,7 +367,7 @@ export default function KycVerificationPage() {
 					{isAllComplete &&
 						!showPaymentForm &&
 						(isLoadingDetails ? (
-							<div className="flex justify-center items-center py-16 bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl">
+							<div className="flex justify-center items-center py-16 bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-xl">
 								<Loader2 className="animate-spin w-6 h-6 text-gray-600 dark:text-gray-400" />
 							</div>
 						) : (

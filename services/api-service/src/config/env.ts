@@ -30,10 +30,6 @@ const envSchema = z.object({
 
 	TELEGRAM_BOT_TOKEN: z.string().min(1),
 
-	TWILIO_SID: z.string().min(1),
-	TWILIO_TOKEN: z.string().min(1),
-	TWILIO_NUMBER: z.string().min(1),
-
 	AWS_REGION: z.string().min(1),
 	AWS_S3_BUCKET: z.string().min(1),
 	AWS_ACCESS_KEY_ID: z.string().min(1),
@@ -45,6 +41,8 @@ const envSchema = z.object({
 	CASHFREE_CLIENT_SECRET: z.string().min(1),
 	CASHFREE_PAYOUT_CLIENT_ID: z.string().min(1),
 	CASHFREE_PAYOUT_CLIENT_SECRET: z.string().min(1),
+	CASHFREE_VERIFICATION_CLIENT_ID: z.string().optional(),
+	CASHFREE_VERIFICATION_CLIENT_SECRET: z.string().optional(),
 
 	NOTIFICATION_WORKER_URL: z.string().url(),
 	WORKER_SECRET: z.string().min(1),
@@ -59,6 +57,8 @@ const envSchema = z.object({
 	FOOTBALL_DATA_API_KEY: z.string().optional(),
 
 	FINNHUB_API_KEY: z.string().optional(),
+
+	IS_KYC_PROVIDER_ENABLED: z.string().default('false'),
 });
 
 const parsed = envSchema.safeParse(Bun.env);
