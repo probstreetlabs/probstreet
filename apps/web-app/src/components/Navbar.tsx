@@ -310,12 +310,15 @@ export default function Navbar() {
 									{/* Wallet - Hidden on mobile, shown on bottom nav instead */}
 									<Link
 										to="/wallet"
-										className="hidden md:flex items-center gap-2 border border-gray-200 dark:border-white/10 px-8 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-white/5 transition-colors h-8"
+										className="hidden group relative md:flex items-center gap-2 border border-gray-200 dark:border-white/10 px-8 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-white/5 transition-colors h-8"
 									>
 										<img src={walletIcon} alt="Wallet" className="w-4 h-4 dark:invert" />
 										<span className="font-semibold text-sm text-gray-900 dark:text-white">
 											₹{balanceLoading ? '0' : formatAmount(balance?.data?.data?.amount)}
 										</span>
+										<div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+											Wallet
+										</div>
 									</Link>
 
 									<Link
@@ -328,7 +331,7 @@ export default function Navbar() {
 										</div>
 									</Link>
 
-									<div ref={notifRef} className="relative">
+									<div ref={notifRef} className="relative group">
 										<button
 											onClick={handleOpenNotifs}
 											className="flex items-center justify-center w-9 h-8 p-0.5 border border-gray-200 dark:border-white/10 cursor-pointer rounded-md hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 relative"
@@ -340,6 +343,9 @@ export default function Navbar() {
 												</span>
 											)}
 										</button>
+										<div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+											Notifications
+										</div>
 										<AnimatePresence>
 											{isNotificationOpen && (
 												<motion.div
