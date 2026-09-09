@@ -27,22 +27,6 @@ const CRYPTO_LOGOS: Record<string, { name: string; logo: string }> = {
 		name: 'BNB',
 		logo: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
 	},
-	ADA: {
-		name: 'Cardano',
-		logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png',
-	},
-	AVAX: {
-		name: 'Avalanche',
-		logo: 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
-	},
-	LINK: {
-		name: 'Chainlink',
-		logo: 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
-	},
-	DOT: {
-		name: 'Polkadot',
-		logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png',
-	},
 };
 
 function detectCryptoCoin(title: string, symbol: string): string | null {
@@ -362,8 +346,12 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 
 	try {
 		if (result) {
-			// Cache for 10 seconds to throttle heavy loads
-			await redis.set(cacheKey, JSON.stringify(result), 'EX', 10);
+			let ttl = 3;
+
+			if (result.type === 'SPORTS') ttl = 15;
+			else if (result.type === 'STOCKS') ttl = 5;
+
+			await redis.set(cacheKey, JSON.stringify(result), 'EX', ttl);
 		}
 	} catch (e: any) {
 		logger.warn({ error: e.message }, 'Live market cache write error');

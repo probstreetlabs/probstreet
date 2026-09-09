@@ -40,7 +40,6 @@ const SUPPORTED_CRYPTO = [
 	{ id: 'XRP', name: 'XRP (Ripple)' },
 	{ id: 'DOGE', name: 'Dogecoin (DOGE)' },
 	{ id: 'BNB', name: 'BNB (Binance Coin)' },
-	{ id: 'ADA', name: 'Cardano (ADA)' },
 ];
 
 const CreateEvent = () => {

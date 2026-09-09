@@ -93,12 +93,8 @@ const COIN_LOGOS: Record<string, string> = {
 	SOL: 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
 	ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
 	DOGE: 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
-	ADA: 'https://assets.coingecko.com/coins/images/975/large/cardano.png',
-	DOT: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png',
 	BNB: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
 	XRP: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
-	LINK: 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
-	AVAX: 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
 };
 
 function formatCountdown(endTime?: string): string | null {
@@ -115,6 +111,12 @@ function formatCountdown(endTime?: string): string | null {
 	return `${String(m).padStart(2, '0')}m : ${String(s).padStart(2, '0')}s`;
 }
 
+function formatPrice(price: number): string {
+	if (price < 1)
+		return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
+	return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function detectCoinFromTitle(title: string, symbol: string): string | null {
 	const text = `${title} ${symbol}`.toUpperCase();
 	const entries: [string, string][] = [
@@ -128,16 +130,8 @@ function detectCoinFromTitle(title: string, symbol: string): string | null {
 		['XRP', 'XRP'],
 		['DOGECOIN', 'DOGE'],
 		['DOGE', 'DOGE'],
-		['CARDANO', 'ADA'],
-		['ADA', 'ADA'],
 		['BINANCE', 'BNB'],
 		['BNB', 'BNB'],
-		['AVALANCHE', 'AVAX'],
-		['AVAX', 'AVAX'],
-		['CHAINLINK', 'LINK'],
-		['LINK', 'LINK'],
-		['POLKADOT', 'DOT'],
-		['DOT', 'DOT'],
 	];
 	for (const [keyword, coin] of entries) {
 		if (text.includes(keyword)) return coin;
@@ -233,10 +227,19 @@ export default function LiveMarketTracker({
 
 	useEffect(() => {
 		if (isResolved) return;
-		fetchLivePrice();
-		const id = setInterval(fetchLivePrice, 5000);
+
+		let intervalTime = 5000;
+		if (liveData?.type === 'CRYPTO') intervalTime = 3000;
+		else if (liveData?.type === 'SPORTS') intervalTime = 15000;
+		else if (liveData?.type === 'STOCKS') intervalTime = 5000;
+
+		if (!liveData) {
+			fetchLivePrice();
+		}
+
+		const id = setInterval(fetchLivePrice, intervalTime);
 		return () => clearInterval(id);
-	}, [symbol, isResolved]);
+	}, [symbol, isResolved, liveData?.type]);
 
 	const isCrypto = liveData?.type === 'CRYPTO';
 
@@ -279,7 +282,7 @@ export default function LiveMarketTracker({
 						minute: '2-digit',
 					});
 				},
-				priceFormatter: (price: number) => price.toFixed(2),
+				priceFormatter: (price: number) => (price < 1 ? price.toFixed(5) : price.toFixed(2)),
 			},
 			layout: {
 				background: { type: ColorType.Solid, color: 'rgba(0,0,0,0)' },
@@ -545,10 +548,7 @@ export default function LiveMarketTracker({
 									<p className="text-xs font-medium text-muted-foreground mb-0.5">Target Price</p>
 									<p className="text-xl sm:text-2xl font-black text-foreground font-mono tracking-tight">
 										{currencySymbol}
-										{(s.targetValue ?? Number(startPrice)).toLocaleString('en-US', {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
+										{formatPrice(s.targetValue ?? Number(startPrice))}
 									</p>
 								</div>
 							)}
@@ -580,10 +580,7 @@ export default function LiveMarketTracker({
 									}`}
 								>
 									{currencySymbol}
-									{displayPrice.toLocaleString('en-US', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2,
-									})}
+									{formatPrice(displayPrice)}
 								</p>
 							</div>
 						</div>
@@ -698,10 +695,9 @@ export default function LiveMarketTracker({
 								</p>
 								<p className="text-xl sm:text-2xl font-black text-foreground font-mono tracking-tight">
 									$
-									{(cryptoMarketType === 'DIRECTION'
-										? Number(startPrice)
-										: Number(c.targetValue)
-									).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+									{formatPrice(
+										cryptoMarketType === 'DIRECTION' ? Number(startPrice) : Number(c.targetValue),
+									)}
 								</p>
 							</div>
 						)}
@@ -732,11 +728,7 @@ export default function LiveMarketTracker({
 										: 'text-red-500 dark:text-red-400'
 								}`}
 							>
-								$
-								{displayPrice.toLocaleString('en-US', {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2,
-								})}
+								${formatPrice(displayPrice)}
 							</p>
 						</div>
 					</div>
