@@ -64,8 +64,8 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "insufficient balance (includes 0.25% fee)", Data: user.Balance.WalletBalance.Amount}
 				return
 			}
-			user.Balance.WalletBalance.Amount -= totalCostWithFee
-			user.Balance.WalletBalance.Locked += totalCostWithFee
+			user.Balance.WalletBalance.Amount -= totalCost
+			user.Balance.WalletBalance.Locked += totalCost
 		}
 	} else { // SELL
 		if isMarketOrder {
