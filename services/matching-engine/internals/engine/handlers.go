@@ -364,14 +364,18 @@ func (e *Engine) handleCancelOrder(msg types.MarketMessage, market *types.Market
 		e.BroadcastMessage("stream:data", string(tickerData))
 	}
 
-	// Broadcast ORDERBOOK update
-	orderbookPayload := map[string]interface{}{
-		"type":      "ORDERBOOK",
-		"symbol":    req.Symbol,
-		"orderbook": aggOrderBook,
-	}
-	if obData, err := json.Marshal(orderbookPayload); err == nil {
-		e.BroadcastMessage("stream:data", string(obData))
+	// Broadcast ORDERBOOK diff update
+	diffOrderBook := utils.CalculateOrderBookDiff(market.PreviousOrderBook, aggOrderBook)
+	market.PreviousOrderBook = aggOrderBook
+	if len(diffOrderBook.Yes) > 0 || len(diffOrderBook.No) > 0 {
+		orderbookPayload := map[string]interface{}{
+			"type":      "ORDERBOOK",
+			"symbol":    req.Symbol,
+			"orderbook": diffOrderBook,
+		}
+		if obData, err := json.Marshal(orderbookPayload); err == nil {
+			e.BroadcastMessage("stream:data", string(obData))
+		}
 	}
 
 	log.Info().Str("orderId", req.OrderId).Msg("Order cancelled successfully")

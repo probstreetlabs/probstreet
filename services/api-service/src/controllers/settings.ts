@@ -1,5 +1,7 @@
 import { Context } from 'hono';
+import { EVENTS } from '@/config/constants';
 import { prisma } from '@probstreet/database';
+import { pushToQueue } from '@/libs/redis/queue';
 
 /**
  * @desc Get all settings (profile, notification preferences)
@@ -70,6 +72,12 @@ export async function updateProfile(c: Context) {
 					usernameChangedAt: new Date(),
 				},
 			});
+
+			await pushToQueue(EVENTS.UPDATE_USERNAME, {
+				id: user.id,
+				username,
+			});
+
 			return c.json({
 				user: updatedUser,
 				message: 'Profile updated successfully',

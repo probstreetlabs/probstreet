@@ -561,25 +561,56 @@ export default function EventDetails() {
 										{market.trades && market.trades.length > 0 ? (
 											<div className="space-y-4">
 												{market.trades.map((trade, idx) => {
-													const realName = trade.takerName || trade.makerName;
+													let isTakerUser = user && trade.takerId === user.id;
+													let isMakerUser = user && trade.makerId === user.id;
+													let perspective = 'taker';
 
-													let displayName = realName || 'Trader';
+													const isTakerProbi =
+														(trade.takerName || '').toLowerCase().includes('probi') ||
+														trade.takerId === 'b0000000-0000-4000-8000-000000000001';
+													const isMakerProbi =
+														(trade.makerName || '').toLowerCase().includes('probi') ||
+														trade.makerId === 'b0000000-0000-4000-8000-000000000001';
+
+													if (isMakerUser) {
+														perspective = 'maker';
+													} else if (isTakerUser) {
+														perspective = 'taker';
+													} else if (isTakerProbi && !isMakerProbi) {
+														perspective = 'maker';
+													} else if (isMakerProbi && !isTakerProbi) {
+														perspective = 'taker';
+													}
+
+													let displayName =
+														perspective === 'taker'
+															? trade.takerName || 'Trader'
+															: trade.makerName || 'Trader';
 													let initial = displayName.charAt(0).toUpperCase();
 													let color = getAvatarGradient(
-														displayName || trade.takerId || trade.makerId || `${idx}`,
+														(perspective === 'taker' ? trade.takerId : trade.makerId) || `${idx}`,
 													);
 
-													if (user && (trade.takerId === user.id || trade.makerId === user.id)) {
+													let actionText = 'traded';
+													if (trade.takerAction) {
+														const isTakerBuy = trade.takerAction.toLowerCase() === 'buy';
+														if (perspective === 'taker') {
+															actionText = isTakerBuy ? 'bought' : 'sold';
+														} else {
+															actionText = isTakerBuy ? 'sold' : 'bought';
+														}
+													}
+
+													if (perspective === 'taker' && isTakerUser) {
+														displayName = 'You';
+														color = 'from-emerald-500 to-teal-500';
+														initial = 'Y';
+													} else if (perspective === 'maker' && isMakerUser) {
 														displayName = 'You';
 														color = 'from-emerald-500 to-teal-500';
 														initial = 'Y';
 													}
 
-													const actionText = trade.takerAction
-														? trade.takerAction.toLowerCase() === 'buy'
-															? 'bought'
-															: 'sold'
-														: 'traded';
 													const price = Number(trade.price);
 													const total = (trade.quantity * price).toFixed(1);
 

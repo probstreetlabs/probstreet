@@ -1,6 +1,8 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { EVENTS } from '@/config/constants';
 import { prisma } from '@probstreet/database';
+import { pushToQueue } from '@/libs/redis/queue';
 import { usernameSchema, referralSchema, notificationPrefsSchema } from '@/validations/onboarding';
 
 const logAudit = async (
@@ -111,6 +113,11 @@ export const updateUsername = async (c: Context) => {
 			username: result.data.username,
 		});
 
+		await pushToQueue(EVENTS.UPDATE_USERNAME, {
+			id: user.id,
+			username: result.data.username,
+		});
+
 		return c.json({
 			success: true,
 			message: 'Username updated successfully',
@@ -182,6 +189,11 @@ export const updatePreferences = async (c: Context) => {
 					});
 					await logAudit('APPLY_REFERRAL', user.id, undefined, undefined, {
 						referralCode: refResult.data.referralCode,
+					});
+
+					await pushToQueue(EVENTS.REFERRAL_CREDIT, {
+						userId: user.id,
+						amount: 10.0,
 					});
 				} catch (err: any) {
 					return c.json({ success: false, error: err.message }, 400);

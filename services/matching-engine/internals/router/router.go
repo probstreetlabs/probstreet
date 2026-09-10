@@ -14,6 +14,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "CREATE_USER":
 		return handlers.CreateUser(payload)
 
+	case "UPDATE_USERNAME":
+		return handlers.UpdateUsername(payload)
+
 	case "INIT_BALANCE":
 		return handlers.InitBalance(payload)
 

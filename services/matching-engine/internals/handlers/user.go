@@ -85,3 +85,52 @@ func CreateUser(payload types.QueuePayload) types.QueueResponse {
 		Message:    "User created in engine",
 	}
 }
+
+type UpdateUsernameRequest struct {
+	ID       string `mapstructure:"id"`
+	Username string `mapstructure:"username"`
+}
+
+func UpdateUsername(payload types.QueuePayload) types.QueueResponse {
+	var data UpdateUsernameRequest
+
+	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		log.Error().
+			Err(err).
+			Str("responseId", payload.ResponseId).
+			Msg("Failed to decode payload data into DTO")
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Invalid data structure",
+			Retryable:  true,
+		}
+	}
+
+	engine.EngineInstance.UM.Lock()
+	defer engine.EngineInstance.UM.Unlock()
+
+	if user, exists := engine.EngineInstance.User[data.ID]; exists {
+		user.Name = data.Username
+		log.Info().
+			Str("id", data.ID).
+			Str("username", data.Username).
+			Msg("User username updated in engine memory")
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Success,
+			Message:    "User username updated in engine",
+			Retryable:  false,
+		}
+	}
+
+	log.Warn().
+		Str("id", data.ID).
+		Msg("User not found in engine memory for username update")
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     types.Error,
+		Message:    "User not found",
+		Retryable:  false,
+	}
+}
