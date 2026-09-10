@@ -255,21 +255,21 @@ export default function LiveMarketTracker({
 
 		const chartColors = isDark
 			? {
-				background: 'transparent',
-				gridLines: '#1F2937',
-				textColor: '#9CA3AF',
-				lineColor: '#FFFFFF',
-				topColor: 'rgba(255,255,255,0.2)',
-				bottomColor: 'rgba(255,255,255,0.0)',
-			}
+					background: 'transparent',
+					gridLines: '#1F2937',
+					textColor: '#9CA3AF',
+					lineColor: '#FFFFFF',
+					topColor: 'rgba(255,255,255,0.2)',
+					bottomColor: 'rgba(255,255,255,0.0)',
+				}
 			: {
-				background: 'transparent',
-				gridLines: '#E5E7EB',
-				textColor: '#6B7280',
-				lineColor: '#111827',
-				topColor: 'rgba(17,24,39,0.15)',
-				bottomColor: 'rgba(17,24,39,0.0)',
-			};
+					background: 'transparent',
+					gridLines: '#E5E7EB',
+					textColor: '#6B7280',
+					lineColor: '#111827',
+					topColor: 'rgba(17,24,39,0.15)',
+					bottomColor: 'rgba(17,24,39,0.0)',
+				};
 
 		const chart = createChart(chartContainerRef.current, {
 			localization: {
@@ -735,10 +735,11 @@ export default function LiveMarketTracker({
 								<div className="flex items-center gap-2 mb-0.5">
 									<p className="text-xs font-medium text-muted-foreground">Current Price</p>
 									<span
-										className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isPositive
+										className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
+											isPositive
 												? 'text-emerald-500 dark:text-emerald-400'
 												: 'text-red-500 dark:text-red-400'
-											}`}
+										}`}
 									>
 										{isPositive ? (
 											<TrendingUp className="w-3 h-3" />
@@ -751,10 +752,11 @@ export default function LiveMarketTracker({
 								</div>
 
 								<p
-									className={`text-lg md:text-xl font-black font-mono tracking-tight${isPositive
+									className={`text-lg md:text-xl font-black font-mono tracking-tight${
+										isPositive
 											? 'text-emerald-500 dark:text-emerald-400'
 											: 'text-red-500 dark:text-red-400'
-										}`}
+									}`}
 								>
 									{currencySymbol}
 									{formatPrice(displayPrice)}
@@ -895,10 +897,11 @@ export default function LiveMarketTracker({
 							<div className="flex items-center gap-2">
 								<p className="text-xs font-medium text-muted-foreground">Current Price</p>
 								<span
-									className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isPositive
+									className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
+										isPositive
 											? 'text-emerald-500 dark:text-emerald-400'
 											: 'text-red-500 dark:text-red-400'
-										}`}
+									}`}
 								>
 									{isPositive ? (
 										<TrendingUp className="w-3 h-3" />
@@ -910,10 +913,11 @@ export default function LiveMarketTracker({
 								</span>
 							</div>
 							<p
-								className={`text-lg md:text-xl font-black font-mono tracking-tight ${isPositive
+								className={`text-lg md:text-xl font-black font-mono tracking-tight ${
+									isPositive
 										? 'text-emerald-500 dark:text-emerald-400'
 										: 'text-red-500 dark:text-red-400'
-									}`}
+								}`}
 							>
 								${formatPrice(displayPrice)}
 							</p>
@@ -933,10 +937,11 @@ export default function LiveMarketTracker({
 								<button
 									key={tf}
 									onClick={() => setTimeframe(tf)}
-									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${timeframe === tf
+									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${
+										timeframe === tf
 											? 'text-black'
 											: 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-										}`}
+									}`}
 								>
 									{timeframe === tf && (
 										<motion.div

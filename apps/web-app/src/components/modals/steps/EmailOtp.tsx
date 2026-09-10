@@ -92,7 +92,7 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 				<h2 className="text-[22px] font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">
 					Check your email
 				</h2>
-				<p className="text-gray-500 dark:text-gray-400 text-[13px] font-medium leading-relaxed max-w-[260px]">
+				<p className="text-gray-500 dark:text-gray-400 text-[13px] font-medium leading-relaxed max-w-65">
 					We've sent a 6-digit verification code to{' '}
 					<span className="font-semibold text-gray-900 dark:text-white">{email}</span>
 				</p>
@@ -115,7 +115,7 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 									<div
 										key={idx}
 										className={clsx(
-											'relative flex items-center justify-center w-10 h-12 text-xl font-bold rounded-md transition-all duration-300',
+											'relative flex items-center justify-center w-11 h-14 md:w-12 md:h-14 text-2xl font-bold rounded-xl transition-all duration-300',
 											'border bg-gray-50 dark:bg-white/5 shadow-none',
 											slot.isActive
 												? 'border-black bg-white dark:border-white dark:bg-white/10 z-10'
@@ -127,7 +127,7 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 										{slot.char !== null && <div>{slot.char}</div>}
 										{slot.hasFakeCaret && (
 											<div className="pointer-events-none absolute inset-0 flex items-center justify-center animate-pulse">
-												<div className="w-[2px] h-5 bg-black dark:bg-white rounded-full" />
+												<div className="w-0.5 h-5 bg-black dark:bg-white rounded-full" />
 											</div>
 										)}
 									</div>

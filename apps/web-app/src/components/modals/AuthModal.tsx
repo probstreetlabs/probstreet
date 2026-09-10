@@ -67,7 +67,7 @@ export default function AuthModal() {
 	return (
 		<AnimatePresence>
 			{onboardModalOpen && (
-				<div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center sm:p-4">
+				<div className="fixed inset-0 z-100 flex items-end md:items-center justify-center sm:p-4">
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
@@ -92,11 +92,17 @@ export default function AuthModal() {
 						dragConstraints={{ top: 0 }}
 						dragElastic={0.2}
 						onDragEnd={handleDragEnd}
-						className={`w-full md:w-[420px] h-[85vh] ${step === 'provider' ? 'md:h-[500px]' : 'md:h-auto'} bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col overflow-hidden md:transition-[height] md:duration-300`}
+						className={`w-full md:w-105 ${
+							['username', 'referral'].includes(step)
+								? 'h-[50vh] md:h-auto'
+								: step === 'email-otp'
+									? 'h-[65vh] md:h-auto'
+									: 'h-[85vh]'
+						} ${step === 'provider' ? 'md:h-125' : 'md:h-auto'} bg-white dark:bg-[#1C1C1E] md:rounded-3xl rounded-t-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden md:transition-[height] md:duration-300`}
 					>
 						{isMobile && (
 							<div
-								className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing z-20 touch-none shrink-0 bg-white dark:bg-[#1C1C1E] rounded-t-[24px]"
+								className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing z-20 touch-none shrink-0 bg-white dark:bg-[#1C1C1E] rounded-t-3xl"
 								onPointerDown={(e) => dragControls.start(e)}
 							>
 								<div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
