@@ -362,17 +362,19 @@ export default function EventDetails() {
 
 	return (
 		<div className="w-full bg-background min-h-screen flex items-start justify-center text-foreground transition-colors">
-			<div className="flex gap-1 max-w-7xl justify-between mx-auto w-full px-12 pt-4 md:pt-8 flex-col lg:flex-row relative">
+			<div className="flex gap-1 max-w-7xl justify-between mx-auto w-full px-6 lg:px-12 pt-8 md:pt-8 flex-col lg:flex-row relative">
 				<div className="w-full lg:w-[65%] pb-20">
 					{!isCryptoMarket && (
 						<div className="flex justify-between items-start mb-8 gap-4">
 							<div className="flex items-start gap-4">
-								<div className="w-16 h-16 md:w-18 md:h-18 shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
+								<div className="w-12 h-12 md:w-18 md:h-18 shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
 									<img
 										src={
 											!market.thumbnail ||
 											market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
-												? defaultThumbnail
+												? market.category?.toUpperCase() === 'SPORTS'
+													? 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=500&q=80'
+													: defaultThumbnail
 												: market.thumbnail
 										}
 										alt={market.title}
@@ -381,32 +383,44 @@ export default function EventDetails() {
 								</div>
 								<div>
 									<div className="flex items-center gap-2 mb-2">
-										<span className="text-xs font-semibold uppercase tracking-wide">
+										<span className="md:text-xs text-[10px] font-semibold uppercase tracking-wide">
 											{market.category || 'Event'}
 										</span>
 									</div>
-									<h1 className="md:text-xl text-lg font-bold leading-tight">{market.title}</h1>
+									<h1 className="md:text-xl text-[15px] font-bold leading-tight">{market.title}</h1>
 								</div>
 							</div>
 
-							<div className="flex gap-2 shrink-0">
+							<div className="flex md:gap-2 gap-1.5 shrink-0">
 								<button
 									onClick={toggleBookmark}
-									className="p-2 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+									className="md:p-2 p-1 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition"
 								>
-									<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+									<Bookmark
+										size={18}
+										className="w-4 h-4 md:w-4.5 md:h-4.5"
+										fill={isBookmarked ? 'currentColor' : 'none'}
+									/>
 								</button>
 								<button
 									onClick={() => setIsShareModalOpen(true)}
-									className="p-2 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+									className="md:p-2 p-1 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition"
 								>
-									<Share2 size={18} />
+									<Share2
+										size={18}
+										className="w-4 h-4 md:w-4.5 md:h-4.5"
+										fill={isBookmarked ? 'currentColor' : 'none'}
+									/>
 								</button>
 								<button
 									onClick={() => setIsPriceAlertModalOpen(true)}
-									className="p-2 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+									className="md:p-2 p-1 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition"
 								>
-									<BellRing size={18} />
+									<BellRing
+										size={18}
+										className="w-4 h-4 md:w-4.5 md:h-4.5"
+										fill={isBookmarked ? 'currentColor' : 'none'}
+									/>
 								</button>
 							</div>
 						</div>
@@ -455,7 +469,7 @@ export default function EventDetails() {
 								<button
 									key={tab}
 									onClick={() => setActiveBoxTab(tab.toLowerCase() as any)}
-									className={`flex-1 py-3.5 text-sm font-bold relative transition cursor-pointer ${
+									className={`flex-1 py-3.5 md:text-sm text-xs md:font-bold font-semibold relative transition cursor-pointer ${
 										activeBoxTab === tab.toLowerCase()
 											? 'text-foreground'
 											: 'text-muted-foreground hover:text-foreground'
@@ -481,7 +495,7 @@ export default function EventDetails() {
 														setInnerTab(tab as any);
 														setTimeout(() => setResetScrollToken((prev) => prev + 1), 60);
 													}}
-													className={`py-2 text-sm cursor-pointer font-bold relative transition-colors ${
+													className={`py-2 text-xs md:text-sm cursor-pointer md:font-bold font-semibold relative transition-colors ${
 														innerTab === tab
 															? 'text-foreground'
 															: 'text-muted-foreground hover:text-foreground'
@@ -626,8 +640,10 @@ export default function EventDetails() {
 					</div>
 
 					<div className="mb-6 bg-card dark:bg-[#111827] p-6 rounded-xl">
-						<h2 className="text-lg font-bold mb-5 text-foreground">About the Event</h2>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-sm">
+						<h2 className="md:text-lg text-base font-semibold mb-5 text-foreground">
+							About the Event
+						</h2>
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-[13px] md:text-sm">
 							<div className="flex flex-col gap-1.5 min-w-0">
 								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
 									Source of Truth
@@ -741,7 +757,7 @@ export default function EventDetails() {
 									<h3 className="text-foreground mb-2 text-sm font-bold">
 										Event Overview & Statistics
 									</h3>
-									<p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+									<p className="text-[13px] md:text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
 										{market.overview.EOS}
 									</p>
 								</div>
@@ -749,7 +765,7 @@ export default function EventDetails() {
 							{market.overview?.Rules && (
 								<div>
 									<h3 className="text-foreground mb-2 text-sm font-bold">Rules</h3>
-									<p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+									<p className="text-[13px] md:text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
 										{market.overview.Rules}
 									</p>
 								</div>

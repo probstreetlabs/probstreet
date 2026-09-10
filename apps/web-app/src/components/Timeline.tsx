@@ -308,10 +308,10 @@ export default function TimelineChart({
 						/>
 					</button>
 
-					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground tracking-wide">
+					<div className="flex flex-col items-start font-semibold md:text-xs text-[10px] text-muted-foreground tracking-wide">
 						{view.toUpperCase()} PROBABILITY
 						<span
-							className={`text-lg font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
+							className={`md:text-lg text-sm font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
 						>
 							{view === 'yes' ? Math.round(yesProb) : Math.round(noProb)}%
 						</span>

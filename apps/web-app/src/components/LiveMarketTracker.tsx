@@ -148,6 +148,7 @@ export default function LiveMarketTracker({
 	marketStatus,
 	startPrice,
 	cryptoMarketType,
+	category,
 	isBookmarked = false,
 	onToggleBookmark,
 	onShare,
@@ -254,21 +255,21 @@ export default function LiveMarketTracker({
 
 		const chartColors = isDark
 			? {
-					background: 'transparent',
-					gridLines: '#1F2937',
-					textColor: '#9CA3AF',
-					lineColor: '#FFFFFF',
-					topColor: 'rgba(255,255,255,0.2)',
-					bottomColor: 'rgba(255,255,255,0.0)',
-				}
+				background: 'transparent',
+				gridLines: '#1F2937',
+				textColor: '#9CA3AF',
+				lineColor: '#FFFFFF',
+				topColor: 'rgba(255,255,255,0.2)',
+				bottomColor: 'rgba(255,255,255,0.0)',
+			}
 			: {
-					background: 'transparent',
-					gridLines: '#E5E7EB',
-					textColor: '#6B7280',
-					lineColor: '#111827',
-					topColor: 'rgba(17,24,39,0.15)',
-					bottomColor: 'rgba(17,24,39,0.0)',
-				};
+				background: 'transparent',
+				gridLines: '#E5E7EB',
+				textColor: '#6B7280',
+				lineColor: '#111827',
+				topColor: 'rgba(17,24,39,0.15)',
+				bottomColor: 'rgba(17,24,39,0.0)',
+			};
 
 		const chart = createChart(chartContainerRef.current, {
 			localization: {
@@ -387,76 +388,241 @@ export default function LiveMarketTracker({
 			.catch((e) => console.debug('klines fetch error', e));
 	}, [timeframe, isDark, isCrypto]);
 
-	if (!liveData) return null;
+	if (!liveData) {
+		const isCategorySports = category?.toUpperCase() === 'SPORTS';
+		const isCategoryStocks = category?.toUpperCase() === 'STOCKS';
+
+		if (isCategorySports) {
+			return (
+				<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl py-4 px-4 animate-pulse">
+					<div className="flex flex-row items-center justify-between px-4 sm:p-6 gap-7 sm:gap-10 relative">
+						<div className="flex flex-col items-center gap-3 z-10 w-60 text-center relative">
+							<div className="md:w-10 w-7 h-7 md:h-10 rounded-full bg-muted"></div>
+							<div className="h-3 w-16 md:mt-1 bg-muted rounded"></div>
+						</div>
+
+						<div className="flex flex-col justify-center items-center z-10">
+							<div className="h-3 w-12 mb-2 bg-muted rounded"></div>
+							<div className="md:text-3xl text-sm font-semibold flex items-center gap-3">
+								<div className="h-6 w-6 bg-muted rounded"></div>
+								<span className="text-muted-foreground text-xl md:text-2xl">-</span>
+								<div className="h-6 w-6 bg-muted rounded"></div>
+							</div>
+						</div>
+
+						<div className="flex flex-col items-center gap-3 z-10 w-60 text-center relative">
+							<div className="md:w-10 w-7 h-7 md:h-10 rounded-full bg-muted"></div>
+							<div className="h-3 w-16 md:mt-1 bg-muted rounded"></div>
+						</div>
+					</div>
+				</div>
+			);
+		}
+
+		if (isCategoryStocks) {
+			return (
+				<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl animate-pulse">
+					<div className="flex items-center justify-between px-5 pt-3">
+						<div className="flex items-center gap-1.5 md:text-sm text-[13px]">
+							<div className="h-4 w-12 bg-muted rounded"></div>
+							<span className="opacity-50">•</span>
+							<div className="h-4 w-16 bg-muted rounded"></div>
+						</div>
+						<div className="flex items-center md:gap-1">
+							<div className="w-8 h-8 rounded-lg bg-muted"></div>
+							<div className="w-8 h-8 rounded-lg bg-muted"></div>
+							<div className="w-8 h-8 rounded-lg bg-muted"></div>
+						</div>
+					</div>
+
+					<div className="flex md:flex-row flex-col items-start justify-between gap-4 px-5 pt-3 md:pb-8 pb-1">
+						<div className="flex md:items-center items-start gap-4 min-w-0">
+							<div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-muted shrink-0"></div>
+							<div className="min-w-0 space-y-2">
+								<div className="h-6 w-32 bg-muted rounded"></div>
+								<div className="h-4 w-16 bg-muted rounded"></div>
+							</div>
+						</div>
+
+						<div className="flex flex-col md:items-end items-start mr-1 my-3 md:py-0 shrink-0 space-y-2">
+							<div className="h-3 w-16 bg-muted rounded"></div>
+							<div className="h-5 w-24 bg-muted rounded"></div>
+						</div>
+					</div>
+
+					<div className="px-5 md:pb-5 pb-3 space-y-4">
+						<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 mb-2">
+							<div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+								<div className="space-y-1">
+									<div className="h-3 w-20 bg-muted rounded"></div>
+									<div className="h-6 w-24 bg-muted rounded"></div>
+								</div>
+								<div className="space-y-1">
+									<div className="h-3 w-24 bg-muted rounded"></div>
+									<div className="h-6 w-28 bg-muted rounded"></div>
+								</div>
+							</div>
+							<div className="flex flex-wrap items-center mt-2 md:mt-0 gap-8">
+								<div className="h-4 w-24 bg-muted rounded"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			);
+		}
+
+		return (
+			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl animate-pulse">
+				<div className="flex items-center justify-between px-5 pt-3">
+					<div className="flex items-center gap-1.5 md:text-sm text-[13px]">
+						<div className="h-4 w-12 bg-muted rounded"></div>
+						<span className="opacity-50">•</span>
+						<div className="h-4 w-16 bg-muted rounded"></div>
+					</div>
+					<div className="flex items-center md:gap-1">
+						<div className="w-8 h-8 rounded-lg bg-muted"></div>
+						<div className="w-8 h-8 rounded-lg bg-muted"></div>
+						<div className="w-8 h-8 rounded-lg bg-muted"></div>
+					</div>
+				</div>
+
+				<div className="flex items-start flex-col md:flex-row justify-between gap-4 px-5 pt-3 md:pb-6 pb-1">
+					<div className="flex md:items-center items-start gap-4 min-w-0">
+						<div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-muted shrink-0"></div>
+						<div className="min-w-0 space-y-2">
+							<div className="h-6 w-32 bg-muted rounded"></div>
+							<div className="h-4 w-16 bg-muted rounded"></div>
+						</div>
+					</div>
+
+					<div className="flex flex-col md:items-end items-start mr-1 my-3 md:py-0 shrink-0 space-y-2">
+						<div className="h-3 w-16 bg-muted rounded"></div>
+						<div className="h-5 w-24 bg-muted rounded"></div>
+					</div>
+				</div>
+
+				<div className="px-5 pb-5 space-y-4">
+					<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 mb-6">
+						<div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+							<div className="space-y-1">
+								<div className="h-3 w-20 bg-muted rounded"></div>
+								<div className="h-6 w-24 bg-muted rounded"></div>
+							</div>
+							<div className="space-y-1">
+								<div className="h-3 w-24 bg-muted rounded"></div>
+								<div className="h-6 w-28 bg-muted rounded"></div>
+							</div>
+						</div>
+
+						<div className="flex mt-6 md:mt-0 flex-wrap items-center md:gap-8 gap-5">
+							<div className="h-4 w-24 bg-muted rounded"></div>
+							<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-sm border border-border/50">
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+								<div className="h-6 w-8 bg-muted rounded-sm"></div>
+							</div>
+						</div>
+					</div>
+
+					<div className="w-full h-52 sm:h-72 rounded-2xl bg-muted" />
+				</div>
+			</div>
+		);
+	}
 
 	if (liveData.type === 'SPORTS') {
 		const m = liveData.match;
 		if (!m) return null;
 
 		return (
-			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
-				<div className="flex items-center justify-between px-4 pt-4">
+			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl py-4 px-4">
+				{/* <div className="flex items-center justify-between">
 					<div className="flex items-center gap-1.5 text-sm font-medium">
 						<span className="font-semibold text-foreground">{m.league}</span>
 					</div>
-				</div>
+				</div> */}
 
-				<div className="flex flex-col sm:flex-row items-center justify-center p-6 sm:p-10 gap-6 sm:gap-20 relative">
-					<div className="flex flex-col items-center gap-3 z-10 w-24 sm:w-32 text-center relative">
-						<div className={cn('w-16 h-16')}>
+				<div className="flex flex-row items-center justify-between px-4 sm:p-6 gap-10 sm:gap-10 relative">
+					<div className="flex flex-col items-center gap-3 z-10 w-60 text-center relative">
+						<div className={cn('md:w-10 w-7 h-7 md:h-10')}>
 							<img
 								src={m.homeTeam.crest}
 								alt={m.homeTeam.name}
 								className="w-full h-full object-contain"
 							/>
 						</div>
-						<span className="font-semibold text-foreground text-sm mt-1">
+						<span className="font-semibold text-foreground md:text-[13px] text-[10px] md:mt-1">
 							{m.homeTeam.name || m.homeTeam.shortName}
 						</span>
 					</div>
 
-					<div className="flex flex-col items-center gap-2 z-10">
+					<div className="flex flex-col justify-center items-center z-10">
 						<div
 							className={cn(
-								'px-3 py-1 rounded-full text-[10px] font-semibold uppercase',
-								liveData.isLive
-									? 'bg-red-500/10 text-red-500 border border-red-500/20'
-									: 'bg-muted text-muted-foreground',
+								'px-3 py-1 md:text-[11px] text-[7px] font-semibold uppercase',
+								liveData.isLive ? 'text-red-500' : 'text-muted-foreground',
 							)}
 						>
-							{liveData.isLive && <span className="animate-pulse mr-1.5">●</span>}
-							{liveData.status === 'LIVE' ? (m.minute ? m.minute + "'" : 'LIVE') : liveData.status}
+							{liveData.status === 'UPCOMING' ? null : liveData.status === 'FINISHED' ? (
+								'Finished'
+							) : (
+								<div className="inline-flex items-center gap-1.5 md:gap-2">
+									<span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
+										<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+										<span className="relative inline-flex h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-red-500" />
+									</span>
+									<span className="font-semibold">
+										LIVE
+										{liveData.status === 'HT' ? ' : HT' : m.minute ? ` : ${m.minute}'` : ''}
+									</span>
+								</div>
+							)}
 						</div>
+
 						{liveData.status === 'UPCOMING' && m.startTime ? (
 							<div className="text-center mt-1">
-								<div className="text-lg font-semibold text-foreground">
+								<div className="md:text-lg text-xs font-semibold text-foreground">
 									{new Date(m.startTime).toLocaleTimeString([], {
 										hour: '2-digit',
 										minute: '2-digit',
 									})}
 								</div>
-								<div className="text-xs text-muted-foreground mt-0.5">
-									{new Date(m.startTime).toLocaleDateString([], { month: 'long', day: 'numeric' })}
+								<div className="text-[8px] md:text-xs text-muted-foreground mt-0.5">
+									<span className="hidden md:inline">
+										{new Date(m.startTime).toLocaleDateString([], {
+											month: 'long',
+											day: 'numeric',
+										})}
+									</span>
+									<span className="md:hidden inline">
+										{new Date(m.startTime).toLocaleDateString([], {
+											month: 'short',
+											day: 'numeric',
+										})}
+									</span>
 								</div>
 							</div>
 						) : (
-							<div className="text-3xl font-bold text-foreground flex items-center gap-3">
+							<div className="md:text-3xl text-sm font-semibold text-foreground flex items-center gap-3">
 								<span>{m.homeTeam.score}</span>
-								<span className="text-muted-foreground text-2xl">-</span>
+								<span className="text-muted-foreground text-xl md:text-2xl">-</span>
 								<span>{m.awayTeam.score}</span>
 							</div>
 						)}
 					</div>
 
-					<div className="flex flex-col items-center gap-3 z-10 w-24 sm:w-32 text-center relative">
-						<div className={cn('w-16 h-16')}>
+					<div className="flex flex-col items-center gap-3 z-10 w-60 text-center relative">
+						<div className={cn('md:w-10 w-7 h-7 md:h-10')}>
 							<img
 								src={m.awayTeam.crest}
 								alt={m.awayTeam.name}
 								className="w-full h-full object-contain"
 							/>
 						</div>
-						<span className="font-semibold text-foreground text-sm mt-1">
+						<span className="font-semibold text-foreground md:text-[13px] text-[10px] md:mt-1">
 							{m.awayTeam.name || m.awayTeam.shortName}
 						</span>
 					</div>
@@ -476,38 +642,50 @@ export default function LiveMarketTracker({
 		return (
 			<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
 				<div className="flex items-center justify-between px-5 pt-3">
-					<div className="flex items-center gap-1.5 text-sm font-medium">
+					<div className="flex items-center gap-1.5 md:text-sm text-[13px] font-medium">
 						<span>Stocks</span>
 						<span className="opacity-50">•</span>
 						<span className="font-semibold">{s.symbol}</span>
 					</div>
-					<div className="flex items-center gap-1">
+					<div className="flex items-center md:gap-1">
 						<button
 							onClick={onToggleBookmark}
 							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 							title="Bookmark"
 						>
-							<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+							<Bookmark
+								size={18}
+								className="w-4 h-4 md:w-4.5 md:h-4.5"
+								fill={isBookmarked ? 'currentColor' : 'none'}
+							/>
 						</button>
 						<button
 							onClick={onShare}
 							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 							title="Share"
 						>
-							<Share2 size={18} />
+							<Share2
+								size={18}
+								className="w-4 h-4 md:w-4.5 md:h-4.5"
+								fill={isBookmarked ? 'currentColor' : 'none'}
+							/>
 						</button>
 						<button
 							onClick={onPriceAlert}
 							className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 							title="Price Alert"
 						>
-							<BellRing size={18} />
+							<BellRing
+								size={18}
+								className="w-4 h-4 md:w-4.5 md:h-4.5"
+								fill={isBookmarked ? 'currentColor' : 'none'}
+							/>
 						</button>
 					</div>
 				</div>
 
-				<div className="flex items-start justify-between gap-4 px-5 pt-3 pb-4">
-					<div className="flex items-center gap-4 min-w-0">
+				<div className="flex md:flex-row flex-col items-start justify-between gap-4 px-5 pt-3 md:pb-8 pb-1">
+					<div className="flex md:items-center items-start  gap-4 min-w-0">
 						<div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
 							{thumbnail && !thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png') ? (
 								<img src={thumbnail} alt={s.symbol} className="w-full h-full object-cover" />
@@ -516,7 +694,7 @@ export default function LiveMarketTracker({
 							)}
 						</div>
 						<div className="min-w-0">
-							<h1 className="text-lg sm:text-2xl font-semibold text-foreground line-clamp-2">
+							<h1 className="text-lg md:text-xl font-semibold text-foreground line-clamp-2">
 								{fallbackTitle || s.symbol}
 							</h1>
 							<div className="flex items-center gap-2 mt-1.5">
@@ -529,24 +707,24 @@ export default function LiveMarketTracker({
 					</div>
 
 					{countdown && (
-						<div className="flex flex-col items-end mr-1 shrink-0">
-							<span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+						<div className="flex flex-col md:items-end items-start mr-1 my-3 md:py-0 shrink-0">
+							<span className="md:text-[11px] text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
 								Time Left
 							</span>
-							<span className="text-lg sm:text-xl font-black text-foreground font-mono tracking-tighter tabular-nums">
+							<span className="text-base md:text-base font-black text-foreground font-mono tracking-tighter tabular-nums">
 								{countdown}
 							</span>
 						</div>
 					)}
 				</div>
 
-				<div className="px-5 pb-5 space-y-4">
+				<div className="px-5 md:pb-5 pb-3 space-y-4">
 					<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 mb-2">
 						<div className="flex flex-wrap items-end gap-x-8 gap-y-2">
 							{(s.targetValue !== undefined || startPrice !== undefined) && (
 								<div>
 									<p className="text-xs font-medium text-muted-foreground mb-0.5">Target Price</p>
-									<p className="text-xl sm:text-2xl font-black text-foreground font-mono tracking-tight">
+									<p className="text-lg md:text-xl font-black text-foreground font-mono tracking-tight">
 										{currencySymbol}
 										{formatPrice(s.targetValue ?? Number(startPrice))}
 									</p>
@@ -557,11 +735,10 @@ export default function LiveMarketTracker({
 								<div className="flex items-center gap-2 mb-0.5">
 									<p className="text-xs font-medium text-muted-foreground">Current Price</p>
 									<span
-										className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
-											isPositive
+										className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isPositive
 												? 'text-emerald-500 dark:text-emerald-400'
 												: 'text-red-500 dark:text-red-400'
-										}`}
+											}`}
 									>
 										{isPositive ? (
 											<TrendingUp className="w-3 h-3" />
@@ -572,12 +749,12 @@ export default function LiveMarketTracker({
 										{displayChange.toFixed(2)}%
 									</span>
 								</div>
+
 								<p
-									className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
-										isPositive
+									className={`text-lg md:text-xl font-black font-mono tracking-tight${isPositive
 											? 'text-emerald-500 dark:text-emerald-400'
 											: 'text-red-500 dark:text-red-400'
-									}`}
+										}`}
 								>
 									{currencySymbol}
 									{formatPrice(displayPrice)}
@@ -585,7 +762,7 @@ export default function LiveMarketTracker({
 							</div>
 						</div>
 
-						<div className="flex flex-wrap items-center gap-8">
+						<div className="flex flex-wrap items-center mt-2 md:mt-0 gap-8">
 							<span className="text-sm text-muted-foreground font-medium">
 								Vol.{' '}
 								<strong className="text-foreground">
@@ -614,39 +791,51 @@ export default function LiveMarketTracker({
 	return (
 		<div className="mb-6 w-full overflow-hidden bg-card dark:bg-[#111827] rounded-xl">
 			<div className="flex items-center justify-between px-5 pt-3">
-				<div className="flex items-center gap-1.5 text-sm font-medium">
+				<div className="flex items-center gap-1.5 md:text-sm text-[13px] font-medium">
 					<span>Crypto</span>
 					<span className="opacity-50">•</span>
 					<span className="font-semibold">{coin}</span>
 				</div>
-				<div className="flex items-center gap-1">
+				<div className="flex items-center md:gap-1">
 					<button
 						onClick={onToggleBookmark}
 						className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 						title="Bookmark"
 					>
-						<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+						<Bookmark
+							size={18}
+							className="w-4 h-4 md:w-4.5 md:h-4.5"
+							fill={isBookmarked ? 'currentColor' : 'none'}
+						/>
 					</button>
 					<button
 						onClick={onShare}
 						className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 						title="Share"
 					>
-						<Share2 size={18} />
+						<Share2
+							size={18}
+							className="w-4 h-4 md:w-4.5 md:h-4.5"
+							fill={isBookmarked ? 'currentColor' : 'none'}
+						/>
 					</button>
 					<button
 						onClick={onPriceAlert}
 						className="p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
 						title="Price Alert"
 					>
-						<BellRing size={18} />
+						<BellRing
+							size={18}
+							className="w-4 h-4 md:w-4.5 md:h-4.5"
+							fill={isBookmarked ? 'currentColor' : 'none'}
+						/>
 					</button>
 				</div>
 			</div>
 
-			<div className="flex items-start justify-between gap-4 px-5 pt-3 pb-4">
-				<div className="flex items-center gap-4 min-w-0">
-					<div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+			<div className="flex items-start flex-col md:flex-row justify-between gap-4 px-5 pt-3 md:pb-6 pb-1">
+				<div className="flex md:items-center items-start gap-4 min-w-0">
+					<div className="w-14 h-14 md:w-20 md:h-20 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
 						{logoUrl ? (
 							<img
 								src={logoUrl}
@@ -661,7 +850,7 @@ export default function LiveMarketTracker({
 						)}
 					</div>
 					<div className="min-w-0">
-						<h1 className="text-lg sm:text-2xl font-semibold text-foreground line-clamp-2">
+						<h1 className="text-lg md:text-xl font-semibold text-foreground line-clamp-2">
 							{fallbackTitle || c.name}
 						</h1>
 						<div className="flex items-center gap-2 mt-1.5">
@@ -674,11 +863,11 @@ export default function LiveMarketTracker({
 				</div>
 
 				{countdown && (
-					<div className="flex flex-col items-end mr-1 shrink-0">
-						<span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+					<div className="flex flex-col md:items-end items-start mr-1 my-3 md:py-0 shrink-0">
+						<span className="md:text-[11px] text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
 							Time Left
 						</span>
-						<span className="text-lg sm:text-xl font-black text-foreground font-mono tracking-tighter tabular-nums">
+						<span className="text-base md:text-base font-black text-foreground font-mono tracking-tighter tabular-nums">
 							{countdown}
 						</span>
 					</div>
@@ -693,7 +882,7 @@ export default function LiveMarketTracker({
 								<p className="text-xs font-medium text-muted-foreground mb-0.5">
 									{cryptoMarketType === 'DIRECTION' ? 'Open Price' : 'Target Price'}
 								</p>
-								<p className="text-xl sm:text-2xl font-black text-foreground font-mono tracking-tight">
+								<p className="text-lg md:text-xl font-black text-foreground font-mono tracking-tight">
 									$
 									{formatPrice(
 										cryptoMarketType === 'DIRECTION' ? Number(startPrice) : Number(c.targetValue),
@@ -703,14 +892,13 @@ export default function LiveMarketTracker({
 						)}
 
 						<div>
-							<div className="flex items-center gap-2 mb-0.5">
+							<div className="flex items-center gap-2">
 								<p className="text-xs font-medium text-muted-foreground">Current Price</p>
 								<span
-									className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
-										isPositive
+									className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isPositive
 											? 'text-emerald-500 dark:text-emerald-400'
 											: 'text-red-500 dark:text-red-400'
-									}`}
+										}`}
 								>
 									{isPositive ? (
 										<TrendingUp className="w-3 h-3" />
@@ -722,18 +910,17 @@ export default function LiveMarketTracker({
 								</span>
 							</div>
 							<p
-								className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
-									isPositive
+								className={`text-lg md:text-xl font-black font-mono tracking-tight ${isPositive
 										? 'text-emerald-500 dark:text-emerald-400'
 										: 'text-red-500 dark:text-red-400'
-								}`}
+									}`}
 							>
 								${formatPrice(displayPrice)}
 							</p>
 						</div>
 					</div>
 
-					<div className="flex flex-wrap items-center gap-8">
+					<div className="flex mt-6 md:mt-0 flex-wrap items-center md:gap-8 gap-5">
 						<span className="text-sm text-muted-foreground font-medium">
 							Vol.{' '}
 							<strong className="text-foreground">
@@ -746,11 +933,10 @@ export default function LiveMarketTracker({
 								<button
 									key={tf}
 									onClick={() => setTimeframe(tf)}
-									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${
-										timeframe === tf
+									className={`relative px-2.5 py-1 text-[11px] font-semibold rounded-sm transition-colors cursor-pointer z-10 ${timeframe === tf
 											? 'text-black'
 											: 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-									}`}
+										}`}
 								>
 									{timeframe === tf && (
 										<motion.div

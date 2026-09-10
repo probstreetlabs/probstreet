@@ -111,12 +111,12 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 
 	return (
 		<div className="bg-card dark:bg-[#111827] p-6 rounded-xl">
-			<h2 className="text-lg font-bold mb-6 text-foreground">Comments</h2>
-			<div className="flex gap-4 items-start mb-8">
+			<h2 className="md:text-lg text-base font-semibold mb-6 text-foreground">Comments</h2>
+			<div className="flex md:gap-4 gap-3 items-start mb-8">
 				<img
 					src={user?.avatarUrl || pfpIcon}
 					alt="You"
-					className="w-10 h-10 rounded-full border border-border shrink-0 object-cover"
+					className="md:w-10 w-8 md:h-10 h-8 rounded-full border border-border shrink-0 object-cover"
 				/>
 				<div className="flex-1">
 					<textarea
@@ -132,7 +132,7 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 						<button
 							onClick={isAuthenticated ? handleSend : openOnboardModal}
 							disabled={sending || (isAuthenticated && !input.trim())}
-							className="bg-foreground text-background cursor-pointer font-semibold text-sm px-6 py-2 rounded-md hover:opacity-90 transition disabled:opacity-50"
+							className="bg-foreground text-background cursor-pointer font-semibold md:text-sm text-xs px-6 py-2 rounded-md hover:opacity-90 transition disabled:opacity-50"
 						>
 							{sending ? 'Posting...' : 'Post'}
 						</button>
@@ -148,7 +148,7 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 				)}
 
 				{!loading && messages.length === 0 && (
-					<div className="text-center py-8 text-muted-foreground text-sm">
+					<div className="text-center py-8 text-muted-foreground md:text-sm text-xs">
 						No comments yet. Be the first to share your thoughts!
 					</div>
 				)}

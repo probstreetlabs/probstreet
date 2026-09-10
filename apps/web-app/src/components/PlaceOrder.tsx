@@ -438,7 +438,10 @@ export default function PlaceOrder({
 						<p className="text-[15px] font-medium text-foreground">Limit price</p>
 						<div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden">
 							<button
-								onClick={() => setYesOrderPrice(Number(activePrice) - 0.5)}
+								onClick={() => {
+									if (activeTab === 'YES') setYesOrderPrice(Number(activePrice) - 0.5);
+									else setNoOrderPrice(Number(activePrice) - 0.5);
+								}}
 								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
 							>
 								−
@@ -447,7 +450,10 @@ export default function PlaceOrder({
 								₹{Number(activePrice).toFixed(1)}
 							</div>
 							<button
-								onClick={() => setYesOrderPrice(Number(activePrice) + 0.5)}
+								onClick={() => {
+									if (activeTab === 'YES') setYesOrderPrice(Number(activePrice) + 0.5);
+									else setNoOrderPrice(Number(activePrice) + 0.5);
+								}}
 								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
 							>
 								+

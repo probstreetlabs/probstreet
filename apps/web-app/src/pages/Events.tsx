@@ -1,9 +1,9 @@
 import { api } from '@/lib/axios';
 import { socket } from '@/socket';
-import { Bookmark, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import { useModalStore } from '@/store/modal';
+import { Bookmark, CheckCircle2 } from 'lucide-react';
 import downloadIcon from '@/assets/images/download.avif';
 import defaultThumbnail from '@/assets/images/logo.avif';
 import barChartIcon from '@/assets/images/Bar_Chart.avif';
@@ -150,7 +150,7 @@ export default function EventsPage() {
 			<div className="max-w-7xl mx-auto py-6 md:py-8 flex flex-col gap-6">
 				<div className="flex gap-16">
 					<div className="w-full">
-						<h1 className="text-xl font-semibold border-b border-gray-200 dark:border-gray-800 pb-3 mb-4 text-gray-900 dark:text-white">
+						<h1 className="md:text-xl text-base font-semibold border-b border-gray-200 dark:border-gray-800 pb-3 mb-4 text-gray-900 dark:text-white">
 							{selectedCategoryName}
 						</h1>
 						<div
