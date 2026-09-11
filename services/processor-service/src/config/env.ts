@@ -1,9 +1,9 @@
 import { logger } from '@/libs/logger';
 
-const checkEnv = (key: string) => {
-	const value = Bun.env[key];
+const checkEnv = (key: string, required: boolean = true, defaultValue: string = '') => {
+	const value = Bun.env[key] || defaultValue;
 
-	if (!value) {
+	if (required && !value) {
 		logger.error(`Missing required environment variable: ${key}`);
 		throw new Error(`Missing required environment variable: ${key}`);
 	}
@@ -11,9 +11,14 @@ const checkEnv = (key: string) => {
 };
 
 export const ENV = {
+	NODE_ENV: checkEnv('NODE_ENV', false, 'development'),
+
 	REDIS_HOST: checkEnv('REDIS_HOST'),
 	REDIS_PORT: checkEnv('REDIS_PORT'),
+
 	KAFKA_BROKERS: checkEnv('KAFKA_BROKERS'),
-	NOTIFICATION_WORKER_URL: checkEnv('NOTIFICATION_WORKER_URL'),
-	WORKER_SECRET: checkEnv('WORKER_SECRET'),
+
+	CLOUDFLARE_ACCOUNT_ID: checkEnv('CLOUDFLARE_ACCOUNT_ID'),
+	CLOUDFLARE_API_TOKEN: checkEnv('CLOUDFLARE_API_TOKEN'),
+	CLOUDFLARE_QUEUE_ID: checkEnv('CLOUDFLARE_QUEUE_ID'),
 };
