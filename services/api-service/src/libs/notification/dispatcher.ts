@@ -3,10 +3,11 @@ import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
 
 type NotificationEventType =
-	| 'otp.send'
 	| 'market.created'
 	| 'trade.executed'
 	| 'price.alert'
+	| 'market.resolved'
+	| 'archive.failed'
 	| 'oracle.review'
 	| 'oracle.resolved'
 	| 'deposit.success'
@@ -39,7 +40,7 @@ export const sendNotification = async (event: NotificationEvent): Promise<void> 
 					Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify([{ body: event }]),
+				body: JSON.stringify({ body: event }),
 				signal: AbortSignal.timeout(3000),
 			},
 		);
