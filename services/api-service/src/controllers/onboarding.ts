@@ -1,6 +1,7 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { usernameSchema, referralSchema, notificationPrefsSchema } from '@/validations/onboarding';
@@ -17,6 +18,12 @@ const logAudit = async (
 			data: { action, userId, ip, userAgent, metadata: metadata ? metadata : undefined },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'onboarding',
+				action: 'UNKNOWN',
+			},
+		});
 		logger.error({ error, action, userId }, 'Failed to write audit log');
 	}
 };
@@ -48,6 +55,12 @@ export const checkUsername = async (c: Context) => {
 			data: { isAvailable: !existingUser },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'onboarding',
+				action: 'CHECKUSERNAME',
+			},
+		});
 		logger.error({ error }, 'Check username failed');
 		return c.json(
 			{
@@ -124,6 +137,12 @@ export const updateUsername = async (c: Context) => {
 			data: { onboardingStatus: updatedUser.onboardingStatus },
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'onboarding',
+				action: 'UPDATEUSERNAME',
+			},
+		});
 		logger.error({ error }, 'Update username failed');
 		return c.json(
 			{
@@ -196,6 +215,12 @@ export const updatePreferences = async (c: Context) => {
 						amount: 10.0,
 					});
 				} catch (err: any) {
+					captureError(err, {
+						tags: {
+							controller: 'onboarding',
+							action: 'UPDATEPREFERENCES',
+						},
+					});
 					return c.json({ success: false, error: err.message }, 400);
 				}
 			}
@@ -224,6 +249,12 @@ export const updatePreferences = async (c: Context) => {
 			data: { onboardingStatus: updatedUser.onboardingStatus },
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'onboarding',
+				action: 'UPDATEPREFERENCES',
+			},
+		});
 		logger.error({ error }, 'Update preferences failed');
 		return c.json({ success: false, error: error.message || 'Internal server error' }, 400);
 	}

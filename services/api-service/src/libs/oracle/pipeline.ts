@@ -1,4 +1,5 @@
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { Market } from '@probstreet/database';
 import { evaluateWithAI } from './resolvers/ai';
 import { tavilyClient } from '@/libs/tavily/client';
@@ -141,6 +142,7 @@ export async function runResolutionPipeline(market: Market): Promise<PipelineRes
 			};
 		}
 	} catch (error: any) {
+		captureError(error, { marketId: market.id, symbol: market.symbol });
 		logger.error({ err: error, marketId: market.id }, 'Pipeline failed');
 		return {
 			resolved: false,

@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 const CASHFREE_SANDBOX_BASE = 'https://sandbox.cashfree.com/verification';
 
@@ -38,6 +39,7 @@ export async function verifyPan(name: string, pan: string) {
 
 		return { valid: false, data };
 	} catch (error) {
+		captureError(error, { provider: 'cashfree', action: 'verifyPan' });
 		logger.error({ error }, 'Error verifying PAN with Cashfree');
 		return { valid: false, data: null };
 	}
@@ -72,6 +74,7 @@ export async function verifyBankAccount(name: string, account_number: string, if
 
 		return { valid: false, data };
 	} catch (error) {
+		captureError(error, { provider: 'cashfree', action: 'verifyBankAccount' });
 		logger.error({ error }, 'Error verifying Bank Account with Cashfree');
 		return { valid: false, data: null };
 	}
@@ -119,6 +122,7 @@ export async function verifyUpi(name: string, upi: string) {
 
 		return { valid: false, data };
 	} catch (error) {
+		captureError(error, { provider: 'cashfree', action: 'verifyUpi' });
 		logger.error({ error }, 'Error verifying UPI with Cashfree');
 		return { valid: false, data: null };
 	}

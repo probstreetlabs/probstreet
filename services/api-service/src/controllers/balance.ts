@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { balanceSchema } from '@/validations/balance';
@@ -93,6 +94,13 @@ export const getBalance = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'balance',
+				action: 'GET_BALANCE',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -206,6 +214,21 @@ export const deposit = async (c: Context) => {
 
 			logger.info({ userId }, 'Deposit DB transaction succeeded');
 		} catch (error) {
+			captureError(error, {
+				tags: {
+					controller: 'balance',
+					action: 'DEPOSIT_TX_FAIL',
+					userId,
+				},
+				contexts: {
+					transaction: {
+						amount:
+							typeof validateData !== 'undefined' && validateData.success
+								? validateData.data.amount
+								: undefined,
+					},
+				},
+			});
 			logger.error(
 				{
 					alert: true,
@@ -257,6 +280,13 @@ export const deposit = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'balance',
+				action: 'DEPOSIT',
+				userId: (c.get('user') as any)?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -283,7 +313,7 @@ export const deposit = async (c: Context) => {
 
 export const getDepositAmount = async (c: Context) => {
 	try {
-		const userId = c.get('user').id;
+		const userId = (c.get('user') as any).id;
 
 		if (!userId) {
 			logger.warn(
@@ -347,6 +377,13 @@ export const getDepositAmount = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'balance',
+				action: 'GET_DEPOSIT_AMOUNT',
+				userId: (c.get('user') as any)?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -373,7 +410,7 @@ export const getDepositAmount = async (c: Context) => {
 
 export const withdraw = async (c: Context) => {
 	try {
-		const userId = c.get('user').id;
+		const userId = (c.get('user') as any).id;
 
 		if (!userId) {
 			logger.warn(
@@ -456,6 +493,19 @@ export const withdraw = async (c: Context) => {
 				},
 			});
 		} catch (error: any) {
+			captureError(error, {
+				tags: {
+					controller: 'balance',
+					action: 'INITIATE_WITHDRAWAL',
+					userId,
+					provider: 'cashfree',
+				},
+				contexts: {
+					transaction: {
+						amount: typeof amount !== 'undefined' ? amount : undefined,
+					},
+				},
+			});
 			logger.error({ error, transferId }, 'Payout gateway failed in withdrawal');
 			return c.json(
 				{
@@ -511,6 +561,18 @@ export const withdraw = async (c: Context) => {
 					});
 				});
 			} catch (error) {
+				captureError(error, {
+					tags: {
+						controller: 'balance',
+						action: 'WITHDRAW_TX_FAIL',
+						userId,
+					},
+					contexts: {
+						transaction: {
+							amount: typeof totalDeduction !== 'undefined' ? totalDeduction : undefined,
+						},
+					},
+				});
 				logger.error(
 					{
 						alert: true,
@@ -539,6 +601,13 @@ export const withdraw = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'balance',
+				action: 'WITHDRAW',
+				userId: (c.get('user') as any)?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,

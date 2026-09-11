@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 
 export const getNotifications = async (c: Context) => {
@@ -33,6 +34,12 @@ export const getNotifications = async (c: Context) => {
 			data: { notifications, unreadCount },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'notifications',
+				action: 'GETNOTIFICATIONS',
+			},
+		});
 		logger.error({ error }, 'Failed to fetch notifications');
 		return c.json(
 			{
@@ -85,6 +92,12 @@ export const markAsRead = async (c: Context) => {
 			message: 'Notifications marked as read',
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'notifications',
+				action: 'MARKASREAD',
+			},
+		});
 		logger.error({ error }, 'Failed to mark notifications as read');
 		return c.json(
 			{

@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { runResolutionPipeline } from '@/libs/oracle/pipeline';
@@ -130,6 +131,12 @@ export function startOracleResolverCron() {
 				});
 			}
 		} catch (error) {
+			captureError(error, {
+				tags: {
+					controller: 'cron',
+					action: 'ORACLE_RESOLVER_TICK',
+				},
+			});
 			logger.error({ error }, 'Error running oracle resolver cron');
 		}
 	});

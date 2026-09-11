@@ -1,7 +1,8 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
+import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 
 export const resolveMarket = async (c: Context) => {
@@ -26,13 +27,13 @@ export const resolveMarket = async (c: Context) => {
 		if (!market) {
 			return c.json({ success: false, error: 'Market not found' }, 404);
 		}
+
 		if (market.status === 'CLOSED') {
 			return c.json({ success: false, error: 'Market is already closed' }, 400);
 		}
 
-		// Push to Engine Queue
 		const response = await pushToQueue(EVENTS.RESOLVE_MARKET, {
-			symbol: market.symbol, // FIX: Engine expects symbol
+			symbol: market.symbol,
 			result: resolution,
 		});
 
@@ -45,6 +46,12 @@ export const resolveMarket = async (c: Context) => {
 			message: `Market ${marketId} resolved to ${resolution}`,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'admin',
+				action: 'RESOLVEMARKET',
+			},
+		});
 		logger.error({ error }, 'Error in resolveMarket');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -153,6 +160,12 @@ export const getDashboardMetrics = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'admin',
+				action: 'GETDASHBOARDMETRICS',
+			},
+		});
 		logger.error({ error }, 'Error in getDashboardMetrics');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -189,6 +202,12 @@ export const getUsers = async (c: Context) => {
 			meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'admin',
+				action: 'GETUSERS',
+			},
+		});
 		logger.error({ error }, 'Error in getUsers');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -220,6 +239,12 @@ export const getTransactions = async (c: Context) => {
 			meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'admin',
+				action: 'GETTRANSACTIONS',
+			},
+		});
 		logger.error({ error }, 'Error in getTransactions');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -260,6 +285,12 @@ export const getMarkets = async (c: Context) => {
 			meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'admin',
+				action: 'GETMARKETS',
+			},
+		});
 		logger.error({ error }, 'Error in getMarkets');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}

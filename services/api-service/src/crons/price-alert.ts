@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { sendNotification } from '@/libs/notification/dispatcher';
 
@@ -75,6 +76,12 @@ export function startPriceAlertCron() {
 				}
 			}
 		} catch (error) {
+			captureError(error, {
+				tags: {
+					controller: 'cron',
+					action: 'PRICE_ALERT_TICK',
+				},
+			});
 			logger.error({ error }, 'Error running price alert cron');
 		}
 	});

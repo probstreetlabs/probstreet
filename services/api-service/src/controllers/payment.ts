@@ -1,8 +1,9 @@
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
+import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { client } from '@/libs/redis/connection';
 import { cashfree } from '@/libs/cashfree/client';
@@ -59,6 +60,14 @@ export const initPayment = async (c: Context) => {
 
 		return c.json({ success: false, error: 'Failed to create payment session' }, 500);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'payment',
+				action: 'CREATE_ORDER',
+				userId: c.get('user')?.id,
+				provider: 'cashfree',
+			},
+		});
 		logger.error({ error }, 'Payment init failed');
 		return c.json({ success: false, error: 'Payment initialization failed' }, 500);
 	}
@@ -88,6 +97,14 @@ export const paymentVerify = async (c: Context) => {
 
 		return c.json({ success: false, error: 'Failed to verify payment' }, 400);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'payment',
+				action: 'VERIFY_PAYMENT',
+				userId: c.get('user')?.id,
+				provider: 'cashfree',
+			},
+		});
 		logger.error({ error }, 'Payment verification failed');
 		return c.json({ success: false, error: 'Verification failed' }, 500);
 	}
@@ -113,6 +130,13 @@ export const paymentWebhook = async (c: Context) => {
 		try {
 			cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
 		} catch (err) {
+			captureError(err, {
+				tags: {
+					controller: 'payment',
+					action: 'PAYMENT_WEBHOOK_INVALID_SIGNATURE',
+					provider: 'cashfree',
+				},
+			});
 			logger.warn({ err }, 'Webhook rejected: invalid signature');
 			return c.json({ success: false, error: 'Unauthorized' }, 401);
 		}
@@ -240,6 +264,13 @@ export const paymentWebhook = async (c: Context) => {
 
 		return c.json({ success: true }, 200);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'payment',
+				action: 'PAYMENT_WEBHOOK_FAIL',
+				provider: 'cashfree',
+			},
+		});
 		logger.error({ error }, 'Failed to process webhook');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -327,6 +358,13 @@ export const payoutWebhook = async (c: Context, bodyOverride?: any) => {
 
 		return c.json({ success: true }, 200);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'payment',
+				action: 'PAYOUT_WEBHOOK_FAIL',
+				provider: 'cashfree',
+			},
+		});
 		logger.error({ error }, 'Failed to process payout webhook');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}

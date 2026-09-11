@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ENV } from '@/config/env';
 import { logger } from 'hono/logger';
+import * as Sentry from '@sentry/bun';
 
 import { aapiRoutes } from '@/routes/admin';
 import { authRoutes } from '@/routes/auth';
@@ -43,6 +44,17 @@ app.use('*', async (c, next) => {
 	await next();
 });
 
+app.use('*', async (c, next) => {
+	const user = c.get('jwtPayload') as any;
+
+	await Sentry.withScope(async (scope) => {
+		if (user && user.id) {
+			scope.setUser({ id: user.id });
+		}
+		await next();
+	});
+});
+
 // Client APIs (CAPI)
 app.route('/api/v1/capi/auth', authRoutes);
 app.route('/api/v1/capi/order', orderRoutes);
@@ -66,5 +78,28 @@ app.route('/api/v1/aapi', aapiRoutes);
 
 // Health check APIs (PAPI)
 app.route('/api/v1/papi/health', healthRoutes);
+
+// Global Error Handler
+app.onError((err, c) => {
+	if (ENV.NODE_ENV !== 'development' && ENV.SENTRY_DSN) {
+		const status = 'status' in err ? (err as any).status : 500;
+
+		if (status >= 500) {
+			Sentry.captureException(err);
+		}
+	}
+
+	console.error(`[Error] ${err.message}`, err);
+
+	const status = 'status' in err ? (err as any).status : 500;
+
+	return c.json(
+		{
+			success: false,
+			message: status >= 500 ? 'Internal Server Error' : err.message,
+		},
+		status as any,
+	);
+});
 
 export default app;

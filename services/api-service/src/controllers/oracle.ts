@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 
@@ -17,6 +18,12 @@ export const getOraclePending = async (c: Context) => {
 
 		return c.json({ success: true, data: pendingMarkets });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'oracle',
+				action: 'GET_ORACLE_PENDING',
+			},
+		});
 		logger.error({ error }, 'Failed to fetch pending oracle markets');
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -61,6 +68,13 @@ export const confirmOracleResolution = async (c: Context) => {
 			return c.json({ success: false, message: queueResponse.message }, 400);
 		}
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'oracle',
+				action: 'CONFIRM_ORACLE_RESOLUTION',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error({ error }, 'Failed to confirm oracle resolution');
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}

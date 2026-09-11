@@ -7,6 +7,7 @@ import { logger } from '@/libs/logger';
 import { customAlphabet } from 'nanoid';
 import { EVENTS } from '@/config/constants';
 import { s3Client } from '@/libs/aws/client';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { client } from '@/libs/redis/connection';
@@ -169,6 +170,12 @@ export const createMarket = async (c: Context) => {
 					});
 				}
 			} catch (err: any) {
+				captureError(err, {
+					tags: {
+						controller: 'market',
+						action: 'CREATEMARKET',
+					},
+				});
 				logger.warn(
 					{ err: err.message, symbol: coinPair },
 					'Failed to fetch start price from Binance',
@@ -212,6 +219,12 @@ export const createMarket = async (c: Context) => {
 					}
 				}
 			} catch (err: any) {
+				captureError(err, {
+					tags: {
+						controller: 'market',
+						action: 'CREATEMARKET',
+					},
+				});
 				logger.warn(
 					{ err: err.message, id: newMarket.id },
 					'Failed to fetch start price from Finnhub',
@@ -289,6 +302,12 @@ export const createMarket = async (c: Context) => {
 			201,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'CREATEMARKET',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -366,6 +385,12 @@ export const addLiquidity = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'ADDLIQUIDITY',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -443,6 +468,12 @@ export const getAllMarket = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETALLMARKET',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -556,6 +587,12 @@ export const getMarketsByCategory = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETSBYCATEGORY',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -613,6 +650,12 @@ export const resolveMarket = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Market resolved successfully', data: market }, 200);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'RESOLVEMARKET',
+			},
+		});
 		logger.error({ error }, 'Failed to resolve market');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -728,6 +771,12 @@ export const getMarketDetails = async (c: Context) => {
 						);
 					}
 				} catch (archiveErr) {
+					captureError(archiveErr, {
+						tags: {
+							controller: 'market',
+							action: 'GETMARKETDETAILS',
+						},
+					});
 					logger.error({ err: archiveErr, symbol }, 'Failed to fetch market archive from R2');
 				}
 			}
@@ -835,6 +884,12 @@ export const getMarketDetails = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETDETAILS',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -918,6 +973,12 @@ export const searchMarkets = async (c: Context) => {
 			200,
 		);
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'SEARCHMARKETS',
+			},
+		});
 		logger.error({ context: 'SEARCH_MARKETS', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -999,6 +1060,12 @@ export const getMarketKlines = async (c: Context) => {
 			data: klines,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETKLINES',
+			},
+		});
 		if (error.code === 'P2010' || (error.message && error.message.includes('does not exist'))) {
 			// Table doesn't exist yet, just return empty klines gracefully
 			return c.json({ success: true, data: [] });
@@ -1054,6 +1121,12 @@ export const getMarketTrades = async (c: Context) => {
 			data: formattedTrades,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETTRADES',
+			},
+		});
 		logger.error({ error }, 'Error in getMarketKlines');
 		return c.json({ success: false, message: 'Failed to fetch trades' }, 500);
 	}
@@ -1100,6 +1173,12 @@ export const getMarketStats = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETSTATS',
+			},
+		});
 		logger.error({ error }, 'Error in searchMarkets');
 		return c.json({ success: false, message: 'Failed to fetch market stats' }, 500);
 	}
@@ -1134,6 +1213,12 @@ export const generatePresignedUrlRoute = async (c: Context) => {
 			publicUrl,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GENERATEPRESIGNEDURLROUTE',
+			},
+		});
 		logger.error({ error }, 'Failed to generate presigned URL');
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -1167,6 +1252,12 @@ export const splitShares = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Shares split successfully' }, 200);
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'SPLITSHARES',
+			},
+		});
 		logger.error({ context: 'SPLIT_SHARES', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -1200,6 +1291,12 @@ export const mergeShares = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Shares merged successfully' }, 200);
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'MERGESHARES',
+			},
+		});
 		logger.error({ context: 'MERGE_SHARES', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -1286,6 +1383,12 @@ export const getMarketNews = async (c: Context) => {
 			source: 'tavily',
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETNEWS',
+			},
+		});
 		logger.error(
 			{
 				message: error.message,
@@ -1354,6 +1457,12 @@ export const getMarketLiveStatus = async (c: Context) => {
 			data: liveData,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETLIVESTATUS',
+			},
+		});
 		logger.error({ error: error.message, symbol }, 'Error fetching market live status');
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -1557,6 +1666,12 @@ export const getMarketProxyKlines = async (c: Context) => {
 			binancePair,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETPROXYKLINES',
+			},
+		});
 		if (error.name === 'AbortError') {
 			return c.json({ success: false, message: 'Upstream timeout fetching klines' }, 504);
 		}
@@ -1607,6 +1722,12 @@ export const getMarketComments = async (c: Context) => {
 			nextCursor: comments.length === 50 ? comments[0].createdAt.toISOString() : null,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'GETMARKETCOMMENTS',
+			},
+		});
 		logger.error({ context: 'GET_MARKET_COMMENTS', error: error.message });
 		return c.json(
 			{
@@ -1702,6 +1823,12 @@ export const postMarketComment = async (c: Context) => {
 			201,
 		);
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'POSTMARKETCOMMENT',
+			},
+		});
 		logger.error({ context: 'POST_MARKET_COMMENT', error: error.message });
 		return c.json(
 			{
@@ -1755,6 +1882,12 @@ export const deleteMarketComment = async (c: Context) => {
 			message: 'Comment removed',
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'market',
+				action: 'DELETEMARKETCOMMENT',
+			},
+		});
 		logger.error({ context: 'DELETE_MARKET_COMMENT', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}

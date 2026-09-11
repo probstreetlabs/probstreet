@@ -1,7 +1,8 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
+import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { referralCodeSchema } from '@/validations/referral';
 
@@ -66,6 +67,12 @@ export const getReferralCode = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'referral',
+				action: 'GETREFERRALCODE',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -151,6 +158,12 @@ export const submitReferral = async (c: Context) => {
 					});
 				});
 			} catch (error) {
+				captureError(error, {
+					tags: {
+						controller: 'referral',
+						action: 'SUBMITREFERRAL',
+					},
+				});
 				logger.error({ error }, 'Database update failed for skip referral');
 				return c.json(
 					{
@@ -251,6 +264,12 @@ export const submitReferral = async (c: Context) => {
 				});
 			});
 		} catch (error) {
+			captureError(error, {
+				tags: {
+					controller: 'referral',
+					action: 'SUBMITREFERRAL',
+				},
+			});
 			logger.error(
 				{
 					alert: true,
@@ -303,6 +322,12 @@ export const submitReferral = async (c: Context) => {
 			message: 'Referral processed successfully',
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'referral',
+				action: 'SUBMITREFERRAL',
+			},
+		});
 		logger.error({ error }, 'Referral processing failed');
 		return c.json(
 			{
@@ -370,6 +395,12 @@ export const getReferralEarnings = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'referral',
+				action: 'GETREFERRALEARNINGS',
+			},
+		});
 		logger.error({ error }, 'Failed to get referral earnings');
 		return c.json(
 			{
@@ -434,6 +465,12 @@ export const referralLeaderboard = async (c: Context) => {
 			leaderboard,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'referral',
+				action: 'REFERRALLEADERBOARD',
+			},
+		});
 		logger.error({ error }, 'Failed to fetch referral leaderboard');
 		return c.json(
 			{
@@ -631,6 +668,12 @@ export const getReferralInfo = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'referral',
+				action: 'GETREFERRALINFO',
+			},
+		});
 		logger.error({ error }, 'Failed to fetch referral info');
 		return c.json(
 			{

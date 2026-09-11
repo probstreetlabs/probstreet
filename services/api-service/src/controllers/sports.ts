@@ -1,6 +1,7 @@
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 export const getSportsFixtures = async (c: Context) => {
 	try {
@@ -32,6 +33,12 @@ export const getSportsFixtures = async (c: Context) => {
 		const data: any = await response.json();
 		return c.json({ success: true, data: data.matches || [] });
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'sports',
+				action: 'GETSPORTSFIXTURES',
+			},
+		});
 		logger.error({ error }, 'Error in getSportsFixtures');
 		return c.json({ success: false, error: error.message, stack: error.stack }, 500);
 	}

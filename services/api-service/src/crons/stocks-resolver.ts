@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { tryAcquireResolve, completeResolve } from '@/libs/crypto/atomic-resolve';
 
@@ -60,6 +61,14 @@ export async function checkAndResolveStocksMarkets() {
 					}
 				}
 			} catch (err: any) {
+				captureError(err, {
+					tags: {
+						controller: 'cron',
+						action: 'RESOLVE_SINGLE_MARKET_STOCKS',
+						marketId: market.id,
+						symbol: market.symbol,
+					},
+				});
 				logger.warn(
 					{ symbol: market.symbol, err: err.message },
 					'Failed to fetch Finnhub quote in stocks resolver',
@@ -130,6 +139,12 @@ export async function checkAndResolveStocksMarkets() {
 			}
 		}
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'cron',
+				action: 'STOCKS_RESOLVER_TICK',
+			},
+		});
 		logger.error({ error }, 'Error in checkAndResolveStocksMarkets cron');
 	}
 }

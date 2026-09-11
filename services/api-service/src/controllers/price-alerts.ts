@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { createPriceAlertSchema } from '@/validations/price-alerts';
 
@@ -55,6 +56,12 @@ export const createAlert = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Price alert set successfully', data: { alert } }, 201);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'price-alerts',
+				action: 'CREATEALERT',
+			},
+		});
 		logger.error({ error }, 'Failed to create price alert');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -87,6 +94,12 @@ export const listAlerts = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Price alerts retrieved', data: { alerts } });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'price-alerts',
+				action: 'LISTALERTS',
+			},
+		});
 		logger.error({ error }, 'Failed to list price alerts');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -120,6 +133,12 @@ export const deleteAlert = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Price alert deleted successfully' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'price-alerts',
+				action: 'DELETEALERT',
+			},
+		});
 		logger.error({ error }, 'Failed to delete price alert');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}

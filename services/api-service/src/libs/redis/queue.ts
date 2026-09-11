@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { client, pubsubClient } from '@/libs/redis/connection';
 
 /**
@@ -59,6 +60,7 @@ export const pushToQueue = async (eventType: string, data: any): Promise<EngineR
 						retryable: retryable ?? true,
 					});
 				} catch (err) {
+					captureError(err, { channel: responseChannel, raw: message });
 					resolve({
 						success: false,
 						message: 'Invalid JSON from engine',

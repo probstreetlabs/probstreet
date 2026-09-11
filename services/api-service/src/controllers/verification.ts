@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { verifyPan, verifyBankAccount, verifyUpi } from '@/libs/cashfree/verification';
@@ -194,6 +195,14 @@ export const submitKyc = async (c: Context) => {
 				});
 			});
 		} catch (error: any) {
+			captureError(error, {
+				tags: {
+					controller: 'verification',
+					action: 'SUBMIT_KYC_TX_FAIL',
+					userId,
+					provider: 'cashfree',
+				},
+			});
 			logger.error(
 				{
 					alert: true,
@@ -220,6 +229,14 @@ export const submitKyc = async (c: Context) => {
 			status: kycStatus,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'SUBMIT_KYC',
+				userId: c.get('user')?.id,
+				provider: 'cashfree',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -374,6 +391,14 @@ export const submitPaymentMethods = async (c: Context) => {
 					});
 				});
 			} catch (error) {
+				captureError(error, {
+					tags: {
+						controller: 'verification',
+						action: 'SUBMIT_PAYMENT_METHOD_UPI_TX_FAIL',
+						userId,
+						provider: 'cashfree',
+					},
+				});
 				logger.error(
 					{
 						alert: true,
@@ -467,6 +492,14 @@ export const submitPaymentMethods = async (c: Context) => {
 					});
 				});
 			} catch (error) {
+				captureError(error, {
+					tags: {
+						controller: 'verification',
+						action: 'SUBMIT_PAYMENT_METHOD_BANK_TX_FAIL',
+						userId,
+						provider: 'cashfree',
+					},
+				});
 				logger.error(
 					{
 						alert: true,
@@ -499,6 +532,14 @@ export const submitPaymentMethods = async (c: Context) => {
 			status: finalStatus,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'SUBMIT_PAYMENT_METHOD',
+				userId: c.get('user')?.id,
+				provider: 'cashfree',
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -543,6 +584,13 @@ export const deletePaymentMethod = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Payment method deleted successfully' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'DELETE_PAYMENT_METHOD',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error({ error }, 'Failed to delete payment method');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -633,6 +681,13 @@ export const getVerificationStatus = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'GET_VERIFICATION_STATUS',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -736,6 +791,13 @@ export const getVerificationDetails = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'GET_VERIFICATION_DETAILS',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -865,6 +927,13 @@ export const getUserVerificationDetailsForAdmin = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'GET_USER_VERIFICATION_DETAILS_FOR_ADMIN',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -954,6 +1023,13 @@ export const getPendingVerifications = async (c: Context) => {
 			data: pendingVerifications,
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'GET_PENDING_VERIFICATIONS',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -1176,6 +1252,13 @@ export const updatePendingVerification = async (c: Context) => {
 			message: 'Verification status updated successfully',
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'verification',
+				action: 'UPDATE_PENDING_VERIFICATION',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,

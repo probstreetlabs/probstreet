@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 
@@ -102,10 +103,24 @@ async function resolveSportsMarkets() {
 					await new Promise((r) => setTimeout(r, 6000));
 				}
 			} catch (err) {
+				captureError(err, {
+					tags: {
+						controller: 'cron',
+						action: 'RESOLVE_SINGLE_MARKET_SPORTS',
+						marketId: market.id,
+						symbol: market.symbol,
+					},
+				});
 				logger.error({ marketId: market.id, err }, 'Failed to process sports market');
 			}
 		}
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'cron',
+				action: 'SPORTS_RESOLVER_TICK',
+			},
+		});
 		logger.error({ error }, 'Error in sports resolver cron');
 	}
 }

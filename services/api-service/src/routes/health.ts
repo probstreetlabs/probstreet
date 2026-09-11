@@ -10,3 +10,7 @@ import { healthCheck } from '@/controllers/health';
 export const healthRoutes = new Hono();
 
 healthRoutes.get('/', healthCheck);
+
+healthRoutes.get('/sentry-test', (c) => {
+	throw new Error('Sentry Test Error from API Service');
+});

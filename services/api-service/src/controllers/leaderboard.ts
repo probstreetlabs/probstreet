@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { client as redis } from '@/libs/redis/connection';
 
@@ -32,6 +33,12 @@ export const syncLeaderboardFromDB = async (redisKey: string) => {
 
 		logger.info({ redisKey, count: earnings.length }, 'Successfully hydrated Redis leaderboard');
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'leaderboard',
+				action: 'SYNCLEADERBOARDFROMDB',
+			},
+		});
 		logger.error({ error, redisKey }, 'Failed to hydrate Redis leaderboard from DB');
 	}
 };
@@ -159,6 +166,12 @@ export const getLeaderboard = async (c: Context) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'leaderboard',
+				action: 'GETLEADERBOARD',
+			},
+		});
 		logger.error({ error }, 'Failed to fetch leaderboard');
 		return c.json(
 			{

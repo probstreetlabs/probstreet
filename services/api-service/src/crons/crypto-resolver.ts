@@ -1,8 +1,9 @@
 import cron from 'node-cron';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
-import { tryAcquireResolve, completeResolve } from '@/libs/crypto/atomic-resolve';
 import { checkWickConfirmation } from '@/libs/crypto/wick-guard';
+import { tryAcquireResolve, completeResolve } from '@/libs/crypto/atomic-resolve';
 
 const COIN_MAP: Record<string, string> = {
 	BTC: 'BTCUSDT',
@@ -115,6 +116,14 @@ export async function checkAndResolveCryptoMarkets() {
 					currentPrice = parseFloat(data.price);
 				}
 			} catch (err: any) {
+				captureError(err, {
+					tags: {
+						controller: 'cron',
+						action: 'RESOLVE_SINGLE_MARKET_CRYPTO',
+						marketId: market.id,
+						symbol: market.symbol,
+					},
+				});
 				logger.warn(
 					{ pair: detected.pair, err: err.message },
 					'Failed to fetch Binance ticker in crypto resolver',
@@ -183,6 +192,12 @@ export async function checkAndResolveCryptoMarkets() {
 			}
 		}
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'cron',
+				action: 'CRYPTO_RESOLVER_TICK',
+			},
+		});
 		logger.error({ error }, 'Error in checkAndResolveCryptoMarkets cron');
 	}
 }

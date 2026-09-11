@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 
 export function startNotificationCleanupCron() {
@@ -42,6 +43,12 @@ export function startNotificationCleanupCron() {
 
 			logger.info('Notification cleanup finished.');
 		} catch (error) {
+			captureError(error, {
+				tags: {
+					controller: 'cron',
+					action: 'NOTIFICATION_CLEANUP_TICK',
+				},
+			});
 			logger.error({ error }, 'Error running notification cleanup cron');
 		}
 	});

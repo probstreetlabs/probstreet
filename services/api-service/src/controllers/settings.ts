@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 
@@ -31,6 +32,12 @@ export async function getSettings(c: Context) {
 
 		return c.json(settings);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'settings',
+				action: 'GETSETTINGS',
+			},
+		});
 		console.error('Error in getSettings:', error);
 		return c.json({ error: 'Failed to fetch settings' }, 500);
 	}
@@ -93,6 +100,12 @@ export async function updateProfile(c: Context) {
 
 		return c.json({ message: 'No changes made', user });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'settings',
+				action: 'UPDATEPROFILE',
+			},
+		});
 		console.error('Error in updateProfile:', error);
 		return c.json({ error: 'Failed to update profile' }, 500);
 	}
@@ -143,6 +156,12 @@ export async function updateNotifications(c: Context) {
 
 		return c.json({ notificationSettings: updatedPrefs, message: 'Notification settings updated' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'settings',
+				action: 'UPDATENOTIFICATIONS',
+			},
+		});
 		console.error('Error in updateNotifications:', error);
 		return c.json({ error: 'Failed to update notification preferences' }, 500);
 	}
@@ -166,6 +185,12 @@ export async function deleteAccount(c: Context) {
 		// Return success, the frontend handles session cleanup
 		return c.json({ message: 'Account deleted successfully' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'settings',
+				action: 'DELETEACCOUNT',
+			},
+		});
 		console.error('Error in deleteAccount:', error);
 		return c.json({ error: 'Failed to delete account' }, 500);
 	}

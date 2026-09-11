@@ -1,6 +1,7 @@
-import { logger } from '@/libs/logger';
 import { Context } from 'hono';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probstreet/database';
+import { captureError } from '@/libs/sentry';
 
 export const getTransactionHistory = async (c: Context) => {
 	try {
@@ -64,6 +65,12 @@ export const getTransactionHistory = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'transaction',
+				action: 'GETTRANSACTIONHISTORY',
+			},
+		});
 		logger.error(
 			{
 				alert: true,

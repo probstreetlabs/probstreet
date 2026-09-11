@@ -2,8 +2,9 @@ import crypto from 'crypto';
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
-import { getClientInfo } from '@/utils/client';
 import { EVENTS } from '@/config/constants';
+import { captureError } from '@/libs/sentry';
+import { getClientInfo } from '@/utils/client';
 import { pushToQueue } from '@/libs/redis/queue';
 import { deleteCookie, getCookie } from 'hono/cookie';
 import { sendOtpEmail } from '@/libs/nodemailer/mailer';
@@ -41,6 +42,13 @@ const logAudit = async (
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'LOG_AUDIT',
+				userId,
+			},
+		});
 		logger.error(
 			{
 				error,
@@ -102,6 +110,13 @@ const resolveOrCreateUser = async (
 			});
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'RESOLVE_OR_CREATE_USER_TX_FAIL',
+				provider,
+			},
+		});
 		logger.error({ error, email }, 'Failed to create new user in transaction');
 		throw new Error('Failed to create user account');
 	}
@@ -112,6 +127,13 @@ const resolveOrCreateUser = async (
 		await pushToQueue(EVENTS.CREATE_USER, { id: user.id, name: user.name });
 		await pushToQueue(EVENTS.INIT_BALANCE, { userId: user.id, amount: 15.0 });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'RESOLVE_OR_CREATE_USER_QUEUE_FAIL',
+				userId: user.id,
+			},
+		});
 		logger.error({ error, userId: user.id }, 'Failed to queue events for new user');
 	}
 
@@ -192,6 +214,12 @@ export const initSignin = async (c: Context) => {
 			message: 'OTP sent successfully',
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'SEND_OTP',
+			},
+		});
 		logger.error({ error }, 'Failed to send email OTP');
 		return c.json(
 			{
@@ -282,6 +310,12 @@ export const verifyOtp = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'VERIFY_OTP',
+			},
+		});
 		logger.error({ error }, 'Failed to verify email OTP');
 		return c.json(
 			{
@@ -355,6 +389,13 @@ export const googleCallback = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'OAUTH_LOGIN',
+				provider: 'google',
+			},
+		});
 		logger.error({ error }, 'Google login failed');
 		return c.json({ success: false, error: 'Authentication failed' }, 401);
 	}
@@ -414,6 +455,13 @@ export const discordCallback = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'OAUTH_LOGIN',
+				provider: 'discord',
+			},
+		});
 		logger.error({ error }, 'Discord login failed');
 		return c.json({ success: false, error: 'Authentication failed' }, 401);
 	}
@@ -508,6 +556,13 @@ export const telegramCallback = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'OAUTH_LOGIN',
+				provider: 'telegram',
+			},
+		});
 		logger.error({ error }, 'Telegram login failed');
 		return c.json({ success: false, error: 'Authentication failed' }, 401);
 	}
@@ -537,6 +592,12 @@ export const logout = async (c: Context) => {
 			message: 'Logged out successfully',
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'LOGOUT',
+			},
+		});
 		logger.error({ error }, 'Logout failed');
 		return c.json(
 			{
@@ -595,6 +656,12 @@ export const refresh = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Token refreshed' });
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'REFRESH_TOKEN',
+			},
+		});
 		logger.error({ error }, 'Refresh token failed');
 		deleteCookie(c, 'accessToken', { path: '/' });
 		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
@@ -629,6 +696,13 @@ export const getMe = async (c: Context) => {
 		if (!user) return c.json({ success: false, error: 'User not found' }, 404);
 		return c.json({ success: true, data: user });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'GET_ME',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error({ error }, 'Failed to fetch profile');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -657,6 +731,13 @@ export const getSessions = async (c: Context) => {
 		});
 		return c.json({ success: true, data: sessions });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'GET_SESSIONS',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error({ error }, 'Failed to get sessions');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
@@ -679,6 +760,13 @@ export const logoutAll = async (c: Context) => {
 		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
 		return c.json({ success: true, message: 'Logged out of all devices' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'LOGOUT_ALL',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error({ error }, 'Logout all failed');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}

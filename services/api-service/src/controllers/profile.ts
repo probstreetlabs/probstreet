@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { client as redis } from '@/libs/redis/connection';
 
@@ -30,6 +31,12 @@ export const getProfile = async (c: Context) => {
 			data: dbUser,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'GETPROFILE',
+			},
+		});
 		logger.error({ context: 'GET_PROFILE', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -66,6 +73,12 @@ export const updateProfile = async (c: Context) => {
 			data: updatedUser,
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'UPDATEPROFILE',
+			},
+		});
 		logger.error({ context: 'UPDATE_PROFILE', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -91,6 +104,12 @@ export const addToWatchlist = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Added to watchlist' });
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'ADDTOWATCHLIST',
+			},
+		});
 		logger.error({ context: 'ADD_WATCHLIST', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -109,6 +128,12 @@ export const removeFromWatchlist = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Removed from watchlist' });
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'REMOVEFROMWATCHLIST',
+			},
+		});
 		logger.error({ context: 'REMOVE_WATCHLIST', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -153,6 +178,12 @@ export const getWatchlist = async (c: Context) => {
 			})),
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'GETWATCHLIST',
+			},
+		});
 		logger.error({ context: 'GET_WATCHLIST', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -187,6 +218,12 @@ export const getUserTrades = async (c: Context) => {
 
 		return c.json({ success: true, data: trades });
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'GETUSERTRADES',
+			},
+		});
 		logger.error({ context: 'GET_USER_TRADES', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -283,6 +320,12 @@ export const getPublicProfile = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'profile',
+				action: 'GETPUBLICPROFILE',
+			},
+		});
 		logger.error({ context: 'GET_PUBLIC_PROFILE', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}

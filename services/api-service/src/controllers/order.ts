@@ -1,8 +1,9 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
-import { pushToQueue } from '@/libs/redis/queue';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
+import { pushToQueue } from '@/libs/redis/queue';
 
 /**
  * Buy order controller which push event to engine for Buy a yes or no stock
@@ -97,6 +98,13 @@ export const buy = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'order',
+				action: 'CREATE_ORDER',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -210,6 +218,13 @@ export const sell = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'order',
+				action: 'SELL_ORDER',
+				userId: c.get('user')?.id,
+			},
+		});
 		logger.error(
 			{
 				alert: true,
@@ -259,6 +274,13 @@ export const cancel = async (c: Context) => {
 
 		return c.json({ success: true, message: 'Order cancelled successfully' });
 	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'order',
+				action: 'CANCEL_ORDER',
+				userId: c.get('user')?.id,
+			},
+		});
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 };

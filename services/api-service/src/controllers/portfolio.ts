@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 
 export const getPortfolio = async (c: Context) => {
@@ -70,6 +71,12 @@ export const getPortfolio = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'portfolio',
+				action: 'GETPORTFOLIO',
+			},
+		});
 		logger.error({ context: 'GET_PORTFOLIO', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
@@ -108,6 +115,12 @@ export const getMarketPosition = async (c: Context) => {
 			},
 		});
 	} catch (error: any) {
+		captureError(error, {
+			tags: {
+				controller: 'portfolio',
+				action: 'GETMARKETPOSITION',
+			},
+		});
 		logger.error({ context: 'GET_MARKET_POSITION', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
