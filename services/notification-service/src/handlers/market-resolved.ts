@@ -114,9 +114,7 @@ export async function handleMarketResolved(env: ENV_CONFIG, prisma: any, data: a
 	}
 
 	if (emailsToSend.length > 0) {
-		await Promise.allSettled(
-			emailsToSend.map((e) => sendEmail(env, e.email, e.subject, e.html)),
-		);
+		await Promise.allSettled(emailsToSend.map((e) => sendEmail(env, e.email, e.subject, e.html)));
 		logger.info(`[market.resolved] Emails sent to ${emailsToSend.length} users`);
 	}
 }

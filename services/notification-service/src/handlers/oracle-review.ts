@@ -27,9 +27,7 @@ export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any
 	const emailAdmins = admins.filter((a: any) => a.email);
 
 	if (emailAdmins.length > 0) {
-		await Promise.allSettled(
-			emailAdmins.map((a: any) => sendEmail(env, a.email, subject, html)),
-		);
+		await Promise.allSettled(emailAdmins.map((a: any) => sendEmail(env, a.email, subject, html)));
 	}
 
 	const notificationData = {

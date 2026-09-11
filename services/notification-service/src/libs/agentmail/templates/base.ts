@@ -1,4 +1,3 @@
-
 export function baseTemplate(title: string, body: string): string {
 	return `<!DOCTYPE html>
 <html lang="en">
