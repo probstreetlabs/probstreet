@@ -7,6 +7,7 @@ import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { client } from '@/libs/redis/connection';
 import { cashfree } from '@/libs/cashfree/client';
+import { sendNotification } from '@/libs/notification/dispatcher';
 
 export const initPayment = async (c: Context) => {
 	try {
@@ -249,6 +250,21 @@ export const paymentWebhook = async (c: Context) => {
 				}
 			});
 
+			const user = await prisma.user.findUnique({
+				where: { id: customerId },
+				select: { email: true },
+			});
+
+			if (user?.email) {
+				sendNotification({
+					type: 'deposit.success',
+					data: {
+						email: user.email,
+						amount: amount,
+					},
+				}).catch((err) => logger.error({ err }, 'Failed to dispatch deposit.success'));
+			}
+
 			if (shouldCreditEngine) {
 				await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
 					userId: customerId,
@@ -259,6 +275,29 @@ export const paymentWebhook = async (c: Context) => {
 					{ customerId, amount, paymentId },
 					'Payment processed successfully into engine',
 				);
+			}
+		} else if (body.type === 'PAYMENT_FAILED_WEBHOOK') {
+			const payment = body.data?.payment;
+			const amount = payment?.payment_amount;
+			const customerId = body.data?.customer_details?.customer_id;
+			const reason = payment?.payment_message || 'Payment failed';
+
+			if (customerId && amount) {
+				const user = await prisma.user.findUnique({
+					where: { id: customerId },
+					select: { email: true },
+				});
+
+				if (user?.email) {
+					sendNotification({
+						type: 'deposit.failed',
+						data: {
+							email: user.email,
+							amount: amount,
+							reason: reason,
+						},
+					}).catch((err) => logger.error({ err }, 'Failed to dispatch deposit.failed'));
+				}
 			}
 		}
 
@@ -329,6 +368,17 @@ export const payoutWebhook = async (c: Context, bodyOverride?: any) => {
 					data: { status: 'SUCCESS' },
 				});
 				logger.info({ transferId }, 'Payout marked as SUCCESS');
+
+				const user = await tx.user.findUnique({
+					where: { id: transaction.userId },
+					select: { email: true },
+				});
+				if (user?.email) {
+					sendNotification({
+						type: 'withdrawal.success',
+						data: { email: user.email, amount: transaction.amount },
+					}).catch((err) => logger.error({ err }, 'Failed to dispatch withdrawal.success'));
+				}
 			} else if (event === 'TRANSFER_FAILED' || event === 'TRANSFER_REVERSED') {
 				await tx.transaction.update({
 					where: { id: transaction.id },
@@ -345,6 +395,21 @@ export const payoutWebhook = async (c: Context, bodyOverride?: any) => {
 				});
 
 				logger.info({ transferId, userId: refundUserId }, 'Payout failed, balance refunded in DB');
+
+				const user = await tx.user.findUnique({
+					where: { id: transaction.userId },
+					select: { email: true },
+				});
+				if (user?.email) {
+					sendNotification({
+						type: 'withdrawal.failed',
+						data: {
+							email: user.email,
+							amount: transaction.amount,
+							reason: body.message || 'Payout rejected',
+						},
+					}).catch((err) => logger.error({ err }, 'Failed to dispatch withdrawal.failed'));
+				}
 			}
 		});
 
