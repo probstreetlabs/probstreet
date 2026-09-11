@@ -44,8 +44,9 @@ const envSchema = z.object({
 	CASHFREE_VERIFICATION_CLIENT_ID: z.string().optional(),
 	CASHFREE_VERIFICATION_CLIENT_SECRET: z.string().optional(),
 
-	NOTIFICATION_WORKER_URL: z.string().url(),
-	WORKER_SECRET: z.string().min(1),
+	CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
+	CLOUDFLARE_API_TOKEN: z.string().min(1),
+	CLOUDFLARE_QUEUE_ID: z.string().min(1),
 
 	GMAIL_USER: z.string().email(),
 	GMAIL_APP_PASSWORD: z.string().min(1),
@@ -59,6 +60,8 @@ const envSchema = z.object({
 	FINNHUB_API_KEY: z.string().optional(),
 
 	IS_KYC_PROVIDER_ENABLED: z.string().default('false'),
+
+	SENTRY_DSN: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(Bun.env);
@@ -66,6 +69,16 @@ const parsed = envSchema.safeParse(Bun.env);
 if (!parsed.success) {
 	const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
 	console.error(`\nInvalid environment variables:\n${issues}\n`);
+	process.exit(1);
+}
+
+if (
+	(parsed.data.NODE_ENV === 'production' || parsed.data.NODE_ENV === 'staging') &&
+	!parsed.data.SENTRY_DSN
+) {
+	console.error(
+		`\nInvalid environment variables:\n  • SENTRY_DSN: Required in production and staging environments\n`,
+	);
 	process.exit(1);
 }
 

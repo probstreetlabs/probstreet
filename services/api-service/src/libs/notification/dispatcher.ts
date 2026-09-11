@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 type NotificationEventType =
 	| 'otp.send'
@@ -7,7 +8,11 @@ type NotificationEventType =
 	| 'trade.executed'
 	| 'price.alert'
 	| 'oracle.review'
-	| 'oracle.resolved';
+	| 'oracle.resolved'
+	| 'deposit.success'
+	| 'deposit.failed'
+	| 'withdrawal.success'
+	| 'withdrawal.failed';
 
 interface NotificationEvent {
 	type: NotificationEventType;
@@ -15,24 +20,29 @@ interface NotificationEvent {
 }
 
 export const sendNotification = async (event: NotificationEvent): Promise<void> => {
-	const workerUrl = ENV.NOTIFICATION_WORKER_URL;
-	const workerSecret = ENV.WORKER_SECRET;
+	const { CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_QUEUE_ID, CLOUDFLARE_API_TOKEN } = ENV;
 
-	if (!workerUrl) {
-		logger.warn({ event: event.type }, 'NOTIFICATION_WORKER_URL not set, skipping notification');
+	if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_QUEUE_ID || !CLOUDFLARE_API_TOKEN) {
+		logger.warn(
+			{ event: event.type },
+			'Cloudflare Queue credentials not set, skipping notification',
+		);
 		return;
 	}
 
 	try {
-		const response = await fetch(workerUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'x-worker-secret': workerSecret,
+		const response = await fetch(
+			`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/queues/${CLOUDFLARE_QUEUE_ID}/messages`,
+			{
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify([{ body: event }]),
+				signal: AbortSignal.timeout(3000),
 			},
-			body: JSON.stringify(event),
-			signal: AbortSignal.timeout(3000),
-		});
+		);
 
 		if (!response.ok) {
 			const text = await response.text();
@@ -42,20 +52,27 @@ export const sendNotification = async (event: NotificationEvent): Promise<void> 
 					body: text,
 					event: event.type,
 				},
-				'Notification worker returned non-OK response',
+				'Cloudflare Queue API returned non-OK response',
 			);
 		} else {
 			logger.info(
 				{
 					event: event.type,
 				},
-				'Notification event dispatched to worker',
+				'Notification event dispatched to Cloudflare Queue',
 			);
 		}
 	} catch (err: any) {
+		captureError(err, {
+			tags: {
+				controller: 'notification_dispatcher',
+				action: 'SEND_NOTIFICATION',
+				eventType: event.type,
+			},
+		});
 		logger.error(
 			{ error: err.message, event: event.type },
-			'Failed to dispatch notification to worker (swallowed)',
+			'Failed to dispatch notification to Queue (swallowed)',
 		);
 	}
 };
