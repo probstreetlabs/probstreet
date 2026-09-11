@@ -1,9 +1,9 @@
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
-import { marketResolvedEmailHtml } from '@/libs/brevo/templates/market-resolved';
+import { marketResolvedEmailHtml } from '@/libs/agentmail/templates/market-resolved';
 
 export async function handleMarketResolved(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
 	const { marketId, title, result, winners = [], holders = [] } = data;
@@ -115,7 +115,7 @@ export async function handleMarketResolved(env: ENV_CONFIG, prisma: any, data: a
 
 	if (emailsToSend.length > 0) {
 		await Promise.allSettled(
-			emailsToSend.map((e) => sendBrevoEmail(env, e.email, e.subject, e.html)),
+			emailsToSend.map((e) => sendEmail(env, e.email, e.subject, e.html)),
 		);
 		logger.info(`[market.resolved] Emails sent to ${emailsToSend.length} users`);
 	}

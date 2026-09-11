@@ -1,9 +1,9 @@
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
-import { priceAlertEmailHtml } from '@/libs/brevo/templates/price-alert';
+import { priceAlertEmailHtml } from '@/libs/agentmail/templates/price-alert';
 
 export async function handlePriceAlert(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
 	const { userId, marketId, marketTitle, currentPrice, stockType, fcmToken, email } = data;
@@ -43,7 +43,7 @@ export async function handlePriceAlert(env: ENV_CONFIG, prisma: any, data: any):
 	}
 
 	if (email) {
-		await sendBrevoEmail(
+		await sendEmail(
 			env,
 			email,
 			`Price Alert: ${marketTitle}`,

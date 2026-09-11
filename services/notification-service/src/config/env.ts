@@ -1,12 +1,19 @@
 import { z } from 'zod';
 
 export const envSchema = z.object({
-	DATABASE_URL: z.string().min(1),
-	BREVO_API_KEY: z.string().min(1),
+	DATABASE_URL: z.url(),
+
+	FRONTEND_URL: z.url(),
+	STREAM_SERVICE_URL: z.url(),
+
 	WORKER_SECRET: z.string().min(1),
+
+	AGENTMAIL_INBOX: z.email(),
+	AGENTMAIL_API_KEY: z.string().min(1),
+
+	ON_CALL_ENGINEER_MAIL: z.email(),
+
 	FIREBASE_SERVER_KEY: z.string().min(1),
-	STREAM_SERVICE_URL: z.string().url(),
-	FRONTEND_URL: z.string().url(),
 });
 
 export type ENV_CONFIG = z.infer<typeof envSchema>;

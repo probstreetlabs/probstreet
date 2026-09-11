@@ -1,9 +1,9 @@
 import { logger } from '@/libs/logger/logger';
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
-import { tradeExecutedEmailHtml } from '@/libs/brevo/templates/trade-executed';
+import { tradeExecutedEmailHtml } from '@/libs/agentmail/templates/trade-executed';
 
 export async function handleTradeExecuted(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
 	const { makerId, takerId, marketId, marketTitle, stockType, price, quantity } = data;
@@ -22,7 +22,7 @@ export async function handleTradeExecuted(env: ENV_CONFIG, prisma: any, data: an
 		const inAppTradeExecuted = user.notificationPrefs?.inAppTradeExecuted ?? true;
 
 		if (emailTradeExecuted && user.email) {
-			await sendBrevoEmail(
+			await sendEmail(
 				env,
 				user.email,
 				`Trade Executed on "${marketTitle}"`,

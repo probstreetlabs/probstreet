@@ -1,9 +1,9 @@
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
-import { newMarketEmailHtml } from '@/libs/brevo/templates/market-created';
+import { newMarketEmailHtml } from '@/libs/agentmail/templates/market-created';
 
 export async function handleMarketCreated(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
 	const { marketId, title, slug } = data;
@@ -23,7 +23,7 @@ export async function handleMarketCreated(env: ENV_CONFIG, prisma: any, data: an
 	if (emailUsers.length > 0) {
 		const results = await Promise.allSettled(
 			emailUsers.map((s: any) =>
-				sendBrevoEmail(
+				sendEmail(
 					env,
 					s.user.email,
 					`New Market: ${title}`,

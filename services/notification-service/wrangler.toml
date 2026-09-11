@@ -1,4 +1,10 @@
-name = "probstreet-notification-service"
+name = "probstreet-notification-worker"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_flags = ["nodejs_compat"]
+
+[[queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 3
+max_batch_timeout = 30
+max_retries = 2

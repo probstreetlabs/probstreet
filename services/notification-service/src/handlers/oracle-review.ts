@@ -1,7 +1,7 @@
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
 
 export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
@@ -19,22 +19,16 @@ export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any
 		return;
 	}
 
+	const { oracleReviewEmailHtml } = await import('@/libs/agentmail/templates/oracle');
 	const subject = `[Action Required] AI Oracle Review: ${marketTitle}`;
-	const html = `
-		<h3>Oracle Resolution Review Required</h3>
-		<p>The AI Oracle has flagged a market for admin review due to low confidence.</p>
-		<ul>
-			<li><strong>Market:</strong> ${marketTitle}</li>
-			<li><strong>Proposed Verdict:</strong> ${verdict || 'INCONCLUSIVE'}</li>
-			<li><strong>Confidence Score:</strong> ${score || 0} / 100</li>
-		</ul>
-		<p><a href="${env.FRONTEND_URL}/dashboard/oracle/review">Click here to review and confirm the resolution</a>.</p>
-	`;
+	const reviewUrl = `${env.FRONTEND_URL}/dashboard/oracle/review`;
+	const html = oracleReviewEmailHtml(marketTitle, verdict, score, reviewUrl);
 
 	const emailAdmins = admins.filter((a: any) => a.email);
+
 	if (emailAdmins.length > 0) {
 		await Promise.allSettled(
-			emailAdmins.map((a: any) => sendBrevoEmail(env, a.email, subject, html)),
+			emailAdmins.map((a: any) => sendEmail(env, a.email, subject, html)),
 		);
 	}
 
@@ -46,7 +40,6 @@ export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any
 		metadata: { marketId },
 	};
 
-	// Save in-app notifications
 	await prisma.notification.createMany({
 		data: admins.map((a: any) => ({
 			userId: a.id,
@@ -54,7 +47,6 @@ export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any
 		})),
 	});
 
-	// Send push notifications
 	const pushAdmins = admins.filter((a: any) => a.fcmToken);
 	if (pushAdmins.length > 0) {
 		await Promise.allSettled(
@@ -67,7 +59,6 @@ export async function handleOracleReview(env: ENV_CONFIG, prisma: any, data: any
 		);
 	}
 
-	// Notify via WebSockets
 	await Promise.allSettled(
 		admins.map((a: any) =>
 			notifyWebSockets(env, a.id, {

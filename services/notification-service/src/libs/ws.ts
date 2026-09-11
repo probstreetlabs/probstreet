@@ -12,7 +12,7 @@ export async function notifyWebSockets(env: ENV_CONFIG, userId: string, notifica
 			},
 			body: JSON.stringify({ userId, notification }),
 		});
-		await response.text(); // Consume body to prevent worker hang
+		await response.text();
 	} catch (error) {
 		logger.error('[notifyWebSockets] Failed to ping stream service: ' + error);
 	}

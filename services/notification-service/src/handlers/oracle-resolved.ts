@@ -1,7 +1,7 @@
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
+import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
 
 export async function handleOracleResolved(env: ENV_CONFIG, prisma: any, data: any): Promise<void> {
@@ -26,24 +26,22 @@ export async function handleOracleResolved(env: ENV_CONFIG, prisma: any, data: a
 			? 'Deterministic Engine (Instant API Math)'
 			: 'AI Evaluator (Groq 120B)';
 
+	const { oracleResolvedEmailHtml } = await import('@/libs/agentmail/templates/oracle');
 	const subject = `[Auto-Resolved] Oracle Resolution: ${marketTitle} -> ${verdict}`;
-	const html = `
-		<h3>Market Successfully Auto-Resolved</h3>
-		<p>The automated Oracle pipeline has resolved the following market:</p>
-		<ul>
-			<li><strong>Market:</strong> ${marketTitle}</li>
-			<li><strong>Verdict:</strong> <span style="color: ${verdict === 'YES' ? 'green' : 'red'}; font-weight: bold;">${verdict}</span></li>
-			<li><strong>Method:</strong> ${sourceLabel}</li>
-			${score !== undefined ? `<li><strong>Confidence Score:</strong> ${score} / 100</li>` : ''}
-			${reasoning ? `<li><strong>Reasoning:</strong> ${reasoning}</li>` : ''}
-		</ul>
-		<p><a href="${env.FRONTEND_URL}/market/${symbol || marketId}">View Resolved Market</a> | <a href="${env.FRONTEND_URL}/dashboard/markets">Admin Dashboard</a></p>
-	`;
+	const marketUrl = `${env.FRONTEND_URL}/market/${symbol || marketId}`;
+	const html = oracleResolvedEmailHtml(
+		marketTitle,
+		verdict,
+		sourceLabel,
+		score,
+		reasoning,
+		marketUrl,
+	);
 
 	const emailAdmins = admins.filter((a: any) => a.email);
 	if (emailAdmins.length > 0) {
 		await Promise.allSettled(
-			emailAdmins.map((a: any) => sendBrevoEmail(env, a.email, subject, html)),
+			emailAdmins.map((a: any) => sendEmail(env, a.email, subject, html)),
 		);
 	}
 

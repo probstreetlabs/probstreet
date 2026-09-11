@@ -1,5 +1,6 @@
 import { ENV_CONFIG } from '@/config/env';
 import { logger } from '@/libs/logger/logger';
+import { handlePaymentEvent } from '@/handlers/payment';
 import { handlePriceAlert } from '@/handlers/price-alert';
 import { handleOracleReview } from '@/handlers/oracle-review';
 import { handleMarketCreated } from '@/handlers/market-created';
@@ -14,7 +15,11 @@ export type NotificationEventTypes =
 	| 'market.resolved'
 	| 'archive.failed'
 	| 'oracle.review'
-	| 'oracle.resolved';
+	| 'oracle.resolved'
+	| 'deposit.success'
+	| 'deposit.failed'
+	| 'withdrawal.success'
+	| 'withdrawal.failed';
 
 export interface NotificationEvent {
 	type: NotificationEventTypes;
@@ -48,6 +53,12 @@ export async function processEvent(env: ENV_CONFIG, event: NotificationEvent): P
 				break;
 			case 'oracle.resolved':
 				await handleOracleResolved(env, prisma, event.data);
+				break;
+			case 'deposit.success':
+			case 'deposit.failed':
+			case 'withdrawal.success':
+			case 'withdrawal.failed':
+				await handlePaymentEvent(env, event.type, event.data);
 				break;
 			default:
 				logger.warn(`[worker] Unknown event type: ${(event as any).type}`);

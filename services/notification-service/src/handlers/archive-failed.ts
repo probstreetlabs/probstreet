@@ -1,16 +1,16 @@
 import { ENV_CONFIG } from '@/config/env';
 import { logger } from '@/libs/logger/logger';
-import { sendBrevoEmail } from '@/libs/brevo/client';
-import { getArchiveFailedTemplate } from '@/libs/brevo/templates/archive-failed';
+import { sendEmail } from '@/libs/agentmail/client';
+import { archiveFailedEmailHtml } from '@/libs/agentmail/templates/archive-failed';
 
 export const handleArchiveFailed = async (env: ENV_CONFIG, data: any) => {
 	try {
 		const { symbol, error } = data;
-		const html = getArchiveFailedTemplate(symbol, error || 'Unknown error');
+		const html = archiveFailedEmailHtml(symbol, error || 'Unknown error');
 
-		await sendBrevoEmail(
+		await sendEmail(
 			env,
-			'officia.rehan.me@gmail.com',
+			env.ON_CALL_ENGINEER_MAIL,
 			`ALERT: Engine Archival Failed for ${symbol}`,
 			html,
 		);
