@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"encoding/json"
+	"matching-engine/internals/utils"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -25,6 +26,7 @@ func InitProducer() {
 		})
 
 		if err != nil {
+			utils.CaptureError(err, map[string]string{"controller": "kafka", "action": "NEW_PRODUCER"}, nil)
 			log.Fatal().Err(err).Msg("Failed to create Kafka producer")
 		}
 		producerInstance = producer
@@ -34,6 +36,7 @@ func InitProducer() {
 				switch ev := e.(type) {
 				case *kafka.Message:
 					if ev.TopicPartition.Error != nil {
+						utils.CaptureError(ev.TopicPartition.Error, map[string]string{"controller": "kafka", "action": "DELIVERY_REPORT_ERROR"}, nil)
 						log.Error().Err(ev.TopicPartition.Error).Msg("Kafka delivery failed")
 					} else {
 						log.Debug().Msgf("Delivered to %v", ev.TopicPartition)
@@ -58,16 +61,23 @@ func ProduceEventToDBProcessor(topic, eventType string, data interface{}) error 
 	}
 	bytes, err := json.Marshal(event)
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "kafka", "action": "PRODUCE_MARSHAL"}, nil)
 		return err
 	}
 
-	return producerInstance.Produce(&kafka.Message{
+	err = producerInstance.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
 			Partition: kafka.PartitionAny,
 		},
 		Value: bytes,
 	}, nil)
+
+	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "kafka", "action": "PRODUCE_EVENT"}, nil)
+	}
+
+	return err
 }
 
 func CloseProducer() {

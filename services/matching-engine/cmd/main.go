@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/getsentry/sentry-go"
 
 	"matching-engine/internals/engine"
 	"matching-engine/internals/services/kafka"
@@ -22,7 +25,11 @@ func main() {
 
 	// Initialize zerolog logger
 	utils.InitLogger()
-	log.Info().Msg("📄 Logger initialized")
+	log.Info().Msg("Logger initialized")
+
+	// Initialize Sentry
+	utils.SetupSentry()
+	defer sentry.Flush(2 * time.Second)
 
 	// connect to redis
 	client := redis.ConnectRedis()

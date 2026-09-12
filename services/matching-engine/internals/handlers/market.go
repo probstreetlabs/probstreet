@@ -51,6 +51,7 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 	startTime, err := time.Parse(time.RFC3339, data.StartDate)
 
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "market", "action": "PARSE_START_DATE"}, nil)
 		log.Error().Err(err).Msg("Invalid startDate format")
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
@@ -63,6 +64,7 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 	endTime, err := time.Parse(time.RFC3339, data.EndDate)
 
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "market", "action": "PARSE_END_DATE"}, nil)
 		log.Error().Err(err).Msg("Invalid endDate format")
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
@@ -131,6 +133,7 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 	var data GetMarketDetailsDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "market", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
@@ -235,6 +238,7 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 	var data AddLiquidityDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "market", "action": "DECODE_PAYLOAD"}, nil)
 		log.Error().
 			Err(err).
 			Interface("payload", payload.Data).
@@ -355,6 +359,7 @@ func ResolveMarket(payload types.QueuePayload) types.QueueResponse {
 	var data ResolveMarketDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "market", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,

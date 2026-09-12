@@ -14,8 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
 
-	"matching-engine/internals/types"
 	"matching-engine/internals/services/kafka"
+	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 )
 
 type SnapshotData struct {
@@ -71,7 +72,7 @@ func (e *Engine) PerformSnapshot() {
 		m.Mu.RUnlock()
 		marketsRaw[k] = mBytes
 	}
-	
+
 	if evictedMarkets > 0 {
 		log.Info().Int("evicted_markets", evictedMarkets).Msg("Purged old closed markets from engine RAM")
 	}
@@ -92,6 +93,7 @@ func (e *Engine) PerformSnapshot() {
 	e.UM.Unlock() // Unlock after serialization to unblock trading
 
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_MARSHAL"}, nil)
 		log.Error().Err(err).Msg("Failed to serialize engine state for snapshot")
 		return
 	}
@@ -110,6 +112,7 @@ func (e *Engine) PerformSnapshot() {
 		// Save to Redis with 7 days TTL (7 * 24 * 60 * 60 seconds)
 		err := e.Redis.Set(ctx, "engine_snapshot:latest", jsonData, 7*24*time.Hour).Err()
 		if err != nil {
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_REDIS_SET"}, nil)
 			log.Error().Err(err).Msg("Failed to save snapshot to Redis")
 		} else {
 			log.Info().Msg("Engine state snapshot successfully saved to Redis")
@@ -121,10 +124,12 @@ func (e *Engine) PerformSnapshot() {
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
 	if _, err := gz.Write(jsonData); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_GZIP_WRITE"}, nil)
 		log.Error().Err(err).Msg("Failed to compress engine state")
 		return
 	}
 	if err := gz.Close(); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_GZIP_CLOSE"}, nil)
 		log.Error().Err(err).Msg("Failed to close gzip writer")
 		return
 	}
@@ -139,8 +144,9 @@ func (e *Engine) PerformSnapshot() {
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
-		
+
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_AWS_CONFIG"}, nil)
 		log.Error().Err(err).Msg("Failed to load AWS config")
 		return
 	}
@@ -155,6 +161,7 @@ func (e *Engine) PerformSnapshot() {
 	})
 
 	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_AWS_S3_PUT"}, nil)
 		log.Error().Err(err).Msg("Failed to upload snapshot to S3")
 		return
 	}
@@ -177,13 +184,15 @@ func (e *Engine) LoadLatestSnapshot() {
 		ctx := context.Background()
 		jsonData, err := e.Redis.Get(ctx, "engine_snapshot:latest").Bytes()
 		if err != nil {
-			log.Info().Err(err).Msg("No snapshot found in Redis or failed to read")
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_REDIS_GET"}, nil)
+			log.Warn().Msg("No snapshot found in Redis or failed to fetch")
 			return
 		}
 
 		var data SnapshotData
 		if err := json.Unmarshal(jsonData, &data); err != nil {
-			log.Error().Err(err).Msg("Failed to unmarshal snapshot from Redis")
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_UNMARSHAL"}, nil)
+			log.Error().Err(err).Msg("Failed to deserialize snapshot from Redis")
 			return
 		}
 
@@ -238,6 +247,7 @@ func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 		marketBytes, err := json.Marshal(market)
 		market.Mu.RUnlock()
 		if err != nil {
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_MARSHAL"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
 			log.Error().Err(err).Str("marketId", market.MarketId).Msg("Failed to serialize closed market for archival")
 			return
 		}
@@ -245,6 +255,7 @@ func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 		var b bytes.Buffer
 		gz := gzip.NewWriter(&b)
 		if _, err := gz.Write(marketBytes); err != nil {
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_GZIP_WRITE"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
 			log.Error().Err(err).Msg("Failed to compress market state")
 			return
 		}
@@ -259,6 +270,7 @@ func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 
 		cfg, err := config.LoadDefaultConfig(context.TODO())
 		if err != nil {
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_AWS_CONFIG"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
 			log.Error().Err(err).Msg("Failed to load AWS config for market archival")
 			return
 		}
@@ -288,6 +300,8 @@ func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 			delete(e.Market, market.Symbol)
 			e.MM.Unlock()
 		} else {
+			err := fmt.Errorf("failed to upload market %s to S3 after 3 attempts", market.Symbol)
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_AWS_S3_PUT"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
 			log.Error().Str("marketId", market.MarketId).Msg("Failed to archive market to S3 after 3 attempts, keeping in RAM and sending alert")
 			kafka.ProduceEventToDBProcessor("process_db", "ARCHIVE_FAILED", map[string]interface{}{
 				"marketId": market.MarketId,

@@ -3,6 +3,7 @@ package handlers
 import (
 	"matching-engine/internals/engine"
 	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,7 @@ func UpdateVerificationStatus(payload types.QueuePayload) types.QueueResponse {
 	var data verificationDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "verification", "action": "DECODE_PAYLOAD"}, nil)
 		log.Error().
 			Err(err).
 			Str("responseId", payload.ResponseId).

@@ -4,6 +4,7 @@ import (
 	"matching-engine/internals/engine"
 	"matching-engine/internals/services/kafka"
 	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -19,6 +20,7 @@ func SplitShares(payload types.QueuePayload) types.QueueResponse {
 	var data SplitMergeDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "split_merge", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
@@ -109,6 +111,7 @@ func MergeShares(payload types.QueuePayload) types.QueueResponse {
 	var data SplitMergeDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "split_merge", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,

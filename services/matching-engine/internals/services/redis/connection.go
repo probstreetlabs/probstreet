@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"matching-engine/internals/utils"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -23,10 +24,11 @@ func ConnectRedis() *redis.Client {
 	_, err = client.Ping(context.Background()).Result()
 
 	if err != nil {
-		log.Error().Err(err).Msg("failed to connect to redis")
+		utils.CaptureError(err, map[string]string{"controller": "redis", "action": "PING_FAIL"}, nil)
+		log.Error().Err(err).Msg("Failed to connect to Redis")
+	} else {
+		log.Info().Msg("connected to redis")
 	}
-
-	log.Info().Msg("connected to redis")
 
 	return client
 

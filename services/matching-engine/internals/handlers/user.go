@@ -3,6 +3,7 @@ package handlers
 import (
 	"matching-engine/internals/engine"
 	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"
@@ -95,6 +96,7 @@ func UpdateUsername(payload types.QueuePayload) types.QueueResponse {
 	var data UpdateUsernameRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "user", "action": "DECODE_PAYLOAD"}, nil)
 		log.Error().
 			Err(err).
 			Str("responseId", payload.ResponseId).

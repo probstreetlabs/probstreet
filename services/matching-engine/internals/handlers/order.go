@@ -1,10 +1,11 @@
 package handlers
 
 import (
+	"time"
+
 	"matching-engine/internals/engine"
 	"matching-engine/internals/types"
 	"matching-engine/internals/utils"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -31,6 +32,7 @@ func BuyOrder(payload types.QueuePayload) types.QueueResponse {
 	var data BuyOrderDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "order", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
@@ -127,6 +129,7 @@ func SellOrder(payload types.QueuePayload) types.QueueResponse {
 	var data SellOrderDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "order", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
@@ -211,6 +214,7 @@ func CancelOrder(payload types.QueuePayload) types.QueueResponse {
 	var data types.CancelOrderPayload
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "order", "action": "DECODE_PAYLOAD"}, nil)
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
