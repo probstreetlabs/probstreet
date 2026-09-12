@@ -3,10 +3,19 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { routes } from '@/routes/routes';
 import { logger } from '@/libs/logger/logger';
+import { captureError } from '@/libs/sentry';
 
 const app = new Hono();
 
 app.route('/api/v1', routes);
+
+app.onError((err, c) => {
+	const status = 'status' in err ? (err as any).status : 500;
+	if (status >= 500) {
+		captureError(err, { tags: { controller: 'global', action: 'UNHANDLED_EXCEPTION' } });
+	}
+	return c.json({ success: false, error: 'Internal server error' }, status);
+});
 
 import { getRequestListener } from '@hono/node-server';
 

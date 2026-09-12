@@ -2,6 +2,7 @@ import { io } from '@/app';
 import { Hono } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger/logger';
+import { captureError } from '@/libs/sentry';
 
 export const routes = new Hono();
 
@@ -38,8 +39,13 @@ routes.post('/internal/notify', async (c: any) => {
 			logger.warn('[stream-service] Missing userId or notification payload');
 		}
 		return c.json({ success: true });
-	} catch (error) {
+	} catch (error: any) {
+		if (error instanceof SyntaxError) {
+			logger.error('[stream-service] Invalid payload /notify request: ' + error.message);
+			return c.json({ success: false, error: 'Invalid payload' }, 400);
+		}
+		captureError(error, { tags: { controller: 'internal', action: 'NOTIFY_WORKER' } });
 		logger.error('[stream-service] Error processing /notify request: ' + error);
-		return c.json({ success: false, error: 'Invalid payload' }, 400);
+		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 });
