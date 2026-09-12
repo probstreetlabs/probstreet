@@ -1,4 +1,5 @@
 import { Context, Next } from 'hono';
+import { captureError } from '@/libs/sentry';
 import { client } from '@/libs/redis/connection';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 
@@ -40,6 +41,7 @@ export const rateLimiter = ({
 			await limiter.consume(key);
 			await next();
 		} catch (_err: unknown) {
+			captureError(_err, { tags: { controller: 'limiter', action: 'RATE_LIMIT' } });
 			const err = _err as RateLimiterRes;
 
 			return c.json(

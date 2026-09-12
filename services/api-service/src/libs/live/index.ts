@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { client as redis } from '@/libs/redis/connection';
 
 const CRYPTO_LOGOS: Record<string, { name: string; logo: string }> = {
@@ -119,6 +120,9 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				};
 			}
 		} catch (err: any) {
+			captureError(err, {
+				tags: { controller: 'live_data', action: 'FETCH_CRYPTO', symbol: market.symbol },
+			});
 			logger.warn(
 				{ coin: effectiveCoin, err: err.message },
 				'Failed to fetch Binance crypto live ticker',
@@ -213,6 +217,9 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				}
 			}
 		} catch (sportsErr: any) {
+			captureError(sportsErr, {
+				tags: { controller: 'live_data', action: 'FETCH_SPORTS', symbol: market.symbol },
+			});
 			logger.warn(
 				{ symbol: market.symbol, err: sportsErr.message },
 				'Failed to fetch sports match feed',
@@ -272,6 +279,9 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				}
 			}
 		} catch (err: any) {
+			captureError(err, {
+				tags: { controller: 'live_data', action: 'FETCH_STOCKS', symbol: market.symbol },
+			});
 			logger.warn(
 				{ symbol: market.symbol, err: err.message },
 				'Failed to fetch Finnhub live ticker',
@@ -339,6 +349,9 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 			return JSON.parse(cached);
 		}
 	} catch (e: any) {
+		captureError(e, {
+			tags: { controller: 'live_data', action: 'CACHE_READ', symbol: market.symbol },
+		});
 		logger.warn({ error: e.message }, 'Live market cache read error');
 	}
 
@@ -354,6 +367,9 @@ export async function fetchLiveMarketData(market: any): Promise<any> {
 			await redis.set(cacheKey, JSON.stringify(result), 'EX', ttl);
 		}
 	} catch (e: any) {
+		captureError(e, {
+			tags: { controller: 'live_data', action: 'CACHE_WRITE', symbol: market.symbol },
+		});
 		logger.warn({ error: e.message }, 'Live market cache write error');
 	}
 

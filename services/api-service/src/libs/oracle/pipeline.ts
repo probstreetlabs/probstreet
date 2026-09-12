@@ -62,6 +62,13 @@ export async function runResolutionPipeline(market: Market): Promise<PipelineRes
 					logger.warn({ status: res.status }, 'Failed to fetch sourceOfTruth URL');
 				}
 			} catch (err: any) {
+				captureError(err, {
+					tags: {
+						controller: 'oracle_pipeline',
+						action: 'FETCH_SOURCE_OF_TRUTH',
+						symbol: market.symbol,
+					},
+				});
 				logger.error({ err }, 'Error fetching sourceOfTruth');
 			}
 		}

@@ -1,6 +1,7 @@
 import { Context, Hono } from 'hono';
 import { logger } from '@/libs/logger';
 import { prisma } from '@probstreet/database';
+import { captureError } from '@/libs/sentry';
 
 export const categoriesRoutes = new Hono();
 
@@ -22,6 +23,7 @@ categoriesRoutes.get('/', async (c: Context) => {
 			200,
 		);
 	} catch (error) {
+		captureError(error, { tags: { controller: 'categories', action: 'GET_CATEGORIES' } });
 		logger.error(
 			{
 				alert: true,

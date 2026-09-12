@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 const IS_PROD = ENV.NODE_ENV === 'production';
 const PAYOUT_V2_BASE_URL = IS_PROD
@@ -110,6 +111,9 @@ export async function triggerCashfreePayout(request: PayoutRequest): Promise<any
 		);
 		return data;
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'payouts', action: 'TRIGGER_PAYOUT', provider: 'cashfree' },
+		});
 		logger.error({ error, request }, 'Error triggering Cashfree Payouts v2');
 		throw error;
 	}
@@ -135,6 +139,9 @@ export async function getPayoutStatusV2(transferId: string): Promise<any> {
 
 		return await response.json();
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'payouts', action: 'FETCH_STATUS', provider: 'cashfree' },
+		});
 		logger.error({ error, transferId }, 'Error fetching Payout v2 status');
 		return null;
 	}
