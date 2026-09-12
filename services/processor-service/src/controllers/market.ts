@@ -1,4 +1,5 @@
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 import { sendNotification } from '@/libs/notification/dispatcher';
@@ -16,6 +17,10 @@ export const updateTradersCount = async (data: any) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'market', action: 'UPDATE_TRADERS_COUNT' },
+			contexts: { market: { marketId: data?.marketId } },
+		});
 		logger.error(
 			{
 				alert: true,
@@ -41,6 +46,10 @@ export const updateStockPrice = async (data: any) => {
 			},
 		});
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'market', action: 'UPDATE_STOCK_PRICE' },
+			contexts: { market: { marketId: data?.marketId } },
+		});
 		logger.error(
 			{
 				alert: true,
@@ -156,6 +165,14 @@ export const handleMarketResolved = async (data: any) => {
 							redisPublisher.zincrby(`leaderboard:weekly:${yearWeek}`, netProfit, holder.userId),
 						]);
 					} catch (redisErr) {
+						captureError(redisErr, {
+							tags: {
+								controller: 'market',
+								action: 'UPDATE_REDIS_LEADERBOARD',
+								userId: holder.userId,
+							},
+							contexts: { market: { marketId } },
+						});
 						logger.error(
 							{ redisErr, userId: holder.userId },
 							'Failed to update Redis leaderboard score',
@@ -243,6 +260,10 @@ export const handleMarketResolved = async (data: any) => {
 			}
 		}
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'market', action: 'MARKET_RESOLVED' },
+			contexts: { market: { marketId: data?.marketId } },
+		});
 		logger.error({ error, data }, 'Failed to process market resolution');
 		throw error;
 	}

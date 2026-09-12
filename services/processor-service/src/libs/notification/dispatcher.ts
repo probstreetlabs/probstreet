@@ -1,5 +1,6 @@
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification Dispatcher (Processor Service)
@@ -47,6 +48,10 @@ export const sendNotification = async (event: NotificationEvent): Promise<void> 
 
 		logger.info({ event: event.type }, 'Notification event dispatched to Cloudflare Queue');
 	} catch (err: any) {
+		captureError(err, {
+			tags: { controller: 'dispatcher', action: 'SEND_NOTIFICATION' },
+			contexts: { notification: { type: event.type } },
+		});
 		logger.error(
 			{ error: err.message, event: event.type },
 			'Failed to dispatch notification to Queue (swallowed)',

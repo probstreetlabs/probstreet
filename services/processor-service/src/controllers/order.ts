@@ -1,4 +1,5 @@
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 import { sendNotification } from '@/libs/notification/dispatcher';
@@ -450,6 +451,16 @@ export const recordTradeExecution = async (data: any) => {
 				/* swallow — notification failure never crashes the processor */
 			});
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'order', action: 'TRADE_EXECUTED' },
+			contexts: {
+				order: {
+					makerOrderId: data?.makerOrderId,
+					takerOrderId: data?.takerOrderId,
+					marketId: data?.marketId,
+				},
+			},
+		});
 		logger.error(
 			{ error, data, context: 'TRADE_EXECUTED_FAIL' },
 			'Failed to record trade execution',
@@ -500,6 +511,12 @@ export const recordOrderPlaced = async (data: any) => {
 			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'order', action: 'ORDER_PLACED' },
+			contexts: {
+				order: { orderId: data?.orderId, userId: data?.userId, marketId: data?.marketId },
+			},
+		});
 		logger.error({ error, data, context: 'ORDER_PLACED_FAIL' }, 'Failed to record order placement');
 		throw error;
 	}
@@ -562,6 +579,12 @@ export const handleOrderCancelled = async (data: any) => {
 			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'order', action: 'ORDER_CANCELLED' },
+			contexts: {
+				order: { orderId: data?.orderId, userId: data?.userId, marketId: data?.marketId },
+			},
+		});
 		logger.error({ error, data }, 'Failed to process order cancellation');
 		throw error;
 	}
@@ -621,6 +644,10 @@ export const handleSharesSplit = async (data: any) => {
 			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'order', action: 'SHARES_SPLIT' },
+			contexts: { order: { userId: data?.userId, marketId: data?.marketId } },
+		});
 		logger.error({ error, data }, 'Failed to process shares split');
 		throw error;
 	}
@@ -664,6 +691,10 @@ export const handleSharesMerged = async (data: any) => {
 			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
 		);
 	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'order', action: 'SHARES_MERGED' },
+			contexts: { order: { userId: data?.userId, marketId: data?.marketId } },
+		});
 		logger.error({ error, data }, 'Failed to process shares merged');
 		throw error;
 	}

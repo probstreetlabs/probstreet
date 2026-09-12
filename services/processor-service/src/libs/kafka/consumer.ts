@@ -1,5 +1,6 @@
 import { consumer } from './client';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { processToDB } from '@/processor/processor';
 import { produceToRetryTopic } from './retryProducer';
 import { KafkaMessageSchema } from '@/schemas/kafka';
@@ -28,6 +29,10 @@ export const dbConsumer = async () => {
 					{ topic, partition, offset: (Number(message.offset) + 1).toString() },
 				]);
 			} catch (error) {
+				captureError(error, {
+					tags: { controller: 'kafka_consumer', action: 'PROCESS_MESSAGE' },
+					contexts: { kafka: { message: rawValue } },
+				});
 				logger.error(
 					{ error, rawValue },
 					'DB update failed or validation error, sending to retry topic',

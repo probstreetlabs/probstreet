@@ -55,7 +55,10 @@ export const startStreamSubscriber = async () => {
 				io.to(symbol).emit('MESSAGE', data);
 			}
 		} catch (e) {
-			captureError(e, { tags: { controller: 'redis_subscriber', action: 'REDIS_MESSAGE' }, contexts: { redis: { message } } });
+			captureError(e, {
+				tags: { controller: 'redis_subscriber', action: 'REDIS_MESSAGE' },
+				contexts: { redis: { message } },
+			});
 			logger.error('Invalid message format from Redis: ' + message);
 		}
 	});
@@ -69,7 +72,10 @@ export const startStreamSubscriber = async () => {
 
 			io.to(`market:${symbol}`).emit('CHAT_MESSAGE', data);
 		} catch (e) {
-			captureError(e, { tags: { controller: 'redis_subscriber', action: 'REDIS_PMESSAGE' }, contexts: { redis: { message } } });
+			captureError(e, {
+				tags: { controller: 'redis_subscriber', action: 'REDIS_PMESSAGE' },
+				contexts: { redis: { message } },
+			});
 			logger.error('Invalid chat message from Redis: ' + message);
 		}
 	});
