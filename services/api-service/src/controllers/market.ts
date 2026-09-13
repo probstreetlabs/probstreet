@@ -6,16 +6,19 @@ import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
 import { customAlphabet } from 'nanoid';
 import { EVENTS } from '@/config/constants';
-import { s3Client } from '@/libs/aws/client';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { client } from '@/libs/redis/connection';
 import { fetchLiveMarketData } from '@/libs/live';
+import { queryApi } from '@/libs/influxdb/client';
+import { snapshotDbPool } from '@/libs/snapshot-db';
 import { tavilyClient } from '@/libs/tavily/client';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { createMarketSchema } from '@/validations/market';
-import { generatePresignedUrl } from '@/libs/aws/presign';
+import {
+	generateThumbnailUploadSignature,
+	generateAvatarUploadSignature,
+} from '@/libs/cloudinary/upload';
 import { sendNotification } from '@/libs/notification/dispatcher';
 
 const gunzip = promisify(zlib.gunzip);
@@ -729,19 +732,15 @@ export const getMarketDetails = async (c: Context) => {
 					let archivedDataStr = await client.get(cacheKey);
 
 					if (!archivedDataStr) {
-						const bucketName = ENV.S3_SNAPSHOT_BUCKET || 'probstreet-closed-markets';
+						if (snapshotDbPool && process.env.NODE_ENV !== 'development') {
+							logger.info({ symbol }, 'Fetching closed market archive from PostgreSQL');
+							const res = await snapshotDbPool.query(
+								'SELECT data FROM closed_markets WHERE market_id = $1',
+								[symbol],
+							);
 
-						if (bucketName && process.env.NODE_ENV !== 'development') {
-							logger.info({ symbol }, 'Fetching closed market archive from S3');
-							const command = new GetObjectCommand({
-								Bucket: bucketName,
-								Key: `closed_markets/${symbol}.json.gz`,
-							});
-							const s3Response = await s3Client.send(command);
-
-							if (s3Response.Body) {
-								const byteArray = await s3Response.Body.transformToByteArray();
-								const unzipped = await gunzip(Buffer.from(byteArray));
+							if (res.rows.length > 0 && res.rows[0].data) {
+								const unzipped = await gunzip(res.rows[0].data);
 								archivedDataStr = unzipped.toString('utf-8');
 
 								await client.set(cacheKey, archivedDataStr, 'EX', 30 * 24 * 60 * 60);
@@ -765,7 +764,7 @@ export const getMarketDetails = async (c: Context) => {
 									orderbook: archivedData.OrderBook || { yes: [], no: [] },
 									trades: archivedData.Trades || [],
 								},
-								source: 's3_archive',
+								source: 'postgres_archive',
 							},
 							200,
 						);
@@ -777,7 +776,7 @@ export const getMarketDetails = async (c: Context) => {
 							action: 'GETMARKETDETAILS',
 						},
 					});
-					logger.error({ err: archiveErr, symbol }, 'Failed to fetch market archive from R2');
+					logger.error({ err: archiveErr, symbol }, 'Failed to fetch market archive from PostgreSQL');
 				}
 			}
 
@@ -1031,28 +1030,68 @@ export const getMarketKlines = async (c: Context) => {
 			: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 		const toDate = to ? new Date(Number(to) * 1000) : new Date();
 
-		const query = `
-			SELECT 
-				time_bucket($1::interval, bucket) AS time,
-				first(open, bucket) AS open,
-				max(high) AS high,
-				min(low) AS low,
-				last(close, bucket) AS close,
-				sum(volume) AS volume
-			FROM trade_candles_1m
-			WHERE "marketId" = $2
-			  AND bucket >= $3
-			  AND bucket <= $4
-			GROUP BY time
-			ORDER BY time ASC;
+		const fluxQuery = `
+			from(bucket: "${ENV.INFLUX_BUCKET}")
+			  |> range(start: ${fromDate.toISOString()}, stop: ${toDate.toISOString()})
+			  |> filter(fn: (r) => r._measurement == "trade_candles_1m" and r.marketId == "${market.id}")
+			  |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
 		`;
 
-		const klines: any[] = await prisma.$queryRawUnsafe(
-			query,
-			interval,
-			market.id,
-			fromDate,
-			toDate,
+		const rawKlines: any[] = [];
+		for await (const { values, tableMeta } of queryApi.iterateRows(fluxQuery)) {
+			const o = tableMeta.toObject(values);
+			rawKlines.push({
+				time: new Date(o._time),
+				open: o.open,
+				high: o.high,
+				low: o.low,
+				close: o.close,
+				volume: o.volume,
+			});
+		}
+
+		let intervalMs = 60 * 1000;
+		switch (resolution) {
+			case '5m':
+				intervalMs = 5 * 60 * 1000;
+				break;
+			case '15m':
+				intervalMs = 15 * 60 * 1000;
+				break;
+			case '1h':
+				intervalMs = 60 * 60 * 1000;
+				break;
+			case '4h':
+				intervalMs = 4 * 60 * 60 * 1000;
+				break;
+			case '1d':
+				intervalMs = 24 * 60 * 60 * 1000;
+				break;
+		}
+
+		const aggregated = new Map<number, any>();
+		for (const row of rawKlines) {
+			const bucketTime = Math.floor(row.time.getTime() / intervalMs) * intervalMs;
+			if (!aggregated.has(bucketTime)) {
+				aggregated.set(bucketTime, {
+					time: new Date(bucketTime),
+					open: row.open,
+					high: row.high,
+					low: row.low,
+					close: row.close,
+					volume: row.volume,
+				});
+			} else {
+				const agg = aggregated.get(bucketTime);
+				agg.high = Math.max(agg.high, row.high);
+				agg.low = Math.min(agg.low, row.low);
+				agg.close = row.close;
+				agg.volume += row.volume;
+			}
+		}
+
+		const klines = Array.from(aggregated.values()).sort(
+			(a, b) => a.time.getTime() - b.time.getTime(),
 		);
 
 		return c.json({
@@ -1145,20 +1184,34 @@ export const getMarketStats = async (c: Context) => {
 			return c.json({ success: false, message: 'Market not found' }, 404);
 		}
 
-		// 24h stats
 		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-		const query = `
-			SELECT 
-				max(high) AS high,
-				min(low) AS low,
-				sum(volume) AS volume24h,
-				first(open, bucket) AS open24h
-			FROM trade_candles_1m
-			WHERE "marketId" = $1 AND bucket >= $2
+		const fluxQuery = `
+			from(bucket: "${ENV.INFLUX_BUCKET}")
+			  |> range(start: ${oneDayAgo.toISOString()})
+			  |> filter(fn: (r) => r._measurement == "trade_candles_1m" and r.marketId == "${market.id}")
+			  |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
 		`;
 
-		const stats: any[] = await prisma.$queryRawUnsafe(query, market.id, oneDayAgo);
+		let high24h = Number(market.yesPrice);
+		let low24h = Number(market.yesPrice);
+		let volume24h = 0;
+		let open24h = Number(market.yesPrice);
+		let first = true;
+
+		for await (const { values, tableMeta } of queryApi.iterateRows(fluxQuery)) {
+			const o = tableMeta.toObject(values);
+			if (first) {
+				open24h = o.open;
+				high24h = o.high;
+				low24h = o.low;
+				first = false;
+			} else {
+				high24h = Math.max(high24h, o.high);
+				low24h = Math.min(low24h, o.low);
+			}
+			volume24h += o.volume;
+		}
 
 		return c.json({
 			success: true,
@@ -1166,10 +1219,10 @@ export const getMarketStats = async (c: Context) => {
 				currentYesPrice: market.yesPrice,
 				currentnoPrice: market.noPrice,
 				totalVolume: market.volume,
-				high24h: stats[0]?.high || market.yesPrice,
-				low24h: stats[0]?.low || market.yesPrice,
-				volume24h: stats[0]?.volume24h || 0,
-				open24h: stats[0]?.open24h || market.yesPrice,
+				high24h,
+				low24h,
+				volume24h,
+				open24h,
 			},
 		});
 	} catch (error) {
@@ -1193,33 +1246,38 @@ export const getMarketStats = async (c: Context) => {
 export const generatePresignedUrlRoute = async (c: Context) => {
 	try {
 		const body = await c.req.json();
-		const { fileName, fileType } = body;
+		const { type } = body;
 
-		if (!fileName || !fileType) {
+		if (!type || !['thumbnail', 'avatar'].includes(type)) {
 			return c.json(
 				{
 					success: false,
-					message: 'Missing file name or type',
+					message: 'Invalid or missing type (must be thumbnail or avatar)',
 				},
 				400,
 			);
 		}
 
-		const { url, publicUrl } = await generatePresignedUrl(fileName, fileType);
+		let signatureData;
+		if (type === 'thumbnail') {
+			signatureData = generateThumbnailUploadSignature();
+		} else {
+			signatureData = generateAvatarUploadSignature();
+		}
+
 		return c.json({
 			success: true,
-			message: 'Presinges url generated',
-			url,
-			publicUrl,
+			message: 'Upload signature generated',
+			data: signatureData,
 		});
 	} catch (error) {
 		captureError(error, {
 			tags: {
 				controller: 'market',
-				action: 'GENERATEPRESIGNEDURLROUTE',
+				action: 'GENERATEUPLOADSIGNATUREROUTE',
 			},
 		});
-		logger.error({ error }, 'Failed to generate presigned URL');
+		logger.error({ error }, 'Failed to generate upload signature');
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };

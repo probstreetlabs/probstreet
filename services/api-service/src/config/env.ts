@@ -30,12 +30,8 @@ const envSchema = z.object({
 
 	TELEGRAM_BOT_TOKEN: z.string().min(1),
 
-	AWS_REGION: z.string().min(1),
-	AWS_S3_BUCKET: z.string().min(1),
-	AWS_ACCESS_KEY_ID: z.string().min(1),
-	AWS_SECRET_ACCESS_KEY: z.string().min(1),
-
-	S3_SNAPSHOT_BUCKET: z.string().min(1),
+	CLOUDINARY_URL: z.string().min(1),
+	SNAPSHOT_DB_URL: z.string().optional(),
 
 	CASHFREE_CLIENT_ID: z.string().min(1),
 	CASHFREE_CLIENT_SECRET: z.string().min(1),
@@ -47,6 +43,11 @@ const envSchema = z.object({
 	CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
 	CLOUDFLARE_API_TOKEN: z.string().min(1),
 	CLOUDFLARE_QUEUE_ID: z.string().min(1),
+
+	INFLUX_URL: z.string().min(1),
+	INFLUX_TOKEN: z.string().min(1),
+	INFLUX_ORG: z.string().min(1),
+	INFLUX_BUCKET: z.string().min(1),
 
 	GMAIL_USER: z.string().email(),
 	GMAIL_APP_PASSWORD: z.string().min(1),
