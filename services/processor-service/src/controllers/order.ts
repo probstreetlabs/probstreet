@@ -3,6 +3,7 @@ import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 import { sendNotification } from '@/libs/notification/dispatcher';
+import { recordTradeForCandle } from '@/libs/influxdb/client';
 
 export const recordTradeExecution = async (data: any) => {
 	try {
@@ -75,6 +76,8 @@ export const recordTradeExecution = async (data: any) => {
 					matchType,
 				},
 			});
+
+			recordTradeForCandle(marketId, executionPrice, qty);
 
 			await tx.market.update({
 				where: { id: marketId },

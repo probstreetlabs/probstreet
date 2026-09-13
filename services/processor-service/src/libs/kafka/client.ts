@@ -6,6 +6,11 @@ export const kafkaClient = new Kafka({
 	logLevel: logLevel.ERROR,
 	brokers: [ENV.KAFKA_BROKERS],
 	clientId: 'processor-service-consumer',
+	retry: {
+		initialRetryTime: 1000,
+		retries: 10,
+		maxRetryTime: 30000,
+	},
 });
 
 export const producer = kafkaClient.producer({
