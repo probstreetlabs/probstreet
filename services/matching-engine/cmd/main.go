@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -45,8 +48,22 @@ func main() {
 	engine.InitEngine(client)
 	log.Info().Msg("Matching engine initialized")
 
-	redis.Consumer(ctx, client)
+	sigCh := make(chan os.Signal, 1)
+	
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-sigCh
+		log.Info().Msg("Received shutdown signal, performing final snapshot...")
+		if engine.EngineInstance != nil {
+			engine.EngineInstance.PerformSnapshot()
+			engine.CloseSnapshotDB()
+		}
+		kafka.CloseProducer()
+		os.Exit(0)
+	}()
 
 	log.Info().Msg("Matching Engine started successfully")
+
+	redis.Consumer(ctx, client)
 
 }

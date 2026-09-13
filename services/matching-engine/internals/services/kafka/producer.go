@@ -3,6 +3,7 @@ package kafka
 import (
 	"encoding/json"
 	"matching-engine/internals/utils"
+	"os"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -21,8 +22,15 @@ type Event struct {
 
 func InitProducer() {
 	once.Do(func() {
+		brokers := os.Getenv("KAFKA_BROKERS")
+		if brokers == "" {
+			brokers = "localhost:9092"
+		}
 		producer, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": "localhost",
+			"bootstrap.servers":  brokers,
+			"compression.type":   "snappy",
+			"retries":            10,
+			"message.timeout.ms": 30000,
 		})
 
 		if err != nil {

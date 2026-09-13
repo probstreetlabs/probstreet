@@ -9,9 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
 	"matching-engine/internals/services/kafka"
@@ -25,9 +23,35 @@ type SnapshotData struct {
 	Markets   map[string]*types.Market `json:"markets"`
 }
 
+var snapshotDB *pgx.Conn
+
+func InitSnapshotDB(dbURL string) {
+	if dbURL == "" {
+		log.Warn().Msg("SNAPSHOT_DB_URL is not set, snapshot storage is disabled")
+		return
+	}
+
+	conn, err := pgx.Connect(context.Background(), dbURL)
+
+	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_CONNECT"}, nil)
+		log.Error().Err(err).Msg("Failed to connect to snapshot DB")
+		return
+	}
+
+	snapshotDB = conn
+	log.Info().Msg("Successfully connected to snapshot DB")
+}
+
+func CloseSnapshotDB() {
+	if snapshotDB != nil {
+		snapshotDB.Close(context.Background())
+		log.Info().Msg("Closed snapshot DB connection")
+	}
+}
+
 func (e *Engine) StartSnapshotRoutine() {
-	// Runs every 10 minutes as requested
-	ticker := time.NewTicker(10 * time.Minute)
+	ticker := time.NewTicker(6 * time.Hour)
 	go func() {
 		for {
 			<-ticker.C
@@ -46,7 +70,6 @@ func (e *Engine) PerformSnapshot() {
 	evictedCount := 0
 
 	for userId, user := range e.User {
-		// If LastActive is zero, it might be a new user or pre-existing without activity
 		if !user.LastActive.IsZero() && user.LastActive.Before(evictionThreshold) {
 			delete(e.User, userId)
 			evictedCount++
@@ -55,11 +78,10 @@ func (e *Engine) PerformSnapshot() {
 
 	log.Info().Int("evicted_users", evictedCount).Msg("Purged inactive users from engine RAM")
 
-	e.MM.Lock() // Changed to Lock because we might evict markets
+	e.MM.Lock()
 	evictedMarkets := 0
 	marketsRaw := make(map[string]json.RawMessage)
 	for k, m := range e.Market {
-		// Evict closed markets that failed to upload after 10 days
 		marketEvictionThreshold := time.Now().Add(-10 * 24 * time.Hour)
 		if m.Status == types.Close && m.Overview.EndDate.Before(marketEvictionThreshold) {
 			delete(e.Market, k)
@@ -90,7 +112,7 @@ func (e *Engine) PerformSnapshot() {
 	}
 
 	jsonData, err := json.Marshal(data)
-	e.UM.Unlock() // Unlock after serialization to unblock trading
+	e.UM.Unlock() // Unlock after serialization
 
 	if err != nil {
 		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_MARSHAL"}, nil)
@@ -104,23 +126,12 @@ func (e *Engine) PerformSnapshot() {
 		return
 	}
 
-	snapshotStore := os.Getenv("SNAPSHOT_STORE")
-
-	if snapshotStore == "redis" {
-		log.Info().Msg("SNAPSHOT_STORE is redis, saving to Redis...")
-		ctx := context.Background()
-		// Save to Redis with 7 days TTL (7 * 24 * 60 * 60 seconds)
-		err := e.Redis.Set(ctx, "engine_snapshot:latest", jsonData, 7*24*time.Hour).Err()
-		if err != nil {
-			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_REDIS_SET"}, nil)
-			log.Error().Err(err).Msg("Failed to save snapshot to Redis")
-		} else {
-			log.Info().Msg("Engine state snapshot successfully saved to Redis")
-		}
+	if snapshotDB == nil {
+		log.Warn().Msg("Snapshot DB connection is nil, skipping snapshot save.")
 		return
 	}
 
-	// 3. Compress for S3
+	// 3. Compress for storage
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
 	if _, err := gz.Write(jsonData); err != nil {
@@ -136,40 +147,45 @@ func (e *Engine) PerformSnapshot() {
 
 	compressedData := b.Bytes()
 
-	// 4. Upload to S3/R2
-	bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
-	if bucketName == "" {
-		log.Warn().Msg("S3_SNAPSHOT_BUCKET env var not set, skipping S3 upload. Snapshot generated in memory.")
-		return
-	}
-
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-
+	// 4. Save to DB
+	ctx := context.Background()
+	tx, err := snapshotDB.Begin(ctx)
 	if err != nil {
-		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_AWS_CONFIG"}, nil)
-		log.Error().Err(err).Msg("Failed to load AWS config")
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_BEGIN"}, nil)
+		log.Error().Err(err).Msg("Failed to start snapshot DB transaction")
 		return
 	}
+	defer tx.Rollback(ctx)
 
-	client := s3.NewFromConfig(cfg)
-	filename := fmt.Sprintf("engine_snapshot_%d.json.gz", time.Now().Unix())
-
-	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(filename),
-		Body:   bytes.NewReader(compressedData),
-	})
-
+	_, err = tx.Exec(ctx, "INSERT INTO snapshots (scope, data) VALUES ('engine', $1)", compressedData)
 	if err != nil {
-		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_AWS_S3_PUT"}, nil)
-		log.Error().Err(err).Msg("Failed to upload snapshot to S3")
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_INSERT"}, nil)
+		log.Error().Err(err).Msg("Failed to insert snapshot to DB")
 		return
 	}
 
-	log.Info().Str("filename", filename).Msg("Engine state snapshot successfully uploaded to S3")
+	// Retain only the last 3 snapshots
+	_, err = tx.Exec(ctx, `
+		DELETE FROM snapshots 
+		WHERE scope = 'engine' AND id NOT IN (
+			SELECT id FROM snapshots WHERE scope = 'engine' ORDER BY created_at DESC LIMIT 3
+		)
+	`)
+	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_PRUNE"}, nil)
+		log.Error().Err(err).Msg("Failed to prune old snapshots")
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_COMMIT"}, nil)
+		log.Error().Err(err).Msg("Failed to commit snapshot to DB")
+		return
+	}
+
+	log.Info().Msg("Engine state snapshot successfully saved to PostgreSQL")
 }
 
-// LoadLatestSnapshot fetches the latest snapshot and populates the engine.
 func (e *Engine) LoadLatestSnapshot() {
 	snapshotEnabled := os.Getenv("SNAPSHOT_ENABLED")
 	if snapshotEnabled != "true" {
@@ -177,69 +193,77 @@ func (e *Engine) LoadLatestSnapshot() {
 		return
 	}
 
-	snapshotStore := os.Getenv("SNAPSHOT_STORE")
-
-	if snapshotStore == "redis" {
-		log.Info().Msg("Attempting to load snapshot from Redis...")
-		ctx := context.Background()
-		jsonData, err := e.Redis.Get(ctx, "engine_snapshot:latest").Bytes()
-		if err != nil {
-			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_REDIS_GET"}, nil)
-			log.Warn().Msg("No snapshot found in Redis or failed to fetch")
-			return
-		}
-
-		var data SnapshotData
-		if err := json.Unmarshal(jsonData, &data); err != nil {
-			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_UNMARSHAL"}, nil)
-			log.Error().Err(err).Msg("Failed to deserialize snapshot from Redis")
-			return
-		}
-
-		e.UM.Lock()
-		e.User = data.Users
-		e.UM.Unlock()
-
-		e.MM.Lock()
-		e.Market = data.Markets
-		if e.Market == nil {
-			e.Market = make(map[string]*types.Market)
-		}
-		// Re-initialize channels and start goroutines for each market
-		for key, market := range e.Market {
-			if market == nil {
-				log.Warn().Str("market_key", key).Msg("Found nil market in snapshot, skipping")
-				delete(e.Market, key)
-				continue
-			}
-			market.Inbox = make(chan types.MarketMessage, 100)
-			go e.runMarket(market)
-		}
-		e.MM.Unlock()
-
-		log.Info().Time("snapshot_timestamp", data.Timestamp).Int("users_loaded", len(data.Users)).Int("markets_loaded", len(e.Market)).Msg("Successfully restored snapshot from Redis")
+	if snapshotDB == nil {
+		log.Warn().Msg("Snapshot DB connection is nil, skipping snapshot restore on startup")
 		return
 	}
 
-	bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
-	if bucketName == "" {
-		log.Info().Msg("S3_SNAPSHOT_BUCKET not set, skipping S3 snapshot restore on startup")
+	log.Info().Msg("Attempting to load snapshot from PostgreSQL...")
+	ctx := context.Background()
+	var compressedData []byte
+	err := snapshotDB.QueryRow(ctx, "SELECT data FROM snapshots WHERE scope = 'engine' ORDER BY created_at DESC LIMIT 1").Scan(&compressedData)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			log.Info().Msg("No snapshot found in PostgreSQL, starting fresh")
+		} else {
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_DB_GET"}, nil)
+			log.Error().Err(err).Msg("Failed to fetch snapshot from PostgreSQL")
+		}
 		return
 	}
 
-	log.Info().Msg("Snapshot restoration logic initialized (ready for S3 sync)")
+	gz, err := gzip.NewReader(bytes.NewReader(compressedData))
+	if err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_GZIP_READ"}, nil)
+		log.Error().Err(err).Msg("Failed to decompress snapshot data")
+		return
+	}
+	defer gz.Close()
+
+	var data SnapshotData
+	if err := json.NewDecoder(gz).Decode(&data); err != nil {
+		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "RESTORE_UNMARSHAL"}, nil)
+		log.Error().Err(err).Msg("Failed to deserialize snapshot from DB")
+		return
+	}
+
+	e.UM.Lock()
+	e.User = data.Users
+	e.UM.Unlock()
+
+	e.MM.Lock()
+	e.Market = data.Markets
+	if e.Market == nil {
+		e.Market = make(map[string]*types.Market)
+	}
+	for key, market := range e.Market {
+		if market == nil {
+			log.Warn().Str("market_key", key).Msg("Found nil market in snapshot, skipping")
+			delete(e.Market, key)
+			continue
+		}
+		market.Inbox = make(chan types.MarketMessage, 100)
+		go e.runMarket(market)
+	}
+	e.MM.Unlock()
+
+	log.Info().Time("snapshot_timestamp", data.Timestamp).Int("users_loaded", len(data.Users)).Int("markets_loaded", len(e.Market)).Msg("Successfully restored snapshot from PostgreSQL")
 }
 
 func (e *Engine) ArchiveClosedMarket(market *types.Market) {
-	// Goroutine for uploading and retry
 	go func() {
 		nodeEnv := os.Getenv("NODE_ENV")
 		if nodeEnv == "development" {
-			log.Info().Str("marketId", market.MarketId).Msg("Development environment detected, skipping S3 archival. Will evict from RAM in 10 days.")
+			log.Info().Str("marketId", market.MarketId).Msg("Development environment detected, skipping archival. Will evict from RAM in 10 days.")
 			time.Sleep(10 * 24 * time.Hour)
 			e.MM.Lock()
 			delete(e.Market, market.Symbol)
 			e.MM.Unlock()
+			return
+		}
+
+		if snapshotDB == nil {
+			log.Warn().Str("marketId", market.MarketId).Msg("Snapshot DB connection is nil, keeping market in RAM")
 			return
 		}
 
@@ -262,51 +286,31 @@ func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 		gz.Close()
 		compressedData := b.Bytes()
 
-		bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
-		if bucketName == "" {
-			log.Warn().Msg("S3_SNAPSHOT_BUCKET not set, skipping market archival")
-			return
-		}
-
-		cfg, err := config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_AWS_CONFIG"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
-			log.Error().Err(err).Msg("Failed to load AWS config for market archival")
-			return
-		}
-
-		client := s3.NewFromConfig(cfg)
-		filename := fmt.Sprintf("closed_markets/%s.json.gz", market.Symbol)
-
 		success := false
 		for attempt := 1; attempt <= 3; attempt++ {
-			_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(filename),
-				Body:   bytes.NewReader(compressedData),
-			})
-
+			ctx := context.Background()
+			_, err = snapshotDB.Exec(ctx, "INSERT INTO closed_markets (market_id, data) VALUES ($1, $2)", market.Symbol, compressedData)
 			if err == nil {
 				success = true
 				break
 			}
-			log.Warn().Err(err).Int("attempt", attempt).Str("marketId", market.MarketId).Msg("Failed to upload market archive to S3, retrying...")
+			log.Warn().Err(err).Int("attempt", attempt).Str("marketId", market.MarketId).Msg("Failed to upload market archive to DB, retrying...")
 			time.Sleep(time.Duration(attempt*2) * time.Second)
 		}
 
 		if success {
-			log.Info().Str("filename", filename).Msg("Market safely archived to S3, evicting from engine RAM")
+			log.Info().Str("marketId", market.MarketId).Msg("Market safely archived to DB, evicting from engine RAM")
 			e.MM.Lock()
 			delete(e.Market, market.Symbol)
 			e.MM.Unlock()
 		} else {
-			err := fmt.Errorf("failed to upload market %s to S3 after 3 attempts", market.Symbol)
-			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_AWS_S3_PUT"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
-			log.Error().Str("marketId", market.MarketId).Msg("Failed to archive market to S3 after 3 attempts, keeping in RAM and sending alert")
+			err := fmt.Errorf("failed to upload market %s to DB after 3 attempts", market.Symbol)
+			utils.CaptureError(err, map[string]string{"controller": "engine", "action": "MARKET_ARCHIVE_DB_PUT"}, map[string]map[string]interface{}{"market": {"marketId": market.MarketId}})
+			log.Error().Str("marketId", market.MarketId).Msg("Failed to archive market to DB after 3 attempts, keeping in RAM and sending alert")
 			kafka.ProduceEventToDBProcessor("process_db", "ARCHIVE_FAILED", map[string]interface{}{
 				"marketId": market.MarketId,
 				"symbol":   market.Symbol,
-				"error":    "Failed to upload market to S3 after 3 attempts",
+				"error":    "Failed to upload market to DB after 3 attempts",
 			})
 		}
 	}()

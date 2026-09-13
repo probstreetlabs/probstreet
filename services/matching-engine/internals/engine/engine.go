@@ -2,6 +2,7 @@ package engine
 
 import (
 	"matching-engine/internals/types"
+	"os"
 	"sync"
 
 	"github.com/redis/go-redis/v9"
@@ -24,6 +25,8 @@ func InitEngine(r *redis.Client) {
 		Market: make(map[string]*types.Market),
 		Redis:  r,
 	}
+
+	InitSnapshotDB(os.Getenv("SNAPSHOT_DB_URL"))
 
 	// Start background routines
 	EngineInstance.LoadLatestSnapshot()
