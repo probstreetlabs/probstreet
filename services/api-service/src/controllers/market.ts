@@ -776,7 +776,10 @@ export const getMarketDetails = async (c: Context) => {
 							action: 'GETMARKETDETAILS',
 						},
 					});
-					logger.error({ err: archiveErr, symbol }, 'Failed to fetch market archive from PostgreSQL');
+					logger.error(
+						{ err: archiveErr, symbol },
+						'Failed to fetch market archive from PostgreSQL',
+					);
 				}
 			}
 
