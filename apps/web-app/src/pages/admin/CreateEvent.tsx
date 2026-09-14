@@ -135,22 +135,30 @@ const CreateEvent = () => {
 		}
 	};
 
-	const uploadToS3 = async (file: File): Promise<string> => {
+	const uploadToCloudinary = async (file: File): Promise<string> => {
 		try {
 			const res = await api.post('/market/generate-url', {
-				fileName: file.name,
-				fileType: file.type,
+				type: 'thumbnail',
 			});
-			const { url, publicUrl } = res.data;
-			const uploadRes = await fetch(url, {
-				method: 'PUT',
-				body: file,
-				headers: { 'Content-Type': file.type },
+			const { signature, timestamp, apiKey, cloudName, folder } = res.data.data;
+
+			const formData = new FormData();
+			formData.append('file', file);
+			formData.append('signature', signature);
+			formData.append('timestamp', timestamp.toString());
+			formData.append('api_key', apiKey);
+			formData.append('folder', folder);
+
+			const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+				method: 'POST',
+				body: formData,
 			});
-			if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
-			return publicUrl;
+			const uploadData = await uploadRes.json();
+
+			if (!uploadRes.ok) throw new Error(uploadData.error?.message || 'Failed to upload image');
+			return uploadData.secure_url;
 		} catch (err) {
-			console.error('Upload to S3 failed:', err);
+			console.error('Upload to Cloudinary failed:', err);
 			throw err;
 		}
 	};
@@ -162,7 +170,7 @@ const CreateEvent = () => {
 		try {
 			let uploadedKey = null;
 			if (form.thumbnail) {
-				uploadedKey = await uploadToS3(form.thumbnail);
+				uploadedKey = await uploadToCloudinary(form.thumbnail);
 			}
 
 			let resolutionMode: 'MANUAL' | 'AUTOMATIC' = 'MANUAL';

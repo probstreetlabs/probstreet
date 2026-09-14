@@ -20,9 +20,9 @@ export const generateUploadSignature = (folder: string) => {
 };
 
 export const generateThumbnailUploadSignature = () => {
-	return generateUploadSignature('market-thumbnails');
+	return generateUploadSignature('probstreet/market-thumbnails');
 };
 
 export const generateAvatarUploadSignature = () => {
-	return generateUploadSignature('profile-avatars');
+	return generateUploadSignature('probstreet/user-avatars');
 };

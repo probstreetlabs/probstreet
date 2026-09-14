@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import api from '@/config/axios';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { UsernameModal } from '@/components/modals/UsernameModal';
 import { User, Bell, LogOut, Trash2, Wallet, Edit2, ChevronRight } from 'lucide-react';
 
@@ -11,6 +11,8 @@ export default function Settings() {
 
 	const { user, updateUser, logout } = useAuthStore();
 	const [loading, setLoading] = useState(false);
+	const [uploadingAvatar, setUploadingAvatar] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
 
 	const [bio, setBio] = useState('');
@@ -64,6 +66,51 @@ export default function Settings() {
 			toast.error(error.response?.data?.error || 'Failed to update profile');
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		try {
+			setUploadingAvatar(true);
+			const sigRes = await api.get('/settings/avatar-signature');
+			const { signature, timestamp, apiKey, cloudName, folder } = sigRes.data.data;
+
+			const formData = new FormData();
+			formData.append('file', file);
+			formData.append('signature', signature);
+			formData.append('timestamp', timestamp.toString());
+			formData.append('api_key', apiKey);
+			formData.append('folder', folder);
+
+			const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+				method: 'POST',
+				body: formData,
+			});
+			const uploadData = await uploadRes.json();
+
+			if (!uploadRes.ok) {
+				throw new Error(uploadData.error?.message || 'Failed to upload image');
+			}
+
+			const secureUrl = uploadData.secure_url;
+			setAvatarUrl(secureUrl);
+
+			const updateRes = await api.put('/settings/profile', { avatarUrl: secureUrl });
+			if (updateRes.data.user) {
+				updateUser(updateRes.data.user);
+				toast.success('Profile picture updated successfully');
+			}
+		} catch (error: any) {
+			console.error('Avatar upload error:', error);
+			toast.error(error.message || 'Failed to update profile picture');
+		} finally {
+			setUploadingAvatar(false);
+			if (fileInputRef.current) {
+				fileInputRef.current.value = '';
+			}
 		}
 	};
 
@@ -155,7 +202,7 @@ export default function Settings() {
 							<div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
 								<h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Profile</h2>
 
-								<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
+								<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
 									{/* Profile Picture */}
 									<div className="p-6 flex items-center justify-between">
 										<div>
@@ -164,15 +211,41 @@ export default function Settings() {
 											</h3>
 										</div>
 										<div className="flex items-center gap-4">
-											<div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 dark:border-white/10 flex items-center justify-center bg-gray-100 dark:bg-[#111111] cursor-pointer hover:opacity-80 transition-opacity">
-												{avatarUrl ? (
-													<img
-														src={avatarUrl}
-														alt="Avatar"
-														className="w-full h-full object-cover"
-													/>
+											<input
+												type="file"
+												ref={fileInputRef}
+												hidden
+												accept="image/*"
+												onChange={handleAvatarUpload}
+											/>
+											<div
+												onClick={() => fileInputRef.current?.click()}
+												className="group relative w-12 h-12 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center bg-gray-100 dark:bg-[#111111] cursor-pointer transition-opacity"
+											>
+												{uploadingAvatar ? (
+													<div className="flex gap-0.5 items-center justify-center h-full">
+														<div className="w-1 h-1 bg-black dark:bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+														<div className="w-1 h-1 bg-black dark:bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+														<div className="w-1 h-1 bg-black dark:bg-white rounded-full animate-bounce"></div>
+													</div>
+												) : avatarUrl ? (
+													<>
+														<img
+															src={avatarUrl}
+															alt="Avatar"
+															className="w-full h-full object-cover rounded-full group-hover:opacity-80 transition-opacity"
+														/>
+														{/* Full-screen centered preview on hover */}
+														<div className="fixed inset-0 z-100 hidden group-hover:flex items-center justify-center pointer-events-none bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+															<img
+																src={avatarUrl}
+																alt="Avatar Preview"
+																className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-full shadow-2xl border-4 border-background"
+															/>
+														</div>
+													</>
 												) : (
-													<span className="text-black dark:text-white font-bold text-lg">
+													<span className="text-black dark:text-white font-bold text-lg group-hover:opacity-80 transition-opacity">
 														{username?.charAt(0).toUpperCase() || 'U'}
 													</span>
 												)}

@@ -3,6 +3,7 @@ import { EVENTS } from '@/config/constants';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
+import { generateAvatarUploadSignature } from '@/libs/cloudinary/upload';
 
 /**
  * @desc Get all settings (profile, notification preferences)
@@ -43,8 +44,25 @@ export async function getSettings(c: Context) {
 	}
 }
 
+export async function generateAvatarUploadSignatureRoute(c: Context) {
+	try {
+		const signatureData = generateAvatarUploadSignature();
+
+		return c.json({
+			success: true,
+			data: signatureData,
+		});
+	} catch (error) {
+		captureError(error, {
+			tags: { controller: 'settings', action: 'GENERATEAVATARSIGNATUREROUTE' },
+		});
+		console.error('Error generating avatar signature:', error);
+		return c.json({ error: 'Failed to generate signature' }, 500);
+	}
+}
+
 /**
- * @desc Update user profile (bio, username)
+ * @desc Update user profile (bio, username, avatarUrl)
  * @param c Hono context
  * @returns Json response with updated user
  */
@@ -52,7 +70,7 @@ export async function getSettings(c: Context) {
 export async function updateProfile(c: Context) {
 	const user = c.get('user');
 	const body = await c.req.json();
-	const { bio, username } = body;
+	const { bio, username, avatarUrl } = body;
 
 	try {
 		if (username && username !== user.username) {
@@ -76,6 +94,7 @@ export async function updateProfile(c: Context) {
 				data: {
 					username,
 					bio: bio !== undefined ? bio : user.bio,
+					avatarUrl: avatarUrl !== undefined ? avatarUrl : user.avatarUrl,
 					usernameChangedAt: new Date(),
 				},
 			});
@@ -89,11 +108,17 @@ export async function updateProfile(c: Context) {
 				user: updatedUser,
 				message: 'Profile updated successfully',
 			});
-		} else if (bio !== undefined && bio !== user.bio) {
-			// Update bio only
+		} else if (
+			(bio !== undefined && bio !== user.bio) ||
+			(avatarUrl !== undefined && avatarUrl !== user.avatarUrl)
+		) {
+			// Update bio or avatarUrl
 			const updatedUser = await prisma.user.update({
 				where: { id: user.id },
-				data: { bio },
+				data: {
+					...(bio !== undefined && { bio }),
+					...(avatarUrl !== undefined && { avatarUrl }),
+				},
 			});
 			return c.json({ user: updatedUser, message: 'Profile updated successfully' });
 		}
