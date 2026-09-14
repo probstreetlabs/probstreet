@@ -8,6 +8,7 @@ import {
 	CheckCircle2,
 	XCircle,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { formatAmount } from '@/lib/format';
 import { useGetTransactionHistoryQuery } from '@/hooks/queries/transaction';
 
@@ -84,15 +85,15 @@ export default function TransactionHistoryPage() {
 				<nav className="md:text-base text-sm md:mt-4 md:mb-10 mb-10">
 					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
 						<li>
-							<a href="/" className="hover:underline">
+							<Link to="/" className="hover:underline">
 								Home
-							</a>
+							</Link>
 						</li>
 						<ChevronRight size={20} />
 						<li>
-							<a href="/wallet" className="hover:underline">
+							<Link to="/wallet" className="hover:underline">
 								Wallet
-							</a>
+							</Link>
 						</li>
 						<ChevronRight size={20} />
 						<li className="text-gray-900 dark:text-white font-medium">Transaction History</li>

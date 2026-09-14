@@ -389,6 +389,9 @@ export default function LiveMarketTracker({
 	}, [timeframe, isDark, isCrypto]);
 
 	if (!liveData) {
+		// Don't show skeleton for already-resolved markets — the resolved card renders without live data
+		if (isResolved) return null;
+
 		const isCategorySports = category?.toUpperCase() === 'SPORTS';
 		const isCategoryStocks = category?.toUpperCase() === 'STOCKS';
 
