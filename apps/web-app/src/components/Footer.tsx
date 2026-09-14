@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import logo from '@/assets/images/logo.avif';
 import darkLogo from '@/assets/images/dark-logo.avif';
-import tradeViewIcon from '@/assets/images/trading-view.avif';
 import { Instagram, Linkedin, ShieldAlert } from 'lucide-react';
 
 export default function Footer() {
@@ -24,7 +23,6 @@ export default function Footer() {
 				</div>
 
 				<div className="flex flex-col md:flex-row justify-between gap-10 md:gap-16">
-					{/* Text Column */}
 					<div className="md:w-1/3">
 						<p className="text-gray-600 dark:text-gray-400 font-medium max-w-sm leading-relaxed text-[15px] md:text-base mb-6">
 							{t(
@@ -53,7 +51,6 @@ export default function Footer() {
 						</div>
 					</div>
 
-					{/* Quick Links Column */}
 					<div className="grid grid-cols-2 gap-8 md:gap-12 md:w-1/3">
 						<div className="flex flex-col gap-4 items-start">
 							<h3 className="font-semibold text-gray-900 dark:text-white mb-2 tracking-wide uppercase text-[15px]">
@@ -102,23 +99,42 @@ export default function Footer() {
 						</div>
 					</div>
 
-					{/* Partners Column */}
 					<div className="flex flex-col gap-5 md:gap-6 md:w-1/3">
 						<h3 className="font-semibold text-gray-900 dark:text-white mb-1 tracking-wide uppercase text-[15px]">
-							Backed By
+							Supported by
 						</h3>
 						<div className="flex flex-wrap items-center gap-7">
-							<img src={tradeViewIcon} alt="TradingView" className="h-8 object-contain" />
-							<img
-								src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg"
-								alt="AWS"
-								className="h-6 mt-0.5 object-contain dark:brightness-0 dark:invert"
-							/>
-							<img
-								src="https://upload.wikimedia.org/wikipedia/commons/3/37/Firebase_Logo.svg"
-								alt="Firebase"
-								className="h-6 object-contain"
-							/>
+							<div className="relative h-6 flex items-center">
+								<img
+									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cloudflare/default.svg"
+									alt="Cloudflare"
+									className="h-4 object-contain"
+								/>
+							</div>
+
+							<div className="relative h-6 flex items-center">
+								<img
+									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/sentry/mono.svg"
+									alt="Sentry"
+									className="h-5 object-contain dark:invert"
+								/>
+							</div>
+
+							<div className="relative h-6 flex items-center">
+								<img
+									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/new-relic/default.svg"
+									alt="New Relic"
+									className="h-5.5 object-contain"
+								/>
+							</div>
+
+							<div className="relative h-6 flex items-center">
+								<img
+									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/oracle/default.svg"
+									alt="Oracle"
+									className="md:h-3 h-3 object-contain"
+								/>
+							</div>
 						</div>
 
 						<div className="mt-3 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50 flex gap-3.5 items-start">
