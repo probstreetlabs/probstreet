@@ -226,17 +226,17 @@ export default function Navbar() {
 								<>
 									<button
 										onClick={() => setShowHowItWorks(true)}
-										className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-black dark:text-white bg-gray-100 dark:bg-slate-800 transition-colors cursor-pointer"
+										className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-sm font-medium rounded-md text-black dark:text-white bg-gray-100 dark:bg-slate-800 transition-colors cursor-pointer"
 									>
 										<div className="flex items-center justify-center">
-											<Info size={14} className="text-black dark:text-white" />
+											<Info size={16} className="text-black dark:text-white md:w-3.5 md:h-3.5" />
 										</div>
-										{t('How it works')}
+										<span className="hidden md:block">{t('How it works')}</span>
 									</button>
 
 									<button
 										onClick={openOnboardModal}
-										className="bg-black dark:bg-white text-white dark:text-black font-medium text-sm px-4 py-1.5 rounded-md hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+										className="bg-black dark:bg-white text-white dark:text-black font-medium text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-md hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
 									>
 										{t('Sign In')}
 									</button>

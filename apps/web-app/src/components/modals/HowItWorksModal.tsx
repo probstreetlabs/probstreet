@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 
-import step1Img from '/Users/rehan/.gemini/antigravity-ide/brain/64d9de6f-311e-4d53-bf9f-e80a0bf021d7/how_it_works_step_1_1785429192027.png';
-import step2Img from '/Users/rehan/.gemini/antigravity-ide/brain/64d9de6f-311e-4d53-bf9f-e80a0bf021d7/how_it_works_step_2_1785429215160.png';
-import step3Img from '/Users/rehan/.gemini/antigravity-ide/brain/64d9de6f-311e-4d53-bf9f-e80a0bf021d7/how_it_works_step_3_1785429237781.png';
+import step1Img from '@/assets/images/step1.png';
+import step2Img from '@/assets/images/step2.png';
+import step3Img from '@/assets/images/step3.png';
 
 export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 	const { t } = useTranslation();
@@ -58,17 +58,11 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 		}
 	};
 
-	const modalVariants: any = isMobile
-		? {
-				hidden: { y: '100%' },
-				visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
-				exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } },
-			}
-		: {
-				hidden: { opacity: 0, scale: 0.95 },
-				visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-				exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } },
-			};
+	const modalVariants: any = {
+		hidden: { opacity: 0, scale: 0.95 },
+		visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
+		exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } },
+	};
 
 	return (
 		<div className="fixed inset-0 z-60 flex items-end md:items-center justify-center sm:p-4">
@@ -105,7 +99,7 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 				)}
 
 				<div className="relative h-80 w-full bg-gray-100 dark:bg-slate-800 overflow-hidden pointer-events-none select-none">
-					<AnimatePresence mode="wait">
+					<AnimatePresence>
 						<motion.img
 							key={currentStep}
 							src={STEPS[currentStep].image}
@@ -113,12 +107,10 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							transition={{ duration: 0.15 }}
+							transition={{ duration: 0.2 }}
 							className="absolute inset-0 w-full h-full object-cover"
 						/>
 					</AnimatePresence>
-
-					<div className="absolute inset-0 bg-linear-to-t from-white dark:from-slate-900 via-transparent to-transparent" />
 				</div>
 
 				<div className="p-6 md:p-8 flex flex-col items-start text-left bg-white dark:bg-[#1C1C1E] z-10 relative">
@@ -132,10 +124,10 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 								transition={{ duration: 0.15 }}
 								className="absolute inset-0"
 							>
-								<h2 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+								<h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
 									{STEPS[currentStep].title}
 								</h2>
-								<p className="text-gray-600 dark:text-slate-400 leading-relaxed text-[13px] sm:text-sm">
+								<p className="text-gray-600 dark:text-slate-300 text-sm md:text-base">
 									{STEPS[currentStep].desc}
 								</p>
 							</motion.div>
@@ -144,7 +136,7 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 
 					<button
 						onClick={handleNext}
-						className="mt-2 w-full py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-md font-medium text-sm flex items-center justify-center cursor-pointer transition-colors"
+						className="mt-2 w-full md:py-3 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-md font-medium text-sm flex items-center justify-center cursor-pointer transition-colors"
 					>
 						{currentStep === STEPS.length - 1 ? t('btn_get_started') : t('btn_next')}
 					</button>
