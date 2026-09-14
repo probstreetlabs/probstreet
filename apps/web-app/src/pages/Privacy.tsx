@@ -12,11 +12,11 @@ export default function PrivacyPage() {
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
 					Probstreet operates the prediction-markets platform accessible at{' '}
 					<span className="font-semibold text-gray-800 dark:text-gray-100 hover:underline cursor-pointer">
-						probstreet.com
-					</span>{' '}
-					(the "Platform"). This Privacy Policy describes how we collect, use, disclose, and
-					safeguard your personal data. By creating an account or using the Platform you consent to
-					the practices described in this Policy.
+						{import.meta.env.VITE_APP_URL || 'probstreet.com'}
+					</span>
+					. This Privacy Policy describes how we collect, use, disclose, and safeguard your personal
+					data. By creating an account or using the Platform you consent to the practices described
+					in this Policy.
 				</p>
 			),
 		},
@@ -27,11 +27,11 @@ export default function PrivacyPage() {
 					{[
 						[
 							'Account data',
-							'Name, email, phone number, username, and profile photo provided at registration or via OAuth (Google, Discord, Telegram).',
+							'Name, email, phone number (optional), username, and profile photo provided at registration or via OAuth (Google, Discord, Telegram).',
 						],
 						[
 							'Identity & KYC',
-							'Government-issued ID, PAN card details collected during the KYC process as required by Indian regulations.',
+							'Since we are operating in a simulated demo environment with no real money, we only require a simple demo KYC with demo details to test the system.',
 						],
 						[
 							'Financial data',
@@ -58,11 +58,10 @@ export default function PrivacyPage() {
 					{[
 						'Create and manage your account and authenticate your identity.',
 						'Process deposits, withdrawals, and referral rewards.',
-						'Comply with applicable laws including KYC/AML requirements under Indian law.',
-						'Send transactional notifications (order fills, payment confirmations).',
+						'Comply with applicable laws including KYC requirements under Indian law.',
+						'Send transactional notifications (order fills, payout requests).',
 						'Detect and prevent fraud, abuse, and security incidents.',
-						'Improve the Platform through analytics and A/B testing using aggregated, anonymised data.',
-						'Respond to legal requests from competent authorities.',
+						'Improve the Platform through analytics and A/B testing using aggregated data.',
 					].map((item) => (
 						<li key={item}>{item}</li>
 					))}
@@ -84,12 +83,12 @@ export default function PrivacyPage() {
 								'Cashfree Payments India Pvt. Ltd. for processing transactions.',
 							],
 							[
-								'Cloud providers',
-								'Amazon Web Services and cloudflare as infrastructure partners necessary to operate the Platform.',
+								'Technology partners',
+								'Cloudflare, Sentry, and other infrastructure partners necessary to operate the Platform.',
 							],
 							[
 								'Communication providers',
-								'Nodemailer for email and in-app notifications using sockets.',
+								'Nodemailer and Agentmail for emails, and in-app notifications using WebSockets.',
 							],
 							[
 								'Legal authorities',
@@ -149,10 +148,10 @@ export default function PrivacyPage() {
 					<p className="text-sm text-gray-600 dark:text-gray-300">
 						To exercise these rights, email{' '}
 						<a
-							href="mailto:privacy@probstreet.com"
+							href="mailto:official.rehan.me@gmail.com"
 							className="text-gray-900 dark:text-white underline underline-offset-2"
 						>
-							privacy@probstreet.com
+							official.rehan.me@gmail.com
 						</a>
 						.
 					</p>
@@ -196,10 +195,10 @@ export default function PrivacyPage() {
 					<br />
 					Email:{' '}
 					<a
-						href="mailto:privacy@probstreet.com"
+						href="mailto:official.rehan.me@gmail.com"
 						className="text-gray-900 dark:text-white underline underline-offset-2"
 					>
-						privacy@probstreet.com
+						official.rehan.me@gmail.com
 					</a>
 				</p>
 			),
@@ -223,7 +222,7 @@ export default function PrivacyPage() {
 						Privacy Policy
 					</h1>
 					<p className="md:text-base text-sm text-gray-600 dark:text-gray-300">
-						Effective Date: 27 August 2026 · Last Updated: 27 August 2026
+						Effective Date: 15 September 2026 · Last Updated: 15 September 2026
 					</p>
 				</div>
 

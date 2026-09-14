@@ -10,10 +10,9 @@ export default function TermsPage() {
 			title: '1. Acceptance of Terms',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-					By accessing or using Probstreet ("the Platform"), you confirm that you have read,
-					understood, and agree to be bound by these Terms of Service ("Terms"). If you do not
-					agree, do not use the Platform. These Terms constitute a legally binding agreement between
-					you and Probstreet.
+					By accessing or using Probstreet, you confirm that you have read, understood, and agree to
+					be bound by these Terms of Service. If you do not agree, do not use the Platform. These
+					Terms constitute a legally binding agreement between you and Probstreet.
 				</p>
 			),
 		},
@@ -23,7 +22,7 @@ export default function TermsPage() {
 				<ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300 list-disc pl-5">
 					{[
 						'You must be at least 18 years of age.',
-						'You must be a resident of India with a valid PAN card for KYC purposes.',
+						'You must be a resident of India.',
 						'You must not be located in a state where prediction markets are prohibited.',
 						'You may not use the Platform if you have been previously suspended or removed by us.',
 					].map((item) => (
@@ -36,35 +35,33 @@ export default function TermsPage() {
 			title: '3. Account Registration & KYC',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-					You must complete the KYC (Know Your Customer) process before making deposits or
-					withdrawals. You agree to provide accurate, current, and complete information during
-					registration and KYC, and to update it if it changes. You are responsible for maintaining
-					the confidentiality of your credentials and for all activity that occurs under your
-					account.
+					As a paper-trading platform, we do not require a real KYC (Know Your Customer) process.
+					Any demo information provided during registration is solely for testing purposes. You are
+					responsible for maintaining the confidentiality of your credentials and for all activity
+					that occurs under your account.
 				</p>
 			),
 		},
 		{
-			title: '4. Financial Terms',
+			title: '4. Financial Terms (Paper Trading)',
 			content: (
 				<ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
 					{[
 						[
-							'Deposits',
-							'Funds are credited to your Probstreet wallet after successful payment confirmation via Cashfree Payments.',
+							'Currency',
+							'All money deposits and withdrawals on the Platform use virtual currency. No real money is involved.',
 						],
 						[
-							'Withdrawals',
-							'Processed to your verified bank account within 3–5 business days, subject to KYC completion. A processing fee of up to 0.25% may apply.',
-						],
-						['Minimum', 'Minimum deposit: ₹50. Minimum withdrawal: ₹100.'],
-						[
-							'Referral rewards',
-							"Credited upon your referred user's first qualifying deposit of ₹50 or more. Rewards are non-withdrawable for 30 days after crediting.",
+							'Rewards',
+							"Virtual rewards are credited upon your referred user's first qualifying demo trade.",
 						],
 						[
-							'Taxes',
-							'You are solely responsible for reporting and paying any taxes applicable to your winnings or income under Indian law (including TDS where applicable).',
+							'Payment',
+							'Any payment gateways are strictly running in demo/test mode and will not process real funds.',
+						],
+						[
+							'Legal',
+							'Since this is a simulated platform, there are no real financial winnings or tax liabilities under Indian law.',
 						],
 					].map(([label, desc]) => (
 						<li key={label} className="flex gap-2">
@@ -126,8 +123,8 @@ export default function TermsPage() {
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
 					The Platform is provided "as is" and "as available" without warranties of any kind,
 					express or implied. We do not guarantee uninterrupted service or that predictions will be
-					profitable. Prediction markets involve financial risk; only participate with funds you can
-					afford to lose.
+					profitable. While prediction markets generally involve financial risk, this platform
+					operates strictly in paper-trading mode, so you face zero real financial risk here.
 				</p>
 			),
 		},
@@ -142,17 +139,27 @@ export default function TermsPage() {
 			),
 		},
 		{
-			title: '10. Termination',
+			title: '10. Third-Party Services',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-					We may terminate or suspend your account at any time, with or without cause. Upon
-					termination, any available balance (after deducting pending withdrawals and applicable
-					fees) will be returned to your registered bank account within 14 business days.
+					We rely on third-party services, including but not limited to Cloudflare for security,
+					Sentry for error tracking, and Cashfree for simulated payments. We are not responsible for
+					any downtime, errors, or losses arising from the failure of these third-party services.
 				</p>
 			),
 		},
 		{
-			title: '11. Governing Law & Disputes',
+			title: '11. Termination',
+			content: (
+				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+					We may terminate or suspend your account at any time, with or without cause. Upon
+					termination, any available virtual balance will be forfeited, as it holds no real-world
+					value.
+				</p>
+			),
+		},
+		{
+			title: '12. Governing Law & Disputes',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
 					These Terms are governed by the laws of India. Disputes shall first be subject to
@@ -163,7 +170,7 @@ export default function TermsPage() {
 			),
 		},
 		{
-			title: '12. Changes to Terms',
+			title: '13. Changes to Terms',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
 					We may update these Terms at any time. Material changes will be communicated via email or
@@ -173,17 +180,17 @@ export default function TermsPage() {
 			),
 		},
 		{
-			title: '13. Contact',
+			title: '14. Contact',
 			content: (
 				<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
 					Probstreet · India
 					<br />
 					Email:{' '}
 					<a
-						href="mailto:legal@probstreet.com"
+						href="mailto:official.rehan.me@gmail.com"
 						className="text-gray-900 dark:text-white underline underline-offset-2"
 					>
-						legal@probstreet.com
+						official.rehan.me@gmail.com
 					</a>
 				</p>
 			),
@@ -207,7 +214,7 @@ export default function TermsPage() {
 						Terms of Service
 					</h1>
 					<p className="text-sm md:text-base text-gray-600 dark:text-gray-300">
-						Effective Date: 27 August 2026 · Last Updated: 27 August 2026
+						Effective Date: 15 September 2026 · Last Updated: 15 September 2026
 					</p>
 				</div>
 

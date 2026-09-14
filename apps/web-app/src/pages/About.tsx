@@ -1,5 +1,5 @@
-import { IndianRupee, ShieldCheck, Trophy } from 'lucide-react';
 import { useEffect } from 'react';
+import { IndianRupee, ShieldCheck, Trophy } from 'lucide-react';
 
 export default function AboutPage() {
 	useEffect(() => {
@@ -12,11 +12,17 @@ export default function AboutPage() {
 			'All trades on a central limit order book — no house edge, no spread manipulation.',
 		],
 		['Instant Matching', 'Our high-performance matching engine settles orders in milliseconds.'],
-		['Secure Payments', 'Deposits and withdrawals powered by Cashfree with full KYC compliance.'],
-		['Transparent Settlement', 'Market outcomes resolved using publicly verifiable sources.'],
+		[
+			'Risk-Free Practice',
+			'Currently operating in paper-trading mode. Test your skills with zero financial risk.',
+		],
+		[
+			'Transparent Settlement',
+			'Crypto and stocks resolve instantly. Other markets are verified using reliable sources and our AI judges.',
+		],
 		[
 			'Referral Rewards',
-			'Earn real money when friends you refer make their first qualifying deposit.',
+			'Invite friends to join the platform, compete on the leaderboard, and earn virtual rewards.',
 		],
 	];
 
@@ -37,7 +43,7 @@ export default function AboutPage() {
 						About Probstreet
 					</h1>
 					<p className="md:text-base text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-						India's prediction market platform where knowledge meets opportunity.
+						A simple, transparent prediction market for everyone. (Currently in Paper Trading Mode)
 					</p>
 				</div>
 
@@ -47,11 +53,11 @@ export default function AboutPage() {
 							Our Mission
 						</h2>
 						<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-							We believe collective intelligence — the wisdom of crowds — consistently produces more
-							accurate forecasts than any individual expert. Probstreet harnesses that intelligence
-							by creating a fair, transparent, and liquid market for predictions. Our goal is to
-							become India's most trusted information market: a place where your insight has real
-							value.
+							We believe that crowds make better predictions than any single expert. Probstreet is a
+							fair and transparent platform where you can forecast real-world events. Right now, we
+							are operating strictly as a <strong>paper trading</strong> platform. No real money is
+							involved, allowing you to build trust with our system and test your skills completely
+							risk-free!
 						</p>
 					</div>
 
@@ -64,7 +70,7 @@ export default function AboutPage() {
 								[
 									<ShieldCheck size={24} />,
 									'Pick an Event',
-									'Browse live markets across sports, politics, finance, and more. Each is a Yes/No question on a real outcome.',
+									'Browse live markets across sports, politics, Crypto, and more. Each is a Yes/No question on a real outcome.',
 								],
 								[
 									<IndianRupee size={20} />,
@@ -91,7 +97,6 @@ export default function AboutPage() {
 						</div>
 					</div>
 
-					{/* Why Probstreet */}
 					<div className="bg-white dark:bg-[#0F1225] border border-gray-200 dark:border-white/6 rounded-xl p-5 md:p-6">
 						<h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 tracking-tight">
 							Why Probstreet?
@@ -116,11 +121,197 @@ export default function AboutPage() {
 							Legal & Compliance
 						</h2>
 						<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-							Probstreet operates in compliance with Indian law. All users are required to complete
-							KYC verification before depositing or withdrawing funds. We follow strict AML
-							guidelines and retain financial records as mandated by applicable regulations. The
-							Platform is restricted to users aged 18 and above.
+							Probstreet is currently operating as a simulated paper-trading platform for
+							educational and entertainment purposes. No real money deposits or withdrawals are
+							supported at this time. However, to maintain a responsible community, the platform
+							remains restricted to users aged 18 and above.
 						</p>
+					</div>
+
+					<div className="bg-white dark:bg-[#0F1225] border border-gray-200 dark:border-white/6 rounded-xl p-5 md:p-6">
+						<h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 tracking-tight">
+							Our Technology Stack
+						</h2>
+						<p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
+							We build on a robust, high-performance tech stack designed for speed, scale, and
+							reliability to give you the best trading experience.
+						</p>
+						<div className="grid gap-6 sm:grid-cols-2">
+							<div className="bg-gray-50 dark:bg-white/3 border border-gray-100 dark:border-white/4 rounded-lg p-4">
+								<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+									Frontend
+								</h3>
+								<div className="flex flex-wrap gap-5 items-center">
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/typescript/default.svg"
+										alt="TypeScript"
+										className="h-6 object-contain"
+										title="TypeScript"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/react/default.svg"
+										alt="React"
+										className="h-6 object-contain"
+										title="React"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/vitejs/default.svg"
+										alt="Vite"
+										className="h-6 object-contain"
+										title="Vite"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/tailwind-css/default.svg"
+										alt="Tailwind CSS"
+										className="h-5 object-contain"
+										title="Tailwind CSS"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/tanstack/default.svg"
+										alt="TanStack"
+										className="h-7.5 object-contain"
+										title="TanStack"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/posthog/default.svg"
+										alt="PostHog"
+										className="h-6 object-contain"
+										title="PostHog"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/vercel/mono.svg"
+										alt="Vercel"
+										className="h-6 object-contain dark:invert"
+										title="Vercel"
+									/>
+								</div>
+							</div>
+
+							<div className="bg-gray-50 dark:bg-white/3 border border-gray-100 dark:border-white/4 rounded-lg p-4">
+								<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+									Backend
+								</h3>
+								<div className="flex flex-wrap gap-5 items-center">
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/typescript/default.svg"
+										alt="TypeScript"
+										className="h-6 object-contain"
+										title="TypeScript"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/bun/default.svg"
+										alt="Bun"
+										className="h-7 object-contain"
+										title="Bun"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/hono/default.svg"
+										alt="Hono"
+										className="h-7 object-contain"
+										title="Hono"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/go/default.svg"
+										alt="Go"
+										className="h-5 object-contain"
+										title="Go"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/zod/default.svg"
+										alt="Zod"
+										className="h-7 object-contain"
+										title="Zod"
+									/>
+								</div>
+							</div>
+
+							<div className="bg-gray-50 dark:bg-white/3 border border-gray-100 dark:border-white/4 rounded-lg p-4">
+								<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+									Data & Infrastructure
+								</h3>
+								<div className="flex flex-wrap gap-5 items-center">
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/postgresql/default.svg"
+										alt="PostgreSQL"
+										className="h-7 object-contain"
+										title="PostgreSQL"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/prisma/light.svg"
+										alt="Prisma"
+										className="h-7 object-contain"
+										title="Prisma"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/influxdb/default.svg"
+										alt="InfluxDB"
+										className="h-7 object-contain"
+										title="InfluxDB"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/redis/default.svg"
+										alt="Redis"
+										className="h-7 object-contain"
+										title="Redis"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/kafka/default.svg"
+										alt="Kafka"
+										className="h-7 object-contain dark:invert"
+										title="Kafka"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/docker-badge/default.svg"
+										alt="Docker"
+										className="h-8 object-contain"
+										title="Docker"
+									/>
+								</div>
+							</div>
+							<div className="bg-gray-50 dark:bg-white/3 border border-gray-100 dark:border-white/4 rounded-lg p-4">
+								<h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+									Partners & Services
+								</h3>
+								<div className="flex flex-wrap gap-5 items-center">
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cloudflare/default.svg"
+										alt="Cloudflare"
+										className="h-4 object-contain"
+										title="Cloudflare"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/sentry/mono.svg"
+										alt="Sentry"
+										className="h-5.5 object-contain dark:invert"
+										title="Sentry"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/neon/default.svg"
+										alt="Neon"
+										className="h-5.5 object-contain"
+										title="Neon"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cloudinary-badge/default.svg"
+										alt="Cloudinary"
+										className="h-7 object-contain"
+										title="Cloudinary"
+									/>
+									<img
+										src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/firebase/default.svg"
+										alt="Firebase"
+										className="h-7 object-contain"
+										title="Firebase"
+									/>
+									<img
+										src="https://cashfreelogo.cashfree.com/website/NavFooter/Cashfree-Dark.svg"
+										alt="Cashfree"
+										className="h-6 object-contain dark:invert"
+										title="Cashfree"
+									/>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<div className="bg-white dark:bg-[#0F1225] border border-gray-200 dark:border-white/6 rounded-xl p-5 md:p-6">
@@ -132,9 +323,9 @@ export default function AboutPage() {
 						</p>
 						<div className="flex flex-col gap-1.5 text-sm">
 							{[
-								['Legal', 'legal@probstreet.com'],
-								['General', 'hello@probstreet.com'],
-								['Support', 'support@probstreet.com'],
+								['Legal', 'official.rehan.me@gmail.com'],
+								['General', 'official.rehan.me@gmail.com'],
+								['Support', 'official.rehan.me@gmail.com'],
 							].map(([label, email]) => (
 								<p key={label} className="text-gray-500 dark:text-gray-400">
 									<span className="text-gray-700 dark:text-gray-300 font-medium">{label}: </span>
