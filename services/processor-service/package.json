@@ -25,6 +25,7 @@
 		"@influxdata/influxdb-client": "^1.35.0",
 		"@probstreet/database": "workspace:*",
 		"@probstreet/logger": "workspace:*",
+		"@sentry/bun": "^10.74.0",
 		"ioredis": "^6.0.0",
 		"kafkajs": "^2.2.4",
 		"zod": "^4.4.3"

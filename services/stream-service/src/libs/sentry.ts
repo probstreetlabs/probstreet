@@ -17,7 +17,17 @@ export const setupSentry = () => {
 	Sentry.init({
 		dsn: ENV.SENTRY_DSN,
 		environment: ENV.NODE_ENV,
-		tracesSampleRate: 1.0,
+		release: process.env.SENTRY_RELEASE,
+		tracesSampleRate: ENV.NODE_ENV === 'production' ? 0.1 : 1.0,
+	});
+
+	process.on('unhandledRejection', (reason) => {
+		Sentry.captureException(reason);
+	});
+
+	process.on('uncaughtException', (error) => {
+		Sentry.captureException(error);
+		Sentry.flush(2000).finally(() => process.exit(1));
 	});
 };
 

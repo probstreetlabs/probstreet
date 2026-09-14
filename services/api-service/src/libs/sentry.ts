@@ -9,6 +9,7 @@ export const setupSentry = () => {
 	Sentry.init({
 		dsn: ENV.SENTRY_DSN,
 		environment: ENV.NODE_ENV,
+		release: process.env.SENTRY_RELEASE,
 		tracesSampleRate: ENV.NODE_ENV === 'production' ? 0.1 : 1.0,
 	});
 

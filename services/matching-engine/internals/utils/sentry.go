@@ -20,10 +20,16 @@ func SetupSentry() {
 		return
 	}
 
+	sampleRate := 1.0
+	if appEnv == "production" {
+		sampleRate = 0.1
+	}
+
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              dsn,
 		Environment:      appEnv,
-		TracesSampleRate: 1.0,
+		Release:          os.Getenv("SENTRY_RELEASE"),
+		TracesSampleRate: sampleRate,
 	})
 
 	if err != nil {

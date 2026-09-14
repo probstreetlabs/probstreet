@@ -24,6 +24,7 @@
 	"dependencies": {
 		"@hono/node-server": "^2.1.1",
 		"@probstreet/logger": "workspace:*",
+		"@sentry/bun": "^10.74.0",
 		"hono": "^4.9.1",
 		"ioredis": "^5.7.0",
 		"socket.io": "^4.8.1"
