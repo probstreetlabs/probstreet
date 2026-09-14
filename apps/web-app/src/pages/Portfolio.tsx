@@ -1,14 +1,14 @@
+import { toast } from 'sonner';
 import api from '@/config/axios';
 import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import logo from '@/assets/images/logo.avif';
+import { placeOrder, cancelOrder } from '@/api/order';
 import darkLogo from '@/assets/images/dark-logo.avif';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Loader2, Eye, EyeOff, Search, Download } from 'lucide-react';
-import { placeOrder, cancelOrder } from '@/api/order';
-import { toast } from 'sonner';
+import { Loader2, Eye, EyeOff, Search, Download, ChevronDown } from 'lucide-react';
 
 interface PortfolioData {
 	positions: any[];
@@ -37,7 +37,8 @@ export default function Portfolio() {
 	const [showBalance, setShowBalance] = useState(true);
 	const [activeTab, setActiveTab] = useState('positions');
 	const [searchQuery, setSearchQuery] = useState('');
-	const [statusFilter, setStatusFilter] = useState('All');
+	const [positionFilter, setPositionFilter] = useState('Active');
+	const [historyFilter, setHistoryFilter] = useState('All');
 	const [processing, setProcessing] = useState<string | null>(null);
 
 	const handleSell = async (row: any) => {
@@ -72,6 +73,47 @@ export default function Portfolio() {
 		} finally {
 			setProcessing(null);
 		}
+	};
+
+	const handleExportHistory = () => {
+		if (!data?.recentActivity || data.recentActivity.length === 0) return;
+
+		const filteredData = data.recentActivity
+			.filter((act) => act.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+			.filter((act) => historyFilter === 'All' || act.orderType === historyFilter);
+
+		if (filteredData.length === 0) {
+			toast.error('No activity to export for current filters');
+			return;
+		}
+
+		const csvRows = [];
+		csvRows.push(['Date', 'Activity', 'Market', 'Shares', 'Type', 'Price', 'Value'].join(','));
+
+		for (const activity of filteredData) {
+			const date = `"${new Date(activity.createdAt).toLocaleString()}"`;
+			const type = activity.orderType;
+			const market = `"${(activity.market?.title || '').replace(/"/g, '""')}"`;
+			const shares = activity.quantity;
+			const stockType = activity.stockType;
+			const price = Number(activity.price).toFixed(2);
+			const value = (activity.quantity * Number(activity.price)).toFixed(2);
+
+			csvRows.push([date, type, market, shares, stockType, price, value].join(','));
+		}
+
+		const csvString = csvRows.join('\n');
+		const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		const url = URL.createObjectURL(blob);
+
+		link.setAttribute('href', url);
+		link.setAttribute('download', 'portfolio_history.csv');
+		link.style.visibility = 'hidden';
+
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
 	};
 
 	const walletBalance = balanceData?.data?.data?.amount || 0;
@@ -166,9 +208,7 @@ export default function Portfolio() {
 
 	return (
 		<div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6 font-sans w-full">
-			{/* Top Cards Section */}
 			<div className="grid md:grid-cols-2 gap-4 md:gap-6">
-				{/* Left Card: Portfolio Balance */}
 				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col justify-between min-h-55">
 					<div className="flex justify-between items-start">
 						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium">
@@ -184,14 +224,14 @@ export default function Portfolio() {
 							<div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
 								Available to trade
 							</div>
-							<div className="text-xl font-bold text-gray-900 dark:text-white">
+							<div className="text-lg font-bold text-gray-900 dark:text-white">
 								{showBalance ? `₹${walletBalance.toFixed(2)}` : '****'}
 							</div>
 						</div>
 					</div>
 
 					<div className="mt-8">
-						<div className="text-3xl md:text-[40px] font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3 flex-wrap break-all">
+						<div className="text-3xl md:text-[33px] font-semibold tracking-tight text-gray-900 dark:text-white flex items-center gap-3 flex-wrap break-all">
 							{showBalance ? `₹${portfolioValue.toFixed(2)}` : '****'}
 							{!showBalance && (
 								<EyeOff
@@ -212,32 +252,17 @@ export default function Portfolio() {
 					</div>
 				</div>
 
-				{/* Right Card: Profit/Loss Chart */}
 				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative flex flex-col justify-between min-h-55">
 					<div className="flex justify-between items-start">
 						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
 							<div className="w-2 h-2 rounded-full bg-gray-400"></div>
 							Profit/Loss
 						</div>
-						<div className="flex flex-wrap justify-end gap-1 overflow-hidden">
-							{['1D', '1W', '1M', '1Y', 'YTD', 'ALL'].map((tf) => (
-								<button
-									key={tf}
-									className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${
-										tf === '1D'
-											? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-											: 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-									}`}
-								>
-									{tf}
-								</button>
-							))}
-						</div>
 					</div>
 
 					<div className="flex justify-between items-end mt-6 relative z-10 gap-4">
 						<div className="min-w-0">
-							<div className="text-2xl md:text-[32px] font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 truncate">
+							<div className="text-2xl md:text-[33px] font-semibold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 truncate">
 								<span
 									className={
 										totalPnL >= 0
@@ -285,11 +310,8 @@ export default function Portfolio() {
 				</div>
 			</div>
 
-			{/* Bottom Section: Positions Table */}
 			<div className="pt-6">
-				{/* Filter Bar */}
 				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6 mt-2">
-					{/* Custom Tabs */}
 					<div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-lg shrink-0 w-full sm:w-auto overflow-x-auto">
 						{['positions', 'open', 'history'].map((tab) => (
 							<button
@@ -301,17 +323,11 @@ export default function Portfolio() {
 										: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer'
 								}`}
 							>
-								{tab}{' '}
-								{tab === 'positions' && data?.positions
-									? `(${data.positions.length})`
-									: tab === 'open' && data?.activeOrders
-										? `(${data.activeOrders.length})`
-										: ''}
+								{tab}
 							</button>
 						))}
 					</div>
 
-					{/* Flexible Search Bar */}
 					<div className="relative flex-1 min-w-50">
 						<Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 						<input
@@ -319,42 +335,62 @@ export default function Portfolio() {
 							placeholder="Search markets..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+							className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md pl-9 pr-4 py-2.5 text-sm focus:outline-none"
 						/>
 					</div>
 
-					{/* Filters and Actions */}
 					<div className="flex items-center gap-2 shrink-0 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
 						{activeTab === 'history' && (
-							<select
-								className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none"
-								value={statusFilter}
-								onChange={(e) => setStatusFilter(e.target.value)}
-							>
-								<option value="All">All Types</option>
-								<option value="BUY">Buy</option>
-								<option value="SELL">Sell</option>
-							</select>
+							<div className="relative flex-1 sm:flex-none">
+								<select
+									className="w-full appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md pl-3 pr-8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-gray-600"
+									value={historyFilter}
+									onChange={(e) => setHistoryFilter(e.target.value)}
+								>
+									<option value="All">All Types</option>
+									<option value="BUY">Buy</option>
+									<option value="SELL">Sell</option>
+								</select>
+								<ChevronDown
+									size={14}
+									className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+								/>
+							</div>
 						)}
 						{activeTab === 'positions' && (
-							<select
-								value={statusFilter}
-								onChange={(e) => setStatusFilter(e.target.value)}
-								className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none"
-							>
-								<option value="All">All Status</option>
-								<option value="Active">Active</option>
-								<option value="Closed">Closed</option>
-							</select>
+							<div className="relative flex-1 sm:flex-none">
+								<select
+									value={positionFilter}
+									onChange={(e) => setPositionFilter(e.target.value)}
+									className="w-full appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md pl-3 pr-8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-gray-600"
+								>
+									<option value="All">All Status</option>
+									<option value="Active">Active</option>
+									<option value="Closed">Closed</option>
+								</select>
+								<ChevronDown
+									size={14}
+									className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+								/>
+							</div>
 						)}
 						{activeTab === 'open' && (
-							<select className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none">
-								<option>Order Date</option>
-								<option>Amount</option>
-							</select>
+							<div className="relative flex-1 sm:flex-none">
+								<select className="w-full appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md pl-3 pr-8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-gray-600">
+									<option>Order Date</option>
+									<option>Amount</option>
+								</select>
+								<ChevronDown
+									size={14}
+									className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+								/>
+							</div>
 						)}
 						{activeTab === 'history' && (
-							<button className="flex items-center justify-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-sm">
+							<button
+								onClick={handleExportHistory}
+								className="flex items-center justify-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-sm"
+							>
 								<Download size={16} /> Export
 							</button>
 						)}
@@ -399,77 +435,112 @@ export default function Portfolio() {
 
 						{/* Table Content */}
 						{activeTab === 'positions' &&
-							(!data?.positions || data.positions.length === 0 ? (
-								<div className="py-24 text-center">
-									<p className="text-gray-400 dark:text-gray-500 font-medium">
-										No positions found.
-									</p>
-								</div>
-							) : (
-								<div className="divide-y divide-gray-100 dark:divide-gray-800">
-									{data.positions
-										.flatMap((pos) => {
-											const rows = [];
-											if (
-												(pos.yesQuantity || 0) > 0 ||
-												(pos.yesLocked || 0) > 0 ||
-												(pos.yesInvested || 0) > 0
-											) {
-												const qty = Number(pos.yesQuantity || 0) + Number(pos.yesLocked || 0);
-												const invested = Number(pos.yesInvested || 0);
-												const sellValue = Number(pos.yesSellValue || 0);
-												const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
-												const currentPrice = Number(pos.market?.yesPrice || 0);
-												const currentValue = qty * currentPrice;
-												const pnl = currentValue + sellValue - invested;
-												rows.push({
-													...pos,
-													uniqueId: `${pos.id}-yes`,
-													side: 'Yes',
-													qty,
-													invested,
-													avgPrice: avg,
-													currentPrice,
-													currentValue,
-													pnl,
-												});
-											}
-											if (
-												(pos.noQuantity || 0) > 0 ||
-												(pos.noLocked || 0) > 0 ||
-												(pos.noInvested || 0) > 0
-											) {
-												const qty = Number(pos.noQuantity || 0) + Number(pos.noLocked || 0);
-												const invested = Number(pos.noInvested || 0);
-												const sellValue = Number(pos.noSellValue || 0);
-												const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
-												const currentPrice = Number(pos.market?.noPrice || 0);
-												const currentValue = qty * currentPrice;
-												const pnl = currentValue + sellValue - invested;
-												rows.push({
-													...pos,
-													uniqueId: `${pos.id}-no`,
-													side: 'No',
-													qty,
-													invested,
-													avgPrice: avg,
-													currentPrice,
-													currentValue,
-													pnl,
-												});
-											}
-											return rows;
-										})
-										.filter((row) => {
-											const matchesSearch = (row.market?.title || '')
-												.toLowerCase()
-												.includes(searchQuery.toLowerCase());
-											if (!matchesSearch) return false;
-											if (statusFilter === 'Active') return row.market?.status === 'OPEN';
-											if (statusFilter === 'Closed') return row.market?.status === 'CLOSED';
-											return true;
-										})
-										.map((row) => (
+							(() => {
+								if (!data?.positions || data.positions.length === 0) {
+									return (
+										<div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+											<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+												<Search size={20} className="text-gray-400" />
+											</div>
+											<p className="text-gray-900 dark:text-white font-semibold text-sm">
+												No positions yet
+											</p>
+											<p className="text-gray-400 dark:text-gray-500 text-sm max-w-sm">
+												Your positions will appear here once you place a trade.
+											</p>
+										</div>
+									);
+								}
+								const filteredRows = data.positions
+									.flatMap((pos) => {
+										const rows = [];
+										if (
+											(pos.yesQuantity || 0) > 0 ||
+											(pos.yesLocked || 0) > 0 ||
+											(pos.yesInvested || 0) > 0
+										) {
+											const qty = Number(pos.yesQuantity || 0) + Number(pos.yesLocked || 0);
+											const invested = Number(pos.yesInvested || 0);
+											const sellValue = Number(pos.yesSellValue || 0);
+											const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+											const currentPrice = Number(pos.market?.yesPrice || 0);
+											const currentValue = qty * currentPrice;
+											const pnl = currentValue + sellValue - invested;
+											rows.push({
+												...pos,
+												uniqueId: `${pos.id}-yes`,
+												side: 'Yes',
+												qty,
+												invested,
+												avgPrice: avg,
+												currentPrice,
+												currentValue,
+												pnl,
+											});
+										}
+										if (
+											(pos.noQuantity || 0) > 0 ||
+											(pos.noLocked || 0) > 0 ||
+											(pos.noInvested || 0) > 0
+										) {
+											const qty = Number(pos.noQuantity || 0) + Number(pos.noLocked || 0);
+											const invested = Number(pos.noInvested || 0);
+											const sellValue = Number(pos.noSellValue || 0);
+											const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+											const currentPrice = Number(pos.market?.noPrice || 0);
+											const currentValue = qty * currentPrice;
+											const pnl = currentValue + sellValue - invested;
+											rows.push({
+												...pos,
+												uniqueId: `${pos.id}-no`,
+												side: 'No',
+												qty,
+												invested,
+												avgPrice: avg,
+												currentPrice,
+												currentValue,
+												pnl,
+											});
+										}
+										return rows;
+									})
+									.filter((row) => {
+										const matchesSearch = (row.market?.title || '')
+											.toLowerCase()
+											.includes(searchQuery.toLowerCase());
+										if (!matchesSearch) return false;
+										if (positionFilter === 'Active') return row.market?.status === 'OPEN';
+										if (positionFilter === 'Closed') return row.market?.status === 'CLOSED';
+										return true;
+									});
+
+								if (filteredRows.length === 0) {
+									return (
+										<div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+											<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+												<Search size={20} className="text-gray-400" />
+											</div>
+											<p className="text-gray-900 dark:text-white font-semibold text-sm">
+												{positionFilter === 'Active'
+													? 'No active positions'
+													: positionFilter === 'Closed'
+														? 'No closed positions'
+														: 'No positions found'}
+											</p>
+											<p className="text-gray-400 dark:text-gray-500 text-sm max-w-sm">
+												{positionFilter === 'Active'
+													? 'Your open market positions will appear here.'
+													: positionFilter === 'Closed'
+														? 'Positions from resolved markets will appear here.'
+														: 'No matching positions found.'}
+											</p>
+										</div>
+									);
+								}
+
+								return (
+									<div className="divide-y divide-gray-100 dark:divide-gray-800">
+										{filteredRows.map((row) => (
 											<div
 												key={row.uniqueId}
 												className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1.5fr_0.8fr] gap-4 px-6 py-5 items-center border-b border-gray-400/25 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
@@ -548,13 +619,22 @@ export default function Portfolio() {
 												</div>
 											</div>
 										))}
-								</div>
-							))}
+									</div>
+								);
+							})()}
 
 						{activeTab === 'open' &&
 							(!data?.activeOrders || data.activeOrders.length === 0 ? (
-								<div className="py-24 text-center">
-									<p className="text-gray-400 dark:text-gray-500 font-medium">No open orders.</p>
+								<div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+									<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+										<Search size={20} className="text-gray-400" />
+									</div>
+									<p className="text-gray-900 dark:text-white font-semibold text-sm">
+										No open orders
+									</p>
+									<p className="text-gray-400 dark:text-gray-500 text-sm max-w-sm">
+										Orders waiting to be matched will show up here.
+									</p>
 								</div>
 							) : (
 								<div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -615,9 +695,15 @@ export default function Portfolio() {
 
 						{activeTab === 'history' &&
 							(!data?.recentActivity || data.recentActivity.length === 0 ? (
-								<div className="py-24 text-center">
-									<p className="text-gray-400 dark:text-gray-500 font-medium">
-										No recent activity.
+								<div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+									<div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+										<Search size={20} className="text-gray-400" />
+									</div>
+									<p className="text-gray-900 dark:text-white font-semibold text-sm">
+										No activity yet
+									</p>
+									<p className="text-gray-400 dark:text-gray-500 text-sm max-w-sm">
+										Your trade history will appear here after your first order.
 									</p>
 								</div>
 							) : (
@@ -626,7 +712,7 @@ export default function Portfolio() {
 										.filter((act) =>
 											act.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()),
 										)
-										.filter((act) => statusFilter === 'All' || act.orderType === statusFilter)
+										.filter((act) => historyFilter === 'All' || act.orderType === historyFilter)
 										.map((activity) => (
 											<div
 												key={activity.id}

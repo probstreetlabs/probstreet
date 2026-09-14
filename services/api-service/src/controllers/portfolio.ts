@@ -47,7 +47,10 @@ export const getPortfolio = async (c: Context) => {
 		});
 
 		const recentActivity = await prisma.order.findMany({
-			where: { userId: user.id },
+			where: {
+				userId: user.id,
+				status: { not: 'FAILED' },
+			},
 			include: {
 				market: {
 					select: {
