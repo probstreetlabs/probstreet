@@ -31,11 +31,8 @@ sleep 5
 echo "Resetting PostgreSQL database........"
 cd packages/database && bunx prisma db push --force-reset && cd ../..
 
-echo "Configuring TimescaleDB (Hypertables & Continuous Aggregates)........"
-psql "postgres://probstreet:probstreetadmin@localhost:5432/primary-database" -f packages/database/prisma/timescale_setup.sql
-
 echo "Seeding database........"
 cd packages/database && bun run db:seed && cd ../..
 
-echo "Environment completely reset with TimescaleDB configured."
+echo "Environment completely reset."
 
