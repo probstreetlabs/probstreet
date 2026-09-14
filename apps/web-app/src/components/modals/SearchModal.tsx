@@ -3,22 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useState, useEffect, useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
-import { Search, X, Flame, TrendingUp, Clock, Target, DollarSign, Activity } from 'lucide-react';
-
-const BROWSE_CATEGORIES = [
-	{ id: 'new', name: 'New', icon: <Target className="w-4 h-4" /> },
-	{ id: 'trending', name: 'Trending', icon: <TrendingUp className="w-4 h-4" /> },
-	{ id: 'popular', name: 'Popular', icon: <Flame className="w-4 h-4" /> },
-	{ id: 'liquid', name: 'Liquid', icon: <DollarSign className="w-4 h-4" /> },
-	{ id: 'ending-soon', name: 'Ending Soon', icon: <Clock className="w-4 h-4" /> },
-	{ id: 'competitive', name: 'Competitive', icon: <Activity className="w-4 h-4" /> },
-];
+import { Search, X } from 'lucide-react';
+import { getAllCategoary } from '@/api/category';
+import { getCategoryIcon } from '@/utils/categoryIcons';
 
 export default function SearchModal({ onClose }: { onClose: () => void }) {
 	const navigate = useNavigate();
 	const [query, setQuery] = useState('');
 	const [results, setResults] = useState<any[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [categories, setCategories] = useState<{ id: string; categoryName: string }[]>([]);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const dragControls = useDragControls();
 
@@ -38,6 +32,10 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
 			setResults([]);
 		}
 	}, [debouncedQuery]);
+
+	useEffect(() => {
+		getAllCategoary().then(res => setCategories(res.data.data)).catch(console.error);
+	}, []);
 
 	const fetchResults = async (q: string) => {
 		setIsLoading(true);
@@ -156,14 +154,14 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
 									Browse Categories
 								</h3>
 								<div className="flex flex-wrap gap-2">
-									{BROWSE_CATEGORIES.map((category) => (
+									{categories.map((cat) => (
 										<button
-											key={category.id}
-											onClick={() => handleNavigate(`/category/${category.id}`)}
+											key={cat.id}
+											onClick={() => handleNavigate(`/events?category=${encodeURIComponent(cat.categoryName)}`)}
 											className="flex items-center gap-2 px-3 py-1.5 text-sm bg-background border border-border hover:bg-gray-200 dark:hover:bg-muted rounded-full text-foreground cursor-pointer transition-colors"
 										>
-											{category.icon}
-											<span>{category.name}</span>
+											{getCategoryIcon(cat.categoryName, "w-4 h-4 text-gray-500")}
+											<span>{cat.categoryName}</span>
 										</button>
 									))}
 								</div>
