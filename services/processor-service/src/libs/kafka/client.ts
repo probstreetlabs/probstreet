@@ -1,6 +1,9 @@
-import { logger } from '@/libs/logger';
 import { ENV } from '@/config/env';
-import { Kafka, logLevel, Partitioners } from 'kafkajs';
+import { logger } from '@/libs/logger';
+import SnappyCodec from 'kafkajs-snappy';
+import { CompressionCodecs, CompressionTypes, Kafka, Partitioners, logLevel } from 'kafkajs';
+
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec;
 
 export const kafkaClient = new Kafka({
 	logLevel: logLevel.ERROR,
