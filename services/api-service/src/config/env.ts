@@ -10,9 +10,9 @@ const envSchema = z.object({
 	ACCESS_TOKEN_EXPIRY: z.string().min(1),
 	REFRESH_TOKEN_EXPIRY: z.string().min(1),
 
-	BACKEND_ORIGIN: z.string().url(),
+	BACKEND_ORIGIN: z.url(),
 	CORS_ORIGIN: z.string().min(1),
-	FRONTEND_URL: z.string().url(),
+	FRONTEND_URL: z.url(),
 
 	REDIS_HOST: z.string().min(1),
 	REDIS_PORT: z.string().min(1),
@@ -22,47 +22,51 @@ const envSchema = z.object({
 
 	GOOGLE_CLIENT_ID: z.string().min(1),
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
-	GOOGLE_REDIRECT_URI: z.string().url(),
+	GOOGLE_REDIRECT_URI: z.url(),
 
 	DISCORD_CLIENT_ID: z.string().min(1),
 	DISCORD_CLIENT_SECRET: z.string().min(1),
-	DISCORD_REDIRECT_URI: z.string().url(),
+	DISCORD_REDIRECT_URI: z.url(),
 
 	TELEGRAM_BOT_TOKEN: z.string().min(1),
 
-	CLOUDINARY_URL: z.string().min(1),
-	SNAPSHOT_DB_URL: z.string().optional(),
+	CLOUDINARY_URL: z.url(),
+	SNAPSHOT_DB_URL: z.url(),
 
 	CASHFREE_CLIENT_ID: z.string().min(1),
 	CASHFREE_CLIENT_SECRET: z.string().min(1),
 	CASHFREE_PAYOUT_CLIENT_ID: z.string().min(1),
 	CASHFREE_PAYOUT_CLIENT_SECRET: z.string().min(1),
-	CASHFREE_VERIFICATION_CLIENT_ID: z.string().optional(),
-	CASHFREE_VERIFICATION_CLIENT_SECRET: z.string().optional(),
+	CASHFREE_VERIFICATION_CLIENT_ID: z.string(),
+	CASHFREE_VERIFICATION_CLIENT_SECRET: z.string(),
 
 	CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
 	CLOUDFLARE_API_TOKEN: z.string().min(1),
 	CLOUDFLARE_QUEUE_ID: z.string().min(1),
 
-	INFLUX_URL: z.string().min(1),
+	INFLUX_URL: z.url(),
 	INFLUX_TOKEN: z.string().min(1),
 	INFLUX_ORG: z.string().min(1),
 	INFLUX_BUCKET: z.string().min(1),
 
-	GMAIL_USER: z.string().email(),
+	GMAIL_USER: z.email(),
 	GMAIL_APP_PASSWORD: z.string().min(1),
 
 	TAVILY_API_KEY: z.string().min(1),
 
 	GROQ_API_KEY: z.string().min(1),
 
-	FOOTBALL_DATA_API_KEY: z.string().optional(),
+	FOOTBALL_DATA_API_KEY: z.string(),
 
-	FINNHUB_API_KEY: z.string().optional(),
+	FINNHUB_API_KEY: z.string(),
 
 	IS_KYC_PROVIDER_ENABLED: z.string().default('false'),
 
-	SENTRY_DSN: z.string().url().optional(),
+	SENTRY_DSN: z.url(),
+
+	NEW_RELIC_API_KEY: z.string(),
+
+	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
 });
 
 const parsed = envSchema.safeParse(Bun.env);

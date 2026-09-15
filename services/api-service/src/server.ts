@@ -1,3 +1,7 @@
+import { initTelemetry } from '@/libs/opentelemetry';
+
+initTelemetry('probstreet-api-service');
+
 import app from '@/app';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
