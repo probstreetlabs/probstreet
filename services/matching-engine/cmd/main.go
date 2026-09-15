@@ -34,6 +34,10 @@ func main() {
 	utils.SetupSentry()
 	defer sentry.Flush(2 * time.Second)
 
+	// Initialize OpenTelemetry
+	shutdownOTel := utils.SetupOTel("probstreet-matching-engine")
+	defer shutdownOTel()
+
 	// connect to redis
 	client := redis.ConnectRedis()
 
