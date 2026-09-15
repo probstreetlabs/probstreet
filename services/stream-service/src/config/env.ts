@@ -11,7 +11,11 @@ const envSchema = z.object({
 
 	WORKER_SECRET: z.string().min(1),
 
-	SENTRY_DSN: z.string().optional(),
+	SENTRY_DSN: z.url(),
+
+	NEW_RELIC_API_KEY: z.string(),
+
+	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
 });
 
 const parsed = envSchema.safeParse(Bun.env);

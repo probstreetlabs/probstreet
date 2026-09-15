@@ -1,3 +1,7 @@
+import { initTelemetry } from '@/libs/opentelemetry';
+
+initTelemetry('probstreet-processor-service');
+
 import { logger } from '@/libs/logger';
 import { setupSentry } from '@/libs/sentry';
 import { dbConsumer } from '@/libs/kafka/consumer';

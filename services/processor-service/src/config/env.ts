@@ -28,6 +28,10 @@ export const ENV = {
 	INFLUX_BUCKET: checkEnv('INFLUX_BUCKET'),
 
 	SENTRY_DSN: checkEnv('SENTRY_DSN', false),
+
+	NEW_RELIC_API_KEY: checkEnv('NEW_RELIC_API_KEY', false),
+
+	OTEL_EXPORTER_OTLP_ENDPOINT: checkEnv('OTEL_EXPORTER_OTLP_ENDPOINT', false),
 };
 
 if ((ENV.NODE_ENV === 'production' || ENV.NODE_ENV === 'staging') && !ENV.SENTRY_DSN) {
