@@ -21,6 +21,14 @@ interface NotificationEvent {
 }
 
 export const sendNotification = async (event: NotificationEvent): Promise<void> => {
+	if (ENV.NODE_ENV === 'development') {
+		logger.info(
+			{ event: event.type },
+			'Skipping Cloudflare Queue notification in development mode',
+		);
+		return;
+	}
+
 	const { CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_QUEUE_ID, CLOUDFLARE_API_TOKEN } = ENV;
 
 	if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_QUEUE_ID || !CLOUDFLARE_API_TOKEN) {
