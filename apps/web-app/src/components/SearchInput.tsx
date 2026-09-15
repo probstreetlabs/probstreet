@@ -52,7 +52,9 @@ export default function SearchInput() {
 	}, [debouncedQuery]);
 
 	useEffect(() => {
-		getAllCategoary().then(res => setCategories(res.data.data)).catch(console.error);
+		getAllCategoary()
+			.then((res) => setCategories(res.data.data))
+			.catch(console.error);
 	}, []);
 
 	const fetchResults = async (q: string) => {
@@ -115,10 +117,12 @@ export default function SearchInput() {
 								{categories.map((cat) => (
 									<button
 										key={cat.id}
-										onClick={() => handleNavigate(`/events?category=${encodeURIComponent(cat.categoryName)}`)}
+										onClick={() =>
+											handleNavigate(`/events?category=${encodeURIComponent(cat.categoryName)}`)
+										}
 										className="flex items-center gap-2 px-3 py-1.5 text-sm bg-background border border-border hover:bg-gray-200 dark:hover:bg-muted rounded-full text-foreground cursor-pointer transition-colors"
 									>
-										{getCategoryIcon(cat.categoryName, "w-4 h-4 text-gray-500")}
+										{getCategoryIcon(cat.categoryName, 'w-4 h-4 text-gray-500')}
 										<span>{cat.categoryName}</span>
 									</button>
 								))}
