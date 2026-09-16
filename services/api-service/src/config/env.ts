@@ -56,15 +56,15 @@ const envSchema = z.object({
 
 	GROQ_API_KEY: z.string().min(1),
 
-	FOOTBALL_DATA_API_KEY: z.string(),
+	FOOTBALL_DATA_API_KEY: z.string().min(1),
 
-	FINNHUB_API_KEY: z.string(),
+	FINNHUB_API_KEY: z.string().min(1),
 
 	IS_KYC_PROVIDER_ENABLED: z.string().default('false'),
 
 	SENTRY_DSN: z.url(),
 
-	NEW_RELIC_API_KEY: z.string(),
+	NEW_RELIC_API_KEY: z.string().min(1),
 
 	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
 });
@@ -74,16 +74,6 @@ const parsed = envSchema.safeParse(Bun.env);
 if (!parsed.success) {
 	const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
 	console.error(`\nInvalid environment variables:\n${issues}\n`);
-	process.exit(1);
-}
-
-if (
-	(parsed.data.NODE_ENV === 'production' || parsed.data.NODE_ENV === 'staging') &&
-	!parsed.data.SENTRY_DSN
-) {
-	console.error(
-		`\nInvalid environment variables:\n  • SENTRY_DSN: Required in production and staging environments\n`,
-	);
 	process.exit(1);
 }
 

@@ -13,7 +13,7 @@ const envSchema = z.object({
 
 	SENTRY_DSN: z.url(),
 
-	NEW_RELIC_API_KEY: z.string(),
+	NEW_RELIC_API_KEY: z.string().min(1),
 
 	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
 });
@@ -23,14 +23,6 @@ const parsed = envSchema.safeParse(Bun.env);
 if (!parsed.success) {
 	const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
 	console.error(`\nInvalid environment variables:\n${issues}\n`);
-	process.exit(1);
-}
-
-if (
-	(parsed.data.NODE_ENV === 'production' || parsed.data.NODE_ENV === 'staging') &&
-	!parsed.data.SENTRY_DSN
-) {
-	console.error('\nSENTRY_DSN is required in production and staging environments.\n');
 	process.exit(1);
 }
 

@@ -1,40 +1,35 @@
-import { logger } from '@/libs/logger';
+import { z } from 'zod';
 
-const checkEnv = (key: string, required: boolean = true, defaultValue: string = '') => {
-	const value = Bun.env[key] || defaultValue;
+const envSchema = z.object({
+	NODE_ENV: z.enum(['development', 'production', 'staging']).default('development'),
 
-	if (required && !value) {
-		logger.error(`Missing required environment variable: ${key}`);
-		throw new Error(`Missing required environment variable: ${key}`);
-	}
-	return value;
-};
+	REDIS_HOST: z.string().min(1),
+	REDIS_PORT: z.string().min(1),
 
-export const ENV = {
-	NODE_ENV: checkEnv('NODE_ENV', false, 'development'),
+	KAFKA_BROKERS: z.string().min(1),
 
-	REDIS_HOST: checkEnv('REDIS_HOST'),
-	REDIS_PORT: checkEnv('REDIS_PORT'),
+	CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
+	CLOUDFLARE_API_TOKEN: z.string().min(1),
+	CLOUDFLARE_QUEUE_ID: z.string().min(1),
 
-	KAFKA_BROKERS: checkEnv('KAFKA_BROKERS'),
+	INFLUX_URL: z.url(),
+	INFLUX_TOKEN: z.string().min(1),
+	INFLUX_ORG: z.string().min(1),
+	INFLUX_BUCKET: z.string().min(1),
 
-	CLOUDFLARE_ACCOUNT_ID: checkEnv('CLOUDFLARE_ACCOUNT_ID'),
-	CLOUDFLARE_API_TOKEN: checkEnv('CLOUDFLARE_API_TOKEN'),
-	CLOUDFLARE_QUEUE_ID: checkEnv('CLOUDFLARE_QUEUE_ID'),
+	SENTRY_DSN: z.url(),
 
-	INFLUX_URL: checkEnv('INFLUX_URL'),
-	INFLUX_TOKEN: checkEnv('INFLUX_TOKEN'),
-	INFLUX_ORG: checkEnv('INFLUX_ORG'),
-	INFLUX_BUCKET: checkEnv('INFLUX_BUCKET'),
+	NEW_RELIC_API_KEY: z.string().min(1),
 
-	SENTRY_DSN: checkEnv('SENTRY_DSN', false),
+	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
+});
 
-	NEW_RELIC_API_KEY: checkEnv('NEW_RELIC_API_KEY', false),
+const parsed = envSchema.safeParse(Bun.env);
 
-	OTEL_EXPORTER_OTLP_ENDPOINT: checkEnv('OTEL_EXPORTER_OTLP_ENDPOINT', false),
-};
-
-if ((ENV.NODE_ENV === 'production' || ENV.NODE_ENV === 'staging') && !ENV.SENTRY_DSN) {
-	console.error('\nSENTRY_DSN is required in production and staging environments.\n');
+if (!parsed.success) {
+	const issues = parsed.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
+	console.error(`\nInvalid environment variables:\n${issues}\n`);
 	process.exit(1);
 }
+
+export const ENV = parsed.data;
