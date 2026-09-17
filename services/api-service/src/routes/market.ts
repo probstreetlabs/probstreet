@@ -42,7 +42,7 @@ marketRoutes.get('/:symbol/klines', getMarketKlines);
 marketRoutes.get('/:symbol/proxy-klines', getMarketProxyKlines);
 marketRoutes.get('/:symbol/trades', getMarketTrades);
 marketRoutes.get('/:symbol/stats', getMarketStats);
-marketRoutes.get('/:symbol/news-change', getMarketNews); // we will change it later before launch
+marketRoutes.get('/:symbol/news', getMarketNews);
 
 marketRoutes.get('/:symbol/comments', optionalAuthorization, getMarketComments);
 marketRoutes.post('/:symbol/comments', authorization, postMarketComment);
