@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
 import api from '@/config/axios';
-import { Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface UsernameSetupProps {
 	onNext: () => void;
@@ -15,6 +15,13 @@ export default function UsernameSetup({ onNext }: UsernameSetupProps) {
 	const [debouncedUsername, setDebouncedUsername] = useState('');
 
 	useEffect(() => {
+		setUsernameAvailable(null);
+		if (username.length >= 3) {
+			setIsCheckingUsername(true);
+		} else {
+			setIsCheckingUsername(false);
+		}
+
 		const timer = setTimeout(() => {
 			setDebouncedUsername(username);
 		}, 500);
@@ -59,7 +66,7 @@ export default function UsernameSetup({ onNext }: UsernameSetupProps) {
 			animate={{ opacity: 1, scale: 1 }}
 			exit={{ opacity: 0, scale: 0.98 }}
 			transition={{ duration: 0.3 }}
-			className="flex flex-col h-full justify-center max-w-[333px] mx-auto w-full py-4 md:py-2"
+			className="flex flex-col h-full justify-center max-w-83.25 mx-auto w-full py-4 md:py-2"
 		>
 			<div className="text-left mb-6">
 				<h2 className="text-xl font-medium text-black dark:text-white tracking-tight">
@@ -92,7 +99,7 @@ export default function UsernameSetup({ onNext }: UsernameSetupProps) {
 						}`}
 					/>
 					<div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm flex items-center">
-						{isCheckingUsername && <Loader className="w-4 h-4 animate-spin text-gray-400" />}
+						{isCheckingUsername && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
 						{usernameAvailable === true && (
 							<span className="text-green-500 font-bold text-[15px]">✓</span>
 						)}
