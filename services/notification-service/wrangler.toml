@@ -5,6 +5,14 @@ compatibility_flags = ["nodejs_compat"]
 
 [[queues.consumers]]
 queue = "notification-queue"
-max_batch_size = 3
-max_batch_timeout = 30
+max_batch_size = 10
+max_batch_timeout = 2
 max_retries = 2
+
+
+[vars]
+FRONTEND_URL = "localhost:5271"
+STREAM_SERVICE_URL = "localhost:1000"
+
+[observability.logs]
+enabled = true
