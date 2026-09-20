@@ -15,7 +15,7 @@ func SetupSentry() {
 	}
 	dsn := os.Getenv("SENTRY_DSN")
 
-	if appEnv == "development" || appEnv == "" || dsn == "" {
+	if appEnv == "development" || appEnv == "dev" || appEnv == "" || dsn == "" {
 		log.Info().Msg("Sentry is disabled (development mode or no DSN)")
 		return
 	}
@@ -48,7 +48,7 @@ func CaptureError(err error, tags map[string]string, contexts map[string]map[str
 
 	dsn := os.Getenv("SENTRY_DSN")
 
-	if appEnv == "development" || appEnv == "" || dsn == "" {
+	if appEnv == "development" || appEnv == "dev" || appEnv == "" || dsn == "" {
 		return
 	}
 
@@ -57,10 +57,8 @@ func CaptureError(err error, tags map[string]string, contexts map[string]map[str
 			scope.SetTags(tags)
 		}
 
-		if contexts != nil {
-			for key, val := range contexts {
-				scope.SetContext(key, sentry.Context(val))
-			}
+		for key, val := range contexts {
+			scope.SetContext(key, sentry.Context(val))
 		}
 		sentry.CaptureException(err)
 	})

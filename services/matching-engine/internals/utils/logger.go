@@ -17,14 +17,14 @@ func InitLogger() {
 	level, err := zerolog.ParseLevel(LOG_LEVEL)
 
 	if err != nil {
-		if APP_ENV == "dev" {
+		if APP_ENV == "development" || APP_ENV == "dev" {
 			level = zerolog.DebugLevel
 		} else {
 			level = zerolog.InfoLevel
 		}
 	}
 
-	if APP_ENV == "dev" {
+	if APP_ENV == "development" || APP_ENV == "dev" {
 		log.Logger = zerolog.New(zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			NoColor:    false,

@@ -24,7 +24,7 @@ func SetupOTel(serviceName string) func() {
 	headersStr := os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 
-	if appEnv == "development" || appEnv == "" || headersStr == "" || endpoint == "" {
+	if appEnv == "development" || appEnv == "dev" || appEnv == "" || headersStr == "" || endpoint == "" {
 		log.Info().Msg("OpenTelemetry is disabled (development mode or missing config)")
 		return func() {}
 	}

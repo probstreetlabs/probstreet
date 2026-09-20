@@ -252,8 +252,11 @@ func (e *Engine) LoadLatestSnapshot() {
 
 func (e *Engine) ArchiveClosedMarket(market *types.Market) {
 	go func() {
-		nodeEnv := os.Getenv("NODE_ENV")
-		if nodeEnv == "development" {
+		env := os.Getenv("APP_ENV")
+		if env == "" {
+			env = os.Getenv("NODE_ENV")
+		}
+		if env == "development" || env == "dev" {
 			log.Info().Str("marketId", market.MarketId).Msg("Development environment detected, skipping archival. Will evict from RAM in 10 days.")
 			time.Sleep(10 * 24 * time.Hour)
 			e.MM.Lock()
