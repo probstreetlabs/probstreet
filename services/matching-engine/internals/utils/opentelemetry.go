@@ -21,7 +21,7 @@ func SetupOTel(serviceName string) func() {
 		appEnv = os.Getenv("NODE_ENV")
 	}
 
-	headersStr := os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")
+	headersStr := os.Getenv("NEW_RELIC_API_KEY")
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 	if appEnv == "development" || appEnv == "dev" || appEnv == "" || headersStr == "" || endpoint == "" {
