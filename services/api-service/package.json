@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probstreet",
+		"url": "https://github.com/probstreetlabs/probstreet",
 		"directory": "services/api-service"
 	},
 	"scripts": {
