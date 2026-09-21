@@ -3,6 +3,8 @@ import { cors } from 'hono/cors';
 import { ENV } from '@/config/env';
 import { logger } from 'hono/logger';
 import * as Sentry from '@sentry/bun';
+import { swaggerUI } from '@hono/swagger-ui';
+import { swaggerDocument } from '@/docs/swagger';
 
 import { aapiRoutes } from '@/routes/admin';
 import { authRoutes } from '@/routes/auth';
@@ -54,6 +56,10 @@ app.use('*', async (c, next) => {
 		await next();
 	});
 });
+
+// Swagger API Docs
+app.get('/docs', swaggerUI({ url: '/docs/swagger.json' }));
+app.get('/docs/swagger.json', (c) => c.json(swaggerDocument));
 
 // Client APIs (CAPI)
 app.route('/api/v1/capi/auth', authRoutes);

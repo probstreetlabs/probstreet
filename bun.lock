@@ -102,6 +102,7 @@
       "name": "@probstreet/api-service",
       "version": "1.0.0",
       "dependencies": {
+        "@hono/swagger-ui": "^0.6.1",
         "@influxdata/influxdb-client": "^1.35.0",
         "@opentelemetry/api": "^1.9.1",
         "@opentelemetry/auto-instrumentations-node": "^0.80.0",
@@ -363,6 +364,8 @@
     "@grpc/proto-loader": ["@grpc/proto-loader@0.8.1", "", { "dependencies": { "lodash.camelcase": "^4.3.0", "long": "^5.0.0", "protobufjs": "^7.5.5", "yargs": "^17.7.2" }, "bin": { "proto-loader-gen-types": "build/bin/proto-loader-gen-types.js" } }, "sha512-wtF6h+DY6M3YaDBPAmvuuA6jV8Sif9MjtOI5euKFWRgCDl5PeDpPsHR9u2l6St5ceY8AZgoNDww5+HvEsXFsGg=="],
 
     "@hono/node-server": ["@hono/node-server@2.1.1", "", { "peerDependencies": { "hono": "^4" } }, "sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg=="],
+
+    "@hono/swagger-ui": ["@hono/swagger-ui@0.6.1", "", { "peerDependencies": { "hono": ">=4.0.0" } }, "sha512-sJTvldu1GPeEPfyeLG7gRj+W4vEuD+JDi+JjJ3TJs/DvMUtBLs0KJO5yokGegWWdy5qrbdnQGekbhgNRmPmYKQ=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 
