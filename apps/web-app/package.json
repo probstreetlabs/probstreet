@@ -42,6 +42,7 @@
 		"date-fns": "^4.4.0",
 		"framer-motion": "^12.43.0",
 		"i18next": "^26.3.6",
+		"input-otp": "^1.5.0",
 		"jwt-decode": "^4.0.0",
 		"lightweight-charts": "^5.2.0",
 		"lucide-react": "^0.542.0",

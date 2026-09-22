@@ -17,6 +17,7 @@
 		"start:api-service": "bun --filter @probstreet/api-service start",
 		"start:stream-service": "bun --filter @probstreet/stream-service start",
 		"start:processor-service": "bun --filter @probstreet/processor-service start",
+		"start:notification-service": "bun --filter @probstreet/notification-service dev",
 		"start:all": "bun run --filter \"@probstreet/api-service\" --filter \"@probstreet/stream-service\" --filter \"@probstreet/processor-service\" start"
 	},
 	"workspaces": [
@@ -38,11 +39,13 @@
 		"golang",
 		"postgresql",
 		"websockets",
+		"cloudflare",
 		"event-driven",
 		"microservices",
 		"trading-system",
 		"real-time-system",
-		"prediction-market"
+		"prediction-market",
+		"copy-trading-platform"
 	],
 	"devDependencies": {
 		"@types/bun": "latest",
@@ -58,8 +61,5 @@
 	"packageManager": "bun@1.2.17",
 	"engines": {
 		"bun": ">=1.2.17"
-	},
-	"dependencies": {
-		"input-otp": "^1.4.2"
 	}
 }
