@@ -1,7 +1,7 @@
 {
 	"name": "@probstreet/processor-service",
 	"version": "1.0.0",
-	"description": "Processor service for Probstreet",
+	"description": "The service is responsible for processing core events and persisting state in Probstreet database.",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
