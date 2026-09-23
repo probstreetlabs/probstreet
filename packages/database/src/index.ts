@@ -1,6 +1,11 @@
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import ws from 'ws';
 import { PrismaClient } from './generated/prisma';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { neonConfig } from '@neondatabase/serverless';
+
+if (typeof globalThis.WebSocket === 'undefined') {
+	neonConfig.webSocketConstructor = ws;
+}
 
 const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
@@ -15,8 +20,8 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export const createEdgePrisma = (connectionString: string) => {
-	const pool = new Pool({ connectionString });
-	const adapter = new PrismaPg(pool);
+	const adapter = new PrismaNeon({ connectionString });
+
 	return new PrismaClient({ adapter });
 };
 
