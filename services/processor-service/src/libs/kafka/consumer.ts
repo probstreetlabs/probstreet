@@ -1,11 +1,11 @@
 import { consumer } from './client';
 import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
-import { processToDB } from '@/processor/processor';
+import { routeEvent } from '@/router';
 import { produceToRetryTopic } from './retryProducer';
-import { KafkaMessageSchema } from '@/schemas/kafka';
+import { KafkaMessageSchema } from '@/validations/kafka';
 
-export const dbConsumer = async () => {
+export const startConsumer = async () => {
 	await consumer.connect();
 	await consumer.subscribe({ topics: ['process_db', 'process_db_retry'], fromBeginning: true });
 
@@ -21,9 +21,9 @@ export const dbConsumer = async () => {
 				const parsedEvent = KafkaMessageSchema.parse(event);
 
 				const eventType: string = parsedEvent.type;
-				const eventData: any = parsedEvent.data;
+				const eventData: unknown = parsedEvent.data;
 
-				await processToDB(eventType, eventData);
+				await routeEvent(eventType, eventData);
 
 				await consumer.commitOffsets([
 					{ topic, partition, offset: (Number(message.offset) + 1).toString() },
@@ -54,7 +54,7 @@ export const dbConsumer = async () => {
 
 	process.on('SIGINT', async () => {
 		await consumer.disconnect();
-		logger.info('consumer disconnect');
+		logger.info('Consumer disconnected');
 		process.exit();
 	});
 };

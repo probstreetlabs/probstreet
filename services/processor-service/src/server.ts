@@ -1,18 +1,18 @@
+import { logger } from '@/libs/logger';
+import { setupSentry } from '@/libs/sentry';
 import { initTelemetry } from '@/libs/opentelemetry';
+import { startConsumer } from '@/libs/kafka/consumer';
+import { connectProducer, disconnectProducer } from '@/libs/kafka/client';
 
 initTelemetry('probstreet-processor-service');
 
-import { logger } from '@/libs/logger';
-import { setupSentry } from '@/libs/sentry';
-import { dbConsumer } from '@/libs/kafka/consumer';
-import { connectProducer, disconnectProducer } from '@/libs/kafka/client';
-
-async function startDBProcessor() {
+async function startProcessor() {
 	setupSentry();
+	
 	await connectProducer();
+	await startConsumer();
 
 	logger.info('Processor service is running and ready to process');
-	await dbConsumer();
 
 	process.on('SIGINT', async () => {
 		await disconnectProducer();
@@ -20,4 +20,4 @@ async function startDBProcessor() {
 	});
 }
 
-startDBProcessor();
+startProcessor();

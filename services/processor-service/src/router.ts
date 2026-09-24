@@ -9,7 +9,7 @@ import {
 	handleSharesMerged,
 } from '@/controllers/order';
 
-export const processToDB = async (eventType: string, data: any) => {
+export const routeEvent = async (eventType: string, data: unknown) => {
 	switch (eventType) {
 		case DB_EVENTS.INCREASE_TRADERS_COUNT:
 			await updateTradersCount(data);
@@ -44,7 +44,7 @@ export const processToDB = async (eventType: string, data: any) => {
 			break;
 
 		case DB_EVENTS.ARCHIVE_FAILED:
-			await sendNotification({ type: 'archive.failed', data });
+			await sendNotification({ type: 'archive.failed', data: data as Record<string, any> });
 			break;
 
 		default:

@@ -3,12 +3,18 @@ import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 import { sendNotification } from '@/libs/notification/dispatcher';
+import {
+	UpdateTradersCountSchema,
+	UpdateStockPriceSchema,
+	MarketResolvedSchema,
+} from '@/validations/market';
 
-export const updateTradersCount = async (data: any) => {
+export const updateTradersCount = async (data: unknown) => {
+	const { marketId } = UpdateTradersCountSchema.parse(data);
 	try {
 		await prisma.market.update({
 			where: {
-				id: data.marketId,
+				id: marketId,
 			},
 			data: {
 				numberOfTraders: {
@@ -19,7 +25,7 @@ export const updateTradersCount = async (data: any) => {
 	} catch (error) {
 		captureError(error, {
 			tags: { controller: 'market', action: 'UPDATE_TRADERS_COUNT' },
-			contexts: { market: { marketId: data?.marketId } },
+			contexts: { market: { marketId } },
 		});
 		logger.error(
 			{
@@ -34,21 +40,22 @@ export const updateTradersCount = async (data: any) => {
 	}
 };
 
-export const updateStockPrice = async (data: any) => {
+export const updateStockPrice = async (data: unknown) => {
+	const { marketId, yesPrice, noPrice } = UpdateStockPriceSchema.parse(data);
 	try {
 		await prisma.market.update({
 			where: {
-				id: data.marketId,
+				id: marketId,
 			},
 			data: {
-				yesPrice: data.yesPrice,
-				noPrice: data.noPrice,
+				yesPrice,
+				noPrice,
 			},
 		});
 	} catch (error) {
 		captureError(error, {
 			tags: { controller: 'market', action: 'UPDATE_STOCK_PRICE' },
-			contexts: { market: { marketId: data?.marketId } },
+			contexts: { market: { marketId } },
 		});
 		logger.error(
 			{
@@ -63,15 +70,9 @@ export const updateStockPrice = async (data: any) => {
 	}
 };
 
-export const handleMarketResolved = async (data: any) => {
+export const handleMarketResolved = async (data: unknown) => {
+	const { marketId, result } = MarketResolvedSchema.parse(data);
 	try {
-		const { marketId, result } = data;
-
-		if (!['YES', 'NO', 'CANCEL'].includes(result)) {
-			logger.warn({ marketId, result }, 'Invalid market resolution result');
-			return;
-		}
-
 		const payoutsToEngine: { userId: string; amount: number }[] = [];
 
 		const activeHolders = await prisma.position.findMany({
@@ -225,10 +226,8 @@ export const handleMarketResolved = async (data: any) => {
 			}
 		});
 
-		// Push deposits to the engine so memory balances stay in sync
-		for (const payout of payoutsToEngine) {
-			await redisPublisher.lpush(
-				'engine:queue',
+		if (payoutsToEngine.length > 0) {
+			const payloads = payoutsToEngine.map((payout) =>
 				JSON.stringify({
 					responseId: `payout-${marketId}-${payout.userId}`,
 					eventType: 'DEPOSIT_BALANCE',
@@ -238,6 +237,8 @@ export const handleMarketResolved = async (data: any) => {
 					},
 				}),
 			);
+			// Pass all payloads to a single lpush call to avoid N network round-trips
+			await redisPublisher.lpush('engine:queue', ...payloads);
 		}
 
 		if (activeHolders.length > 0) {
@@ -262,7 +263,7 @@ export const handleMarketResolved = async (data: any) => {
 	} catch (error) {
 		captureError(error, {
 			tags: { controller: 'market', action: 'MARKET_RESOLVED' },
-			contexts: { market: { marketId: data?.marketId } },
+			contexts: { market: { marketId } },
 		});
 		logger.error({ error, data }, 'Failed to process market resolution');
 		throw error;

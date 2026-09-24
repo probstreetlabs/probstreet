@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
-import { logger } from '../logger/index.js';
-import { ENV } from '@/config/env.js';
+import { ENV } from '@/config/env';
+import { logger } from '@/libs/logger';
 
 export const redisPublisher = new Redis({
 	host: ENV.REDIS_HOST,

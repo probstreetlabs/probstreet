@@ -11,7 +11,7 @@ export const kafkaClient = new Kafka({
 	clientId: 'processor-service-consumer',
 	retry: {
 		initialRetryTime: 1000,
-		retries: 10,
+		retries: 3,
 		maxRetryTime: 30000,
 	},
 });
@@ -22,10 +22,11 @@ export const producer = kafkaClient.producer({
 export const consumer = kafkaClient.consumer({ groupId: 'group-1' });
 
 export const connectProducer = async () => {
-	logger.info('Producer is connected');
 	await producer.connect();
+	logger.info('Kafka Producer is connected');
 };
 
 export const disconnectProducer = async () => {
 	await producer.disconnect();
+	logger.info('Kafka Producer is disconnected');
 };

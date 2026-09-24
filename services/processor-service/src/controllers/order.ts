@@ -4,22 +4,29 @@ import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 import { sendNotification } from '@/libs/notification/dispatcher';
 import { recordTradeForCandle } from '@/libs/influxdb/client';
+import {
+	TradeExecutionSchema,
+	OrderPlacedSchema,
+	OrderCancelledSchema,
+	SharesSplitSchema,
+	SharesMergedSchema,
+} from '@/validations/order';
 
-export const recordTradeExecution = async (data: any) => {
+export const recordTradeExecution = async (data: unknown) => {
+	const {
+		marketId,
+		makerId,
+		takerId,
+		makerOrderId,
+		takerOrderId,
+		stockType,
+		takerAction,
+		price,
+		quantity,
+		matchType,
+	} = TradeExecutionSchema.parse(data);
+
 	try {
-		const {
-			marketId,
-			makerId,
-			takerId,
-			makerOrderId,
-			takerOrderId,
-			stockType,
-			takerAction,
-			price,
-			quantity,
-			matchType,
-		} = data;
-
 		if (makerId === 'System' || !marketId) {
 			logger.info('Skipping malformed System message');
 			return;
@@ -40,10 +47,22 @@ export const recordTradeExecution = async (data: any) => {
 					const m = await tx.market.findUnique({ where: { id: marketId } });
 					let sType = stockType;
 					let p = executionPrice;
-					if (isMaker && matchType === 'MINT') {
-						sType = stockType === 'YES' ? 'NO' : 'YES';
-						p = 10.0 - executionPrice;
+					let oType = takerAction;
+
+					if (isMaker) {
+						if (matchType === 'MINT') {
+							sType = stockType === 'YES' ? 'NO' : 'YES';
+							p = 10.0 - executionPrice;
+							oType = 'BUY';
+						} else if (matchType === 'MERGE') {
+							sType = stockType === 'YES' ? 'NO' : 'YES';
+							p = 10.0 - executionPrice;
+							oType = 'SELL';
+						} else {
+							oType = takerAction === 'BUY' ? 'SELL' : 'BUY';
+						}
 					}
+
 					await tx.order.create({
 						data: {
 							id: oId,
@@ -51,7 +70,7 @@ export const recordTradeExecution = async (data: any) => {
 							userId: uId,
 							stockSymbol: m?.symbol || '',
 							stockType: sType as any,
-							orderType: isMaker ? 'BUY' : (takerAction as any),
+							orderType: oType as any,
 							price: p,
 							quantity: 100000,
 							totalPrice: p * 100000,
@@ -406,7 +425,6 @@ export const recordTradeExecution = async (data: any) => {
 
 			// Helper to update Order table
 			const updateOrder = async (orderId: string, tradeQty: number) => {
-				if (!orderId) return;
 				const order = await tx.order.findUnique({ where: { id: orderId } });
 				if (order) {
 					const newTraded = order.filledQuantity + tradeQty;
@@ -458,9 +476,9 @@ export const recordTradeExecution = async (data: any) => {
 			tags: { controller: 'order', action: 'TRADE_EXECUTED' },
 			contexts: {
 				order: {
-					makerOrderId: data?.makerOrderId,
-					takerOrderId: data?.takerOrderId,
-					marketId: data?.marketId,
+					makerOrderId,
+					takerOrderId,
+					marketId,
 				},
 			},
 		});
@@ -472,9 +490,9 @@ export const recordTradeExecution = async (data: any) => {
 	}
 };
 
-export const recordOrderPlaced = async (data: any) => {
+export const recordOrderPlaced = async (data: unknown) => {
+	const { userId, marketId, side, action, price, originalQuantity } = OrderPlacedSchema.parse(data);
 	try {
-		const { userId, marketId, side, action, price, originalQuantity } = data;
 		const totalCost = Number(price) * Number(originalQuantity);
 
 		await prisma.$transaction(async (tx) => {
@@ -517,7 +535,7 @@ export const recordOrderPlaced = async (data: any) => {
 		captureError(error, {
 			tags: { controller: 'order', action: 'ORDER_PLACED' },
 			contexts: {
-				order: { orderId: data?.orderId, userId: data?.userId, marketId: data?.marketId },
+				order: { userId, marketId },
 			},
 		});
 		logger.error({ error, data, context: 'ORDER_PLACED_FAIL' }, 'Failed to record order placement');
@@ -525,9 +543,9 @@ export const recordOrderPlaced = async (data: any) => {
 	}
 };
 
-export const handleOrderCancelled = async (data: any) => {
+export const handleOrderCancelled = async (data: unknown) => {
+	const { userId, orderId, refund, type, marketId } = OrderCancelledSchema.parse(data);
 	try {
-		const { userId, orderId, refund, type, marketId } = data;
 		const qty = Number(refund);
 
 		await prisma.$transaction(async (tx) => {
@@ -567,7 +585,7 @@ export const handleOrderCancelled = async (data: any) => {
 			} else if (type === 'YES_STOCK' || type === 'NO_STOCK') {
 				const field = type === 'YES_STOCK' ? 'yes' : 'no';
 				await tx.position.updateMany({
-					where: { userId, marketId },
+					where: { userId, marketId: marketId! },
 					data: {
 						[`${field}Locked`]: { decrement: qty },
 						[`${field}Quantity`]: { increment: qty },
@@ -585,7 +603,7 @@ export const handleOrderCancelled = async (data: any) => {
 		captureError(error, {
 			tags: { controller: 'order', action: 'ORDER_CANCELLED' },
 			contexts: {
-				order: { orderId: data?.orderId, userId: data?.userId, marketId: data?.marketId },
+				order: { orderId, userId, marketId },
 			},
 		});
 		logger.error({ error, data }, 'Failed to process order cancellation');
@@ -593,9 +611,9 @@ export const handleOrderCancelled = async (data: any) => {
 	}
 };
 
-export const handleSharesSplit = async (data: any) => {
+export const handleSharesSplit = async (data: unknown) => {
+	const { userId, marketId, quantity, cost } = SharesSplitSchema.parse(data);
 	try {
-		const { userId, marketId, quantity, cost } = data;
 		const qty = Number(quantity);
 		const totalCost = Number(cost);
 
@@ -649,16 +667,16 @@ export const handleSharesSplit = async (data: any) => {
 	} catch (error) {
 		captureError(error, {
 			tags: { controller: 'order', action: 'SHARES_SPLIT' },
-			contexts: { order: { userId: data?.userId, marketId: data?.marketId } },
+			contexts: { order: { userId, marketId } },
 		});
 		logger.error({ error, data }, 'Failed to process shares split');
 		throw error;
 	}
 };
 
-export const handleSharesMerged = async (data: any) => {
+export const handleSharesMerged = async (data: unknown) => {
+	const { userId, marketId, quantity, refund } = SharesMergedSchema.parse(data);
 	try {
-		const { userId, marketId, quantity, refund } = data;
 		const qty = Number(quantity);
 		const totalRefund = Number(refund);
 
@@ -696,7 +714,7 @@ export const handleSharesMerged = async (data: any) => {
 	} catch (error) {
 		captureError(error, {
 			tags: { controller: 'order', action: 'SHARES_MERGED' },
-			contexts: { order: { userId: data?.userId, marketId: data?.marketId } },
+			contexts: { order: { userId, marketId } },
 		});
 		logger.error({ error, data }, 'Failed to process shares merged');
 		throw error;
