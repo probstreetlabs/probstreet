@@ -1,6 +1,6 @@
-import { logger } from '@/libs/logger/logger';
 import { ENV_CONFIG } from '@/config/env';
 import { notifyWebSockets } from '@/libs/ws';
+import { logger } from '@/libs/logger/logger';
 import { sendEmail } from '@/libs/agentmail/client';
 import { sendFirebasePush } from '@/libs/firebase/push';
 import { tradeExecutedEmailHtml } from '@/libs/agentmail/templates/trade-executed';

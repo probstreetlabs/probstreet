@@ -6,6 +6,11 @@
 	"main": "src/index.ts",
 	"author": "Rehan <official.rehan.me@gmail.com>",
 	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/probstreetlabs/probstreet",
+		"directory": "services/notification-service"
+	},
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy"
@@ -20,5 +25,13 @@
 		"@cloudflare/workers-types": "^4.20240815.0",
 		"typescript": "^5.5.4",
 		"wrangler": "^4.131.1"
-	}
+	},
+	"keywords": [
+		"probstreet",
+		"typescript",
+		"microservices",
+		"cloudflare-workers",
+		"notification-service",
+		"paper-trading-platform"
+	]
 }
