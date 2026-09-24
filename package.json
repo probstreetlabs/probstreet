@@ -1,7 +1,7 @@
 {
 	"name": "probstreet",
 	"version": "1.0.0",
-	"description": "An opinion trading platform where users can trade on the outcome of future events.",
+	"description": "A paper trading prediction market platform where users trade on the outcome of real-world events.",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -45,7 +45,7 @@
 		"trading-system",
 		"real-time-system",
 		"prediction-market",
-		"copy-trading-platform"
+		"paper-trading-platform"
 	],
 	"devDependencies": {
 		"@types/bun": "latest",

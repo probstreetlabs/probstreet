@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import { useState, useEffect, useRef } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Loader2, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, Info } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import kycTitleIcon from '@/assets/images/kyc_title.avif';
 import { VerificationPreview } from '@/components/VerificationPreview';
@@ -176,6 +176,19 @@ export default function KycVerificationPage() {
 						</h2>
 						<p className="text-gray-600 dark:text-gray-400 md:text-base text-sm">
 							{isAllComplete ? 'Verification complete' : 'Instant verification via Cashfree'}
+						</p>
+					</div>
+				</div>
+
+				<div className="mb-6 flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/20 px-4 py-3.5 max-w-2xl">
+					<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+					<div>
+						<p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-0.5">
+							Test Mode
+						</p>
+						<p className="text-xs text-blue-700 dark:text-blue-400/90 leading-relaxed">
+							Details submitted are processed in a sandbox environment. No real verification takes
+							place.
 						</p>
 					</div>
 				</div>

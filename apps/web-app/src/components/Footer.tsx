@@ -26,7 +26,7 @@ export default function Footer() {
 					<div className="md:w-1/3">
 						<p className="text-gray-600 dark:text-gray-400 font-medium max-w-sm leading-relaxed text-[15px] md:text-base mb-6">
 							{t(
-								'Trade on the worlds leading prediction market. Buy shares in global events and earn when you are right.',
+								'The paper trading prediction market platform. Forecast real-world events, trade YES or NO shares, and test your skills — completely risk-free.',
 							)}
 						</p>
 
@@ -116,7 +116,7 @@ export default function Footer() {
 								<img
 									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/sentry/mono.svg"
 									alt="Sentry"
-									className="h-5 object-contain dark:invert"
+									className="h-5.5 object-contain dark:invert"
 								/>
 							</div>
 
@@ -124,15 +124,7 @@ export default function Footer() {
 								<img
 									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/new-relic/default.svg"
 									alt="New Relic"
-									className="h-5.5 object-contain"
-								/>
-							</div>
-
-							<div className="relative h-6 flex items-center">
-								<img
-									src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/oracle/default.svg"
-									alt="Oracle"
-									className="md:h-3 h-3 object-contain"
+									className="h-6 object-contain"
 								/>
 							</div>
 						</div>
@@ -144,8 +136,8 @@ export default function Footer() {
 									18+ Play Responsibly
 								</h4>
 								<p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
-									This platform involves financial risk and may be habit-forming. Please play
-									responsibly.
+									Probstreet operates in <strong>paper trading mode</strong>. No real money is
+									involved.
 								</p>
 							</div>
 						</div>

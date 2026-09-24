@@ -12,6 +12,7 @@ import {
 	Check,
 	ChevronRight,
 	ArrowRight,
+	Info,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatAmount } from '@/lib/format';
@@ -184,8 +185,21 @@ export default function WithdrawPage() {
 						Withdraw
 					</h1>
 					<p className="md:text-sm text-xs text-gray-600 dark:text-gray-300 mt-1">
-						Transfer your winnings directly to your verified bank account or UPI
+						Simulated withdrawal — transfer virtual winnings to your verified account
 					</p>
+				</div>
+
+				<div className="flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/20 px-4 py-3.5">
+					<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+					<div>
+						<p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-0.5">
+							Test Mode
+						</p>
+						<p className="text-xs text-blue-700 dark:text-blue-400/90 leading-relaxed">
+							No real funds will be transferred. This is a virtual withdrawal for demonstration
+							purposes.
+						</p>
+					</div>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

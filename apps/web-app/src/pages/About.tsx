@@ -80,7 +80,7 @@ export default function AboutPage() {
 								[
 									<Trophy size={20} />,
 									'Collect Returns',
-									'Winning shares pay ₹10 each at settlement. Withdraw profits directly to your bank account.',
+									'Winning shares pay ₹10 virtual credits at settlement. Withdraw to your simulated wallet — no real money leaves the platform.',
 								],
 							].map(([icon, title, desc]) => (
 								<div

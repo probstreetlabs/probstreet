@@ -6,7 +6,7 @@ export function otpEmailHtml(otp: string): string {
 <body style="font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; padding: 40px; margin: 0;">
   <div style="max-width: 480px; margin: 0 auto; background: #1a1a1a; border-radius: 12px; padding: 32px; border: 1px solid #2a2a2a;">
     <h1 style="color: #6366f1; margin: 0 0 4px; font-size: 22px;">Probstreet</h1>
-    <p style="color: #666; margin: 0 0 32px; font-size: 13px;">Opinion Trading Platform</p>
+    <p style="color: #666; margin: 0 0 32px; font-size: 13px;">Paper Trading · Prediction Markets</p>
     <h2 style="margin: 0 0 12px; font-size: 18px;">Your Login Code</h2>
     <p style="color: #aaa; margin-bottom: 24px; font-size: 14px;">
       Use this code to sign in. It expires in <strong style="color: #fff;">5 minutes</strong>.

@@ -155,7 +155,9 @@ export default function WalletPage() {
 									)}
 								</p>
 							) : (
-								<p className="text-xs text-[#D29822] dark:text-yellow-500">Tap to verify</p>
+								<p className="text-xs text-[#D29822] dark:text-yellow-500">
+									Required for virtual withdrawals
+								</p>
 							)}
 							<button
 								onClick={goToverification}

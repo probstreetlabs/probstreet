@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, Info } from 'lucide-react';
 // @ts-ignore
 import { load } from '@cashfreepayments/cashfree-js';
 import { useInitPaymentMutation } from '@/hooks/mutations/payment';
@@ -69,9 +69,30 @@ export default function RechargePage() {
 					</ol>
 				</nav>
 
-				<h1 className="md:text-2xl text-xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">
+				<h1 className="md:text-2xl text-xl font-semibold md:mb-4 mb-3 text-gray-900 dark:text-white">
 					Deposit
 				</h1>
+
+				<div className="max-w-137.5 mb-6 flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/20 px-4 py-3.5">
+					<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+					<div>
+						<p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-0.5">
+							Test Mode
+						</p>
+						<p className="text-xs text-blue-700 dark:text-blue-400/90 leading-relaxed">
+							This is a simulated deposit. Your card will not be charged. Use{' '}
+							<a
+								href="https://www.cashfree.com/docs/payments/online/resources/sandbox-environment"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline font-medium hover:text-blue-800 dark:hover:text-blue-300"
+							>
+								test card details
+							</a>
+							.
+						</p>
+					</div>
+				</div>
 
 				<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 max-w-137.5 rounded-xl py-6 px-4 space-y-6 transition-colors shadow-sm">
 					<div className="space-y-2">
