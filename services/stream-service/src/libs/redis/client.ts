@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { ENV } from '@/config/env';
-import { logger } from '@/libs/logger/logger';
+import { logger } from '@/libs/logger';
 
 export const redisSubscriber = new Redis({
 	host: ENV.REDIS_HOST,
@@ -12,6 +12,6 @@ redisSubscriber.on('connect', () => {
 	logger.info('Connected to Redis');
 });
 
-redisSubscriber.on('error', () => {
-	logger.error('Failed to connect to Redis');
+redisSubscriber.on('error', (err) => {
+	logger.error('Failed to connect to Redis: ' + err.message);
 });

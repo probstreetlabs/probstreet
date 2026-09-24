@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import { logger } from '@/libs/logger';
 import { routes } from '@/routes/routes';
-import { logger } from '@/libs/logger/logger';
 import { captureError } from '@/libs/sentry';
+import { getRequestListener } from '@hono/node-server';
 
 const app = new Hono();
 
@@ -16,8 +17,6 @@ app.onError((err, c) => {
 	}
 	return c.json({ success: false, error: 'Internal server error' }, status);
 });
-
-import { getRequestListener } from '@hono/node-server';
 
 export const httpServer = createServer(getRequestListener(app.fetch));
 

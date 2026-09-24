@@ -1,25 +1,23 @@
 import { io } from '@/app';
-import { logger } from '@/libs/logger/logger';
-import { redisSubscriber } from '@/libs/redis/client';
+import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
+import { redisSubscriber } from '@/libs/redis/client';
 
 export const startStreamSubscriber = async () => {
-	// Subscribe to market stream data (ticker, orderbook, activity, etc.)
 	await redisSubscriber.subscribe('stream:data', (err) => {
 		if (err) {
-			logger.error('Failed to subscribe to stream:data');
+			logger.error('Failed to subscribe to stream:data: ' + err.message);
 		}
 	});
 
 	await redisSubscriber.psubscribe('chat:*', (err) => {
 		if (err) {
-			logger.error('Failed to psubscribe to chat:*');
+			logger.error('Failed to psubscribe to chat:*: ' + err.message);
 		} else {
 			logger.info('Subscribed to chat:* channels');
 		}
 	});
 
-	// Handle regular channel messages (stream:data)
 	redisSubscriber.on('message', (channel, message) => {
 		try {
 			const data = JSON.parse(message);

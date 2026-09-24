@@ -1,12 +1,11 @@
-import { initTelemetry } from '@/libs/opentelemetry';
-
-initTelemetry('probstreet-stream-service');
-
 import { ENV } from '@/config/env';
 import { httpServer } from './app';
-import { logger } from '@/libs/logger/logger';
+import { logger } from '@/libs/logger';
+import { initTelemetry } from '@/libs/opentelemetry';
 import { captureError, setupSentry } from '@/libs/sentry';
 import { startStreamSubscriber } from '@/libs/redis/subscriber';
+
+initTelemetry('probstreet-stream-service');
 
 async function startStreamService() {
 	try {

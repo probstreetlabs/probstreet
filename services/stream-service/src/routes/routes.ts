@@ -1,7 +1,7 @@
 import { io } from '@/app';
-import { Hono } from 'hono';
 import { ENV } from '@/config/env';
-import { logger } from '@/libs/logger/logger';
+import { Hono, Context } from 'hono';
+import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
 
 export const routes = new Hono();
@@ -16,7 +16,7 @@ routes.get('/health', (c) => {
 	);
 });
 
-routes.post('/internal/notify', async (c: any) => {
+routes.post('/internal/notify', async (c: Context) => {
 	const secret = c.req.header('x-worker-secret');
 
 	if (!secret || secret !== ENV.WORKER_SECRET) {
