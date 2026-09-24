@@ -8,7 +8,7 @@ initTelemetry('probstreet-processor-service');
 
 async function startProcessor() {
 	setupSentry();
-	
+
 	await connectProducer();
 	await startConsumer();
 
