@@ -1,11 +1,8 @@
-import { initTelemetry } from '@/libs/opentelemetry';
-
-initTelemetry('probstreet-api-service');
-
 import app from '@/app';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
 import { setupSentry } from '@/libs/sentry';
+import { initTelemetry } from '@/libs/opentelemetry';
 import { startPriceAlertCron } from '@/crons/price-alert';
 import { startOracleResolverCron } from '@/crons/oracle-resolver';
 import { startCryptoResolverCron } from '@/crons/crypto-resolver';
@@ -13,15 +10,17 @@ import { startSportsResolverCron } from '@/crons/sports-resolver';
 import { startStocksResolverCron } from '@/crons/stocks-resolver';
 import { startNotificationCleanupCron } from '@/crons/notification-cleanup';
 
+initTelemetry('probstreet-api-service');
+
 setupSentry();
 
-Bun.serve({
+const server = Bun.serve({
 	fetch: app.fetch,
 	port: ENV.PORT,
 	idleTimeout: 60,
 });
 
-logger.info(`API service is running at http://localhost:${ENV.PORT}`);
+logger.info(`API service is running at ${server.hostname}:${server.port}`);
 
 startPriceAlertCron();
 startNotificationCleanupCron();

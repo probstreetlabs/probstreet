@@ -1,7 +1,7 @@
 {
 	"name": "@probstreet/api-service",
 	"version": "1.0.0",
-	"description": "API service for Probstreet built with Bun and Hono",
+	"description": "Core API service for Probstreet handling REST endpoints and queuing",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
@@ -56,14 +56,14 @@
 		"bun",
 		"hono",
 		"redis",
-		"api-service",
 		"typescript",
+		"api-service",
 		"microservices",
 		"zod",
 		"ioredis",
-		"uuid",
+		"sentry",
 		"probstreet",
-		"fintech",
+		"opentelemetry",
 		"prediction-market"
 	]
 }

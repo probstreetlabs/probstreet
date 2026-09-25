@@ -6,7 +6,7 @@ import {
 	updateNotifications,
 	deleteAccount,
 	generateAvatarUploadSignatureRoute,
-} from '../controllers/settings';
+} from '@/controllers/settings';
 
 export const settingsRoutes = new Hono();
 

@@ -3,27 +3,30 @@ import { cors } from 'hono/cors';
 import { ENV } from '@/config/env';
 import { logger } from 'hono/logger';
 import * as Sentry from '@sentry/bun';
+import { compress } from 'hono/compress';
 import { swaggerUI } from '@hono/swagger-ui';
 import { swaggerDocument } from '@/docs/swagger';
-
-import { aapiRoutes } from '@/routes/admin';
-import { authRoutes } from '@/routes/auth';
-import { orderRoutes } from '@/routes/order';
-import { healthRoutes } from '@/routes/health';
-import { marketRoutes } from '@/routes/market';
-import { paymentRoutes } from '@/routes/payment';
-import { profileRoutes } from '@/routes/profile';
-import { balanceRoutes } from '@/routes/balance';
-import { settingsRoutes } from '@/routes/settings';
-import { referralRoutes } from '@/routes/referral';
-import { portfolioRoutes } from '@/routes/portfolio';
-import { onboardingRoutes } from '@/routes/onboarding';
-import { categoriesRoutes } from '@/routes/categories';
-import { transactionRoutes } from '@/routes/transaction';
-import { leaderboardRoutes } from '@/routes/leaderboard';
-import { priceAlertsRoutes } from '@/routes/price-alerts';
-import { verificationRoutes } from '@/routes/verification';
-import { notificationsRoutes } from '@/routes/notifications';
+import { secureHeaders } from 'hono/secure-headers';
+import {
+	aapiRoutes,
+	authRoutes,
+	orderRoutes,
+	healthRoutes,
+	marketRoutes,
+	paymentRoutes,
+	profileRoutes,
+	balanceRoutes,
+	settingsRoutes,
+	referralRoutes,
+	portfolioRoutes,
+	onboardingRoutes,
+	categoriesRoutes,
+	transactionRoutes,
+	leaderboardRoutes,
+	priceAlertsRoutes,
+	verificationRoutes,
+	notificationsRoutes,
+} from '@/routes';
 
 const app = new Hono();
 
@@ -38,13 +41,12 @@ app.use(
 		credentials: true,
 	}),
 );
-app.use('*', async (c, next) => {
-	c.header('X-Content-Type-Options', 'nosniff');
-	c.header('X-Frame-Options', 'DENY');
-	c.header('X-XSS-Protection', '1; mode=block');
-	c.header('Referrer-Policy', 'no-referrer');
-	await next();
-});
+app.use(secureHeaders());
+app.use(
+	compress({
+		encoding: 'gzip',
+	}),
+);
 
 app.use('*', async (c, next) => {
 	const user = c.get('jwtPayload') as any;

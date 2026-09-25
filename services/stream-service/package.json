@@ -1,7 +1,7 @@
 {
 	"name": "@probstreet/stream-service",
 	"version": "1.0.0",
-	"description": "stream service for Probstreet",
+	"description": "Real-time stream service for Probstreet utilizing WebSockets and Redis Pub/Sub",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
@@ -40,14 +40,14 @@
 	"keywords": [
 		"probstreet",
 		"bun",
-		"typescript",
-		"socket.io",
-		"web socket",
-		"stream-service",
 		"redis",
 		"pub/sub",
-		"microservices",
+		"typescript",
 		"real-time",
-		"websockets"
+		"socket.io",
+		"websockets",
+		"stream-service",
+		"microservices",
+		"paper-trading-platform"
 	]
 }
