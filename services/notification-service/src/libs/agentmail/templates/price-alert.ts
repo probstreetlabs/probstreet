@@ -22,9 +22,9 @@ export function priceAlertEmailHtml(
         <span class="detail-value">&#8377;${currentPrice}</span>
       </div>
     </div>
-    <p>Log in to Probstreet to review the market and act on this price movement before the opportunity changes.</p>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">You set up a price alert for this market. You can manage or remove alerts from your account settings.</p>
+    <div style="margin-top: 32px;">
+      <a href="${process.env.FRONTEND_URL || ''}/markets" class="cta-button">View Market</a>
+    </div>
   `;
 	return baseTemplate(`Price Alert: ${marketTitle}`, body);
 }

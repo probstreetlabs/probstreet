@@ -2,7 +2,7 @@ import { baseTemplate } from './base';
 
 export function newMarketEmailHtml(title: string, slug: string): string {
 	const body = `
-    <h2>A new market is now live</h2>
+    <h2>A New Market is Live</h2>
     <p>A new prediction market has just been published on Probstreet and is open for trading.</p>
     <div class="detail-box">
       <div class="detail-row">
@@ -14,10 +14,9 @@ export function newMarketEmailHtml(title: string, slug: string): string {
         <span class="detail-value"><span class="badge-success">Live</span></span>
       </div>
     </div>
-    <p>Head over to Probstreet to explore the market, review the odds, and place your prediction.</p>
-    <a href="${process.env.FRONTEND_URL || ''}/events/${slug}" class="cta-button">View Market</a>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">You are receiving this because you have new market email alerts enabled. You can update your notification preferences in account settings.</p>
+    <div style="margin-top: 32px;">
+      <a href="${process.env.FRONTEND_URL || ''}/events/${slug}" class="cta-button">Trade Now</a>
+    </div>
   `;
 	return baseTemplate(`New Market: ${title}`, body);
 }

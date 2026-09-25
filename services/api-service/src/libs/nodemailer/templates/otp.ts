@@ -1,23 +1,34 @@
 export function otpEmailHtml(otp: string): string {
-	return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8" /></head>
-<body style="font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; padding: 40px; margin: 0;">
-  <div style="max-width: 480px; margin: 0 auto; background: #1a1a1a; border-radius: 12px; padding: 32px; border: 1px solid #2a2a2a;">
-    <h1 style="color: #6366f1; margin: 0 0 4px; font-size: 22px;">Probstreet</h1>
-    <p style="color: #666; margin: 0 0 32px; font-size: 13px;">Paper Trading · Prediction Markets</p>
-    <h2 style="margin: 0 0 12px; font-size: 18px;">Your Login Code</h2>
-    <p style="color: #aaa; margin-bottom: 24px; font-size: 14px;">
-      Use this code to sign in. It expires in <strong style="color: #fff;">5 minutes</strong>.
-    </p>
-    <div style="background: #2a2a2a; border-radius: 10px; padding: 24px; text-align: center; letter-spacing: 10px; font-size: 38px; font-weight: bold; color: #6366f1; font-family: monospace;">
-      ${otp}
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login OTP — Probstreet</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f4f4f5; color: #18181b; line-height: 1.6; }
+    .wrapper { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; border: 1px solid #f0f0f0; }
+    .header { background-color: #ffffff; padding: 12px 40px; border-bottom: 1px solid #e4e4e7; }
+    .content { padding: 36px 40px; }
+    .content h2 { font-size: 22px; font-weight: 700; color: #09090b; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .content p { font-size: 15px; color: #3f3f46; margin-bottom: 16px; }
+    .otp-box { background-color: #f4f4f5; border-radius: 4px; padding: 24px; margin: 24px 0; text-align: center; font-size: 38px; font-weight: bold; letter-spacing: 12px; font-family: monospace; color: #09090b; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <img src="${process.env.FRONTEND_URL || 'https://probstreet.com'}/logo.png" alt="Probstreet" style="height: 48px;" />
     </div>
-    <p style="color: #444; margin-top: 28px; font-size: 12px; line-height: 1.5;">
-      If you did not request this code, you can safely ignore this email.
-      Someone may have typed your email address by mistake.
-    </p>
+    <div class="content">
+      <h2>Your Login Code</h2>
+      <p>Use this code to sign in to Probstreet. It expires in <strong>5 minutes</strong>.</p>
+      <div class="otp-box">
+        ${otp}
+      </div>
+      <p style="margin-top: 24px;">If you did not request this code, you can safely ignore this email.</p>
+    </div>
   </div>
 </body>
 </html>`;

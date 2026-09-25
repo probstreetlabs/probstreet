@@ -44,8 +44,9 @@ export function marketResolvedEmailHtml(title: string, result: string, isWinner:
 	const body =
 		(isWinner ? winnerBody : loserBody) +
 		`
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">You received this because you held a position in this market. Manage your notification preferences in account settings.</p>
+    <div style="margin-top: 32px;">
+      <a href="${process.env.FRONTEND_URL || ''}/portfolio" class="cta-button">View Portfolio</a>
+    </div>
   `;
 
 	return baseTemplate(isWinner ? `Market Resolved — You Won` : `Market Settled: ${title}`, body);

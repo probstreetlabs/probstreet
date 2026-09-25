@@ -32,9 +32,9 @@ export function tradeExecutedEmailHtml(
         <span class="detail-value">&#8377;${totalValue}</span>
       </div>
     </div>
-    <p>Your portfolio has been updated to reflect this trade. Visit Probstreet to monitor your positions.</p>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">You can update your trade notification preferences in your account settings.</p>
+    <div style="margin-top: 32px;">
+      <a href="${process.env.FRONTEND_URL || ''}/portfolio" class="cta-button">View Portfolio</a>
+    </div>
   `;
 	return baseTemplate(`Trade Executed on "${marketTitle}"`, body);
 }

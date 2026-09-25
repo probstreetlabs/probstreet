@@ -27,10 +27,9 @@ export function oracleReviewEmailHtml(
         <span class="detail-value">Admin</span>
       </div>
     </div>
-    <p>Please review the oracle's proposed verdict, verify the underlying data, and confirm or override the resolution.</p>
-    <a href="${reviewUrl}" class="cta-button">Review and Confirm Resolution</a>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">This alert was sent to all Probstreet administrators. If you have already reviewed this, no further action is needed.</p>
+    <div style="margin-top: 32px;">
+      <a href="${reviewUrl}" class="cta-button">Review and Confirm Resolution</a>
+    </div>
   `;
 	return baseTemplate(`Action Required: Oracle Review — ${marketTitle}`, body);
 }
@@ -79,10 +78,9 @@ export function oracleResolvedEmailHtml(
 					: ''
 			}
     </div>
-    <p>Users with positions in this market have been notified and payouts will be processed automatically.</p>
-    <a href="${marketUrl}" class="cta-button">View Resolved Market</a>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">This is an automated resolution summary sent to all Probstreet administrators.</p>
+    <div style="margin-top: 32px;">
+      <a href="${marketUrl}" class="cta-button">View Resolved Market</a>
+    </div>
   `;
 	return baseTemplate(`Oracle Auto-Resolved: ${marketTitle} — ${verdict}`, body);
 }

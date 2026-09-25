@@ -23,9 +23,9 @@ export function paymentEmailHtml(
             <span class="detail-value"><span class="badge-success">Successful</span></span>
           </div>
         </div>
-        <p>Your wallet has been updated. Head to Probstreet to start trading with your available balance.</p>
-        <hr class="divider" />
-        <p style="font-size: 13px; color: #71717a;">If you did not initiate this deposit, please contact our support team immediately.</p>
+        <div style="margin-top: 32px;">
+          <a href="${process.env.FRONTEND_URL || ''}/wallet" class="cta-button">View Wallet</a>
+        </div>
       `;
 			return baseTemplate('Deposit Successful — Probstreet', body);
 		}
@@ -53,9 +53,9 @@ export function paymentEmailHtml(
 							: ''
 					}
         </div>
-        <p>Please check your payment details and try again. If the issue persists, contact your bank or our support team.</p>
-        <hr class="divider" />
-        <p style="font-size: 13px; color: #71717a;">This notification was sent because a deposit was attempted on your Probstreet account.</p>
+        <div style="margin-top: 32px;">
+          <a href="${process.env.FRONTEND_URL || ''}/wallet" class="cta-button">View Wallet</a>
+        </div>
       `;
 			return baseTemplate('Deposit Failed — Probstreet', body);
 		}
@@ -74,9 +74,9 @@ export function paymentEmailHtml(
             <span class="detail-value"><span class="badge-success">Successful</span></span>
           </div>
         </div>
-        <p>Please allow 2 to 3 business days for the funds to reflect in your bank account, depending on your bank's processing time.</p>
-        <hr class="divider" />
-        <p style="font-size: 13px; color: #71717a;">If you did not request this withdrawal, please contact our support team immediately.</p>
+        <div style="margin-top: 32px;">
+          <a href="${process.env.FRONTEND_URL || ''}/wallet" class="cta-button">View Wallet</a>
+        </div>
       `;
 			return baseTemplate('Withdrawal Successful — Probstreet', body);
 		}
@@ -104,9 +104,9 @@ export function paymentEmailHtml(
 							: ''
 					}
         </div>
-        <p>Please ensure your bank account details are up to date and try again. If the issue continues, contact our support team for assistance.</p>
-        <hr class="divider" />
-        <p style="font-size: 13px; color: #71717a;">This notification was sent because a withdrawal was attempted on your Probstreet account.</p>
+        <div style="margin-top: 32px;">
+          <a href="${process.env.FRONTEND_URL || ''}/wallet" class="cta-button">View Wallet</a>
+        </div>
       `;
 			return baseTemplate('Withdrawal Failed — Probstreet', body);
 		}

@@ -16,6 +16,4 @@ export async function sendOtpEmail(email: string, otp: string): Promise<void> {
 		text: `Your login OTP is: ${otp}. It expires in 5 minutes. Do not share this with anyone.`,
 		html: otpEmailHtml(otp),
 	});
-
-	logger.info({ email }, 'OTP email sent successfully');
 }

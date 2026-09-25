@@ -18,9 +18,9 @@ export function archiveFailedEmailHtml(symbol: string, error: string): string {
         <span class="detail-value" style="color: #dc2626; word-break: break-all;">${error}</span>
       </div>
     </div>
-    <p>Please log in to the admin dashboard to investigate the issue and trigger a manual archive if necessary.</p>
-    <hr class="divider" />
-    <p style="font-size: 13px; color: #71717a;">This is an automated system alert sent to Probstreet administrators.</p>
+    <div style="margin-top: 32px;">
+      <a href="https://admin.probstreet.com/markets/${symbol}" class="cta-button">View Admin Dashboard</a>
+    </div>
   `;
 	return baseTemplate(`ALERT: Engine Archival Failed — ${symbol}`, body);
 }
