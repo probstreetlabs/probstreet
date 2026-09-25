@@ -3,7 +3,6 @@ import { cors } from 'hono/cors';
 import { ENV } from '@/config/env';
 import { logger } from 'hono/logger';
 import * as Sentry from '@sentry/bun';
-import { compress } from 'hono/compress';
 import { swaggerUI } from '@hono/swagger-ui';
 import { swaggerDocument } from '@/docs/swagger';
 import { secureHeaders } from 'hono/secure-headers';
@@ -42,11 +41,6 @@ app.use(
 	}),
 );
 app.use(secureHeaders());
-app.use(
-	compress({
-		encoding: 'gzip',
-	}),
-);
 
 app.use('*', async (c, next) => {
 	const user = c.get('jwtPayload') as any;

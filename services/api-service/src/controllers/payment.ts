@@ -148,7 +148,8 @@ export const paymentWebhook = async (c: Context) => {
 			const payment = body.data?.payment;
 			const amount = payment?.payment_amount;
 			const customerId = body.data?.customer_details?.customer_id;
-			const paymentId = String(payment?.cf_payment_id || body.data?.order?.order_id || Date.now());
+			const orderId = body.data?.order?.order_id;
+			const paymentId = String(orderId || payment?.cf_payment_id || Date.now());
 
 			const lockKey = `lock:webhook:payment:${paymentId}`;
 			const acquired = await client.set(lockKey, '1', 'EX', 60, 'NX');
@@ -157,7 +158,7 @@ export const paymentWebhook = async (c: Context) => {
 				return c.json({ success: true, message: 'Already processing' }, 200);
 			}
 
-			let shouldCreditEngine = false;
+			let isNewPayment = false;
 
 			await prisma.$transaction(async (tx) => {
 				const existing = await tx.ledgerEntry.findFirst({
@@ -169,7 +170,7 @@ export const paymentWebhook = async (c: Context) => {
 					return;
 				}
 
-				shouldCreditEngine = true;
+				isNewPayment = true;
 
 				await tx.wallet.upsert({
 					where: { userId: customerId },
@@ -250,6 +251,10 @@ export const paymentWebhook = async (c: Context) => {
 				}
 			});
 
+			if (!isNewPayment) {
+				return c.json({ success: true, message: 'Already processed' }, 200);
+			}
+
 			const user = await prisma.user.findUnique({
 				where: { id: customerId },
 				select: { email: true },
@@ -265,17 +270,12 @@ export const paymentWebhook = async (c: Context) => {
 				}).catch((err) => logger.error({ err }, 'Failed to dispatch deposit.success'));
 			}
 
-			if (shouldCreditEngine) {
-				await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
-					userId: customerId,
-					amount: amount,
-				});
+			await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
+				userId: customerId,
+				amount: amount,
+			});
 
-				logger.info(
-					{ customerId, amount, paymentId },
-					'Payment processed successfully into engine',
-				);
-			}
+			logger.info({ customerId, amount, paymentId }, 'Payment processed successfully into engine');
 		} else if (body.type === 'PAYMENT_FAILED_WEBHOOK') {
 			const payment = body.data?.payment;
 			const amount = payment?.payment_amount;

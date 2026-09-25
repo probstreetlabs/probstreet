@@ -205,8 +205,6 @@ export const initSignin = async (c: Context) => {
 
 		if (!attempts) await redis.set(attemptsKey, 0, 'EX', 900);
 
-		logger.info({ email }, 'Generated OTP');
-
 		await sendOtpEmail(email, otp);
 
 		return c.json({
