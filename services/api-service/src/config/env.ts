@@ -67,6 +67,9 @@ const envSchema = z.object({
 	NEW_RELIC_API_KEY: z.string().min(1),
 
 	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
+
+	OPENROUTER_API_KEY: z.string().optional(),
+	USE_JEV_ORACLE_RESOLVER: z.string().default('false'),
 });
 
 const parsed = envSchema.safeParse(Bun.env);

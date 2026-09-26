@@ -1,8 +1,14 @@
+import { ENV } from '@/config/env';
 import { Market } from '@probstreet/database';
-import { AIEvaluation, RubricScores } from '../types';
-import { callGroqLLM } from '../llm/groq';
+import { callGroqLLM } from '@/libs/oracle/llm/groq';
+import { evaluateWithJev } from '@/libs/openrouter/jev';
+import { AIEvaluation, RubricScores } from '@/libs/oracle/types';
 
 export async function evaluateWithAI(evidence: string, market: Market): Promise<AIEvaluation> {
+	if (ENV.USE_JEV_ORACLE_RESOLVER === 'true') {
+		return evaluateWithJev(evidence, market);
+	}
+
 	const prompt = buildRubricPrompt(evidence, market);
 	const rawResponse = await callGroqLLM(prompt);
 
