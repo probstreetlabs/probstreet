@@ -11,59 +11,59 @@ export const getPortfolio = async (c: Context) => {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
 
-		const positions = await prisma.position.findMany({
-			where: { userId: user.id },
-			include: {
-				market: {
-					select: {
-						id: true,
-						title: true,
-						symbol: true,
-						thumbnail: true,
-						status: true,
-						result: true,
-						yesPrice: true,
-						noPrice: true,
+		const [positions, activeOrders, recentActivity] = await Promise.all([
+			prisma.position.findMany({
+				where: { userId: user.id },
+				include: {
+					market: {
+						select: {
+							id: true,
+							title: true,
+							symbol: true,
+							thumbnail: true,
+							status: true,
+							result: true,
+							yesPrice: true,
+							noPrice: true,
+						},
 					},
 				},
-			},
-		});
-
-		const activeOrders = await prisma.order.findMany({
-			where: {
-				userId: user.id,
-				status: { in: ['PENDING', 'PARTIAL'] },
-			},
-			include: {
-				market: {
-					select: {
-						id: true,
-						title: true,
-						symbol: true,
+			}),
+			prisma.order.findMany({
+				where: {
+					userId: user.id,
+					status: { in: ['PENDING', 'PARTIAL'] },
+				},
+				include: {
+					market: {
+						select: {
+							id: true,
+							title: true,
+							symbol: true,
+						},
 					},
 				},
-			},
-			orderBy: { createdAt: 'desc' },
-		});
-
-		const recentActivity = await prisma.order.findMany({
-			where: {
-				userId: user.id,
-				status: { not: 'FAILED' },
-			},
-			include: {
-				market: {
-					select: {
-						id: true,
-						title: true,
-						symbol: true,
-						thumbnail: true,
+				orderBy: { createdAt: 'desc' },
+			}),
+			prisma.order.findMany({
+				where: {
+					userId: user.id,
+					status: { not: 'FAILED' },
+				},
+				include: {
+					market: {
+						select: {
+							id: true,
+							title: true,
+							symbol: true,
+							thumbnail: true,
+						},
 					},
 				},
-			},
-			orderBy: { createdAt: 'desc' },
-			take: 50,
-		});
+				orderBy: { createdAt: 'desc' },
+				take: 50,
+			}),
+		]);
 
 		return c.json({
 			success: true,
@@ -108,6 +108,7 @@ export const getMarketPosition = async (c: Context) => {
 				status: { in: ['PENDING', 'PARTIAL'] },
 			},
 			orderBy: { createdAt: 'desc' },
+			take: 20,
 		});
 
 		return c.json({

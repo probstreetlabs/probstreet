@@ -143,3 +143,6 @@ matching-engine (Go)
 /services/matching-engine/bin/
 
 /services/notification-service/.wrangler/
+
+
+/load-tests

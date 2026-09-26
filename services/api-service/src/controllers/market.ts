@@ -787,18 +787,23 @@ export const getMarketDetails = async (c: Context) => {
 			let tradersCount = marketDetails?.numberOfTraders || 0;
 
 			if (marketDetails) {
-				const orders = await prisma.order.findMany({
-					where: { marketId: marketDetails.id },
-					select: { price: true, filledQuantity: true, userId: true },
-				});
+				try {
+					const stats: any = await prisma.$queryRaw`
+						SELECT 
+							COUNT(DISTINCT "user_id") as "uniqueTraders",
+							SUM(price * "filled_quantity") as "totalVolume"
+						FROM "orders"
+						WHERE "market_id" = ${marketDetails.id}
+					`;
 
-				const uniqueTraders = new Set<string>();
-				for (const o of orders) {
-					volume += Number(o.price) * o.filledQuantity;
-					uniqueTraders.add(o.userId);
-				}
-				if (uniqueTraders.size > 0) {
-					tradersCount = uniqueTraders.size;
+					if (stats && stats[0]) {
+						volume = Number(stats[0].totalVolume) || 0;
+						if (Number(stats[0].uniqueTraders) > 0) {
+							tradersCount = Number(stats[0].uniqueTraders);
+						}
+					}
+				} catch (e) {
+					logger.error({ err: e }, 'Failed to aggregate volume and traders from DB');
 				}
 			}
 
@@ -836,17 +841,24 @@ export const getMarketDetails = async (c: Context) => {
 		let tradersCount = response.data?.numberOftraders || 0;
 
 		if (marketId) {
-			const orders = await prisma.order.findMany({
-				where: { marketId },
-				select: { price: true, filledQuantity: true, userId: true },
-			});
+			try {
+				const stats: any = await prisma.$queryRaw`
+					SELECT 
+						COUNT(DISTINCT "user_id") as "uniqueTraders",
+						SUM(price * "filled_quantity") as "totalVolume"
+					FROM "orders"
+					WHERE "market_id" = ${marketId}
+				`;
 
-			const uniqueTraders = new Set<string>();
-			for (const o of orders) {
-				volume += Number(o.price) * o.filledQuantity;
-				uniqueTraders.add(o.userId);
+				if (stats && stats[0]) {
+					volume = Number(stats[0].totalVolume) || 0;
+					if (Number(stats[0].uniqueTraders) > 0) {
+						tradersCount = Number(stats[0].uniqueTraders);
+					}
+				}
+			} catch (e) {
+				logger.error({ err: e }, 'Failed to aggregate volume and traders from DB');
 			}
-			tradersCount = uniqueTraders.size;
 
 			let categoryName = 'Unknown';
 			const m = await prisma.market.findUnique({
