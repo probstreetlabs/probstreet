@@ -457,6 +457,8 @@ model Position {
   yesSellValue Decimal @default(0.00) @map("yes_sell_value") @db.Decimal(14, 2)
   noSellValue  Decimal @default(0.00) @map("no_sell_value") @db.Decimal(14, 2)
 
+  @@index([userId])
+  @@index([marketId])
   @@map("positions")
 }
 
@@ -479,6 +481,8 @@ model Order {
   market         Market      @relation(fields: [marketId], references: [id])
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
+  @@index([userId])
+  @@index([marketId])
   @@map("orders")
 }
 
