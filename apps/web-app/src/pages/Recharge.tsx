@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, ChevronRight, Info } from 'lucide-react';
+import { toast } from 'sonner';
 // @ts-ignore
 import { load } from '@cashfreepayments/cashfree-js';
 import { useInitPaymentMutation } from '@/hooks/mutations/payment';
@@ -16,7 +17,7 @@ export default function RechargePage() {
 
 	const handleSubmit = async () => {
 		if (!amount || amount <= 0) {
-			alert('Please enter a valid amount greater than 0');
+			toast.error('Please enter a valid amount greater than 0');
 			return;
 		}
 		mutate(amount, {
@@ -35,15 +36,22 @@ export default function RechargePage() {
 						});
 					} catch (err) {
 						console.error('Failed to load Cashfree SDK', err);
-						alert('Failed to initialize payment gateway.');
+						toast.error('Failed to initialize payment gateway.');
 					}
 				} else {
-					alert('Failed to initialize payment gateway.');
+					toast.error('Failed to initialize payment gateway.');
 				}
 			},
-			onError: (err) => {
+			onError: (err: any) => {
 				console.error(err);
-				alert('Failed to create payment order');
+				const backendError = err?.response?.data?.error || err?.message;
+
+				// Rewrite the verbose backend validation message into a cleaner UI message
+				if (backendError && backendError.includes('Amount must be greater than')) {
+					toast.error('Maximum deposit limit is ₹5,00,000');
+				} else {
+					toast.error(backendError || 'Failed to create payment order');
+				}
 			},
 		});
 	};

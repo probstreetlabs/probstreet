@@ -73,7 +73,7 @@ export default function WalletPage() {
 						<h3 className="text-base mt-4 text-[#262626] dark:text-gray-200 font-normal">
 							Deposit Money
 						</h3>
-						<p className="text-xl font-medium text-gray-900 dark:text-white">
+						<p className="text-xl font-medium tracking-tight text-gray-900 dark:text-white">
 							₹{formatAmount(depositeAmountData?.data?.data?.totalDepositAmount)}
 						</p>
 						<button
@@ -91,7 +91,7 @@ export default function WalletPage() {
 							Your Winnings
 						</h3>
 						<p
-							className={`text-xl font-medium ${isKycVerified ? 'text-black dark:text-white' : 'text-gray-900 dark:text-white'}`}
+							className={`text-xl font-medium tracking-tight ${isKycVerified ? 'text-black dark:text-white' : 'text-gray-900 dark:text-white'}`}
 						>
 							₹{isLoading ? '0' : formatAmount(balance?.data?.data?.amount)}
 						</p>

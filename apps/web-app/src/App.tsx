@@ -135,7 +135,7 @@ function App() {
 
 	return (
 		<BrowserRouter>
-			<Toaster position="bottom-center" richColors />
+			<Toaster position="bottom-center" richColors theme="dark" />
 			<AppContent />
 		</BrowserRouter>
 	);
