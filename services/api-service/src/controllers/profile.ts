@@ -7,6 +7,7 @@ import { client as redis } from '@/libs/redis/connection';
 export const getProfile = async (c: Context) => {
 	try {
 		const user = c.get('user');
+
 		if (!user) {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
@@ -45,6 +46,7 @@ export const getProfile = async (c: Context) => {
 export const updateProfile = async (c: Context) => {
 	try {
 		const user = c.get('user');
+
 		if (!user) {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
@@ -253,15 +255,10 @@ export const getPublicProfile = async (c: Context) => {
 				404,
 			);
 
-		const [tradeStats, openPositionsCount] = await Promise.all([
+		const [tradeStats, openPositionsCount, netProfit, positions] = await Promise.all([
 			prisma.trade.aggregate({
 				where: {
-					OR: [
-						{
-							makerId: user.id,
-						},
-						{ takerId: user.id },
-					],
+					OR: [{ makerId: user.id }, { takerId: user.id }],
 				},
 				_count: { id: true },
 			}),
@@ -272,36 +269,34 @@ export const getPublicProfile = async (c: Context) => {
 					OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
 				},
 			}),
-		]);
 
-		let netProfit = 0;
+			redis
+				.zscore('leaderboard:all_time', user.id)
+				.then((score) => (score ? parseFloat(score) : 0))
+				.catch(() => {
+					logger.error({ context: 'GET_PUBLIC_PROFILE', message: 'Failed to get net profit' });
+					return 0;
+				}),
 
-		try {
-			const score = await redis.zscore('leaderboard:all_time', user.id);
-			netProfit = score ? parseFloat(score) : 0;
-		} catch {}
-
-		const positions = await prisma.position.findMany({
-			where: {
-				userId: user.id,
-				OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
-			},
-			take: 10,
-			include: {
-				market: {
-					select: {
-						id: true,
-						title: true,
-						symbol: true,
-						yesPrice: true,
-						noPrice: true,
-						thumbnail: true,
-						status: true,
-						endTime: true,
+			prisma.position.findMany({
+				where: { userId: user.id },
+				take: 50,
+				include: {
+					market: {
+						select: {
+							id: true,
+							title: true,
+							symbol: true,
+							yesPrice: true,
+							noPrice: true,
+							thumbnail: true,
+							status: true,
+							endTime: true,
+						},
 					},
 				},
-			},
-		});
+			}),
+		]);
 
 		return c.json({
 			success: true,
