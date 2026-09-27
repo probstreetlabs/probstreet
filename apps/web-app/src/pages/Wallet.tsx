@@ -93,7 +93,16 @@ export default function WalletPage() {
 						<p
 							className={`text-xl font-medium tracking-tight ${isKycVerified ? 'text-black dark:text-white' : 'text-gray-900 dark:text-white'}`}
 						>
-							₹{isLoading ? '0' : formatAmount(balance?.data?.data?.amount)}
+							₹
+							{isLoading
+								? '0'
+								: formatAmount(
+										Math.max(
+											0,
+											(balance?.data?.data?.amount || 0) -
+												(depositeAmountData?.data?.data?.totalDepositAmount || 0),
+										),
+									)}
 						</p>
 						<button
 							onClick={() => {
