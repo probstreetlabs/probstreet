@@ -99,7 +99,8 @@ export default function WalletPage() {
 								: formatAmount(
 										Math.max(
 											0,
-											(balance?.data?.data?.amount || 0) -
+											(balance?.data?.data?.amount || 0) +
+												(balance?.data?.data?.locked || 0) -
 												(depositeAmountData?.data?.data?.totalDepositAmount || 0),
 										),
 									)}
@@ -133,7 +134,7 @@ export default function WalletPage() {
 						</p>
 						<button
 							onClick={goToTransactionHistory}
-							className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+							className="w-16 h-9 cursor-pointer mt-7 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
 						>
 							<ArrowRight className="w-6 h-6 text-black dark:text-white" />
 						</button>
@@ -170,7 +171,7 @@ export default function WalletPage() {
 							)}
 							<button
 								onClick={goToverification}
-								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+								className="w-16 h-9 cursor-pointer mt-7 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
 							>
 								<ArrowRight className="w-6 h-6 text-black dark:text-white" />
 							</button>
@@ -189,7 +190,7 @@ export default function WalletPage() {
 							</p>
 							<button
 								onClick={() => navigate('/referral')}
-								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+								className="w-16 h-9 cursor-pointer mt-7 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
 							>
 								<ArrowRight className="w-6 h-6 text-black dark:text-white" />
 							</button>
@@ -206,7 +207,7 @@ export default function WalletPage() {
 							</p>
 							<button
 								onClick={goToControlCentre}
-								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+								className="w-16 h-9 cursor-pointer mt-7 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
 								aria-label="Open Control Centre"
 							>
 								<ArrowRight className="w-6 h-6 text-black dark:text-white" />
