@@ -64,6 +64,7 @@ function AppContent() {
 					<Route path="/events/:symbol" element={<EventDetails />} />
 					<Route path="/search" element={<SearchPage />} />
 					<Route path="/leaderboard" element={<LeaderboardPage />} />
+					<Route path="/profile/:username" element={<ProfilePage />} />
 					<Route path="/referral" element={<ReferralPage />} />
 
 					<Route path="/about" element={<AboutPage />} />
@@ -82,7 +83,6 @@ function AppContent() {
 						<Route path="/portfolio" element={<Portfolio />} />
 
 						<Route path="/settings" element={<SettingsPage />} />
-						<Route path="/profile/:username" element={<ProfilePage />} />
 						<Route path="/profile" element={<Navigate to="/settings" replace />} />
 						<Route path="/verification" element={<VerificationgePage />} />
 						<Route path="/transaction-history" element={<TransactionHistoryPage />} />

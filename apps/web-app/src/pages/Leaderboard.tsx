@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatAmount } from '@/lib/format';
 import { useAuthStore } from '@/store/auth';
 import { useLeaderboardQuery } from '@/hooks/queries/leaderboard';
@@ -136,7 +137,8 @@ export default function LeaderboardPage() {
 								const displayName = isMe ? 'You' : item.name;
 
 								return (
-									<div
+									<Link
+										to={`/profile/${item.username}`}
 										key={item.userId}
 										className={`px-2 md:px-3 py-3 grid grid-cols-12 items-center transition-colors rounded-xl ${
 											isMe
@@ -167,7 +169,7 @@ export default function LeaderboardPage() {
 											</div>
 
 											{/* Avatar (w-7 h-7 on mobile for large numbers fit) */}
-											<div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm overflow-hidden shrink-0">
+											<div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm overflow-hidden shrink-0">
 												{item.avatar ? (
 													<img
 														src={item.avatar}
@@ -206,7 +208,7 @@ export default function LeaderboardPage() {
 												₹{formatAmount(item.volume || 0)}
 											</span>
 										</div>
-									</div>
+									</Link>
 								);
 							})}
 						</div>
