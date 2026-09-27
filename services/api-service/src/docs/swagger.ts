@@ -486,9 +486,9 @@ export const swaggerDocument = {
 				],
 			},
 		},
-		'/api/v1/capi/balance/get': {
+		'/api/v1/capi/balance': {
 			get: {
-				summary: 'GET /api/v1/capi/balance/get',
+				summary: 'GET /api/v1/capi/balance',
 				tags: ['balance'],
 				responses: {
 					'200': {
