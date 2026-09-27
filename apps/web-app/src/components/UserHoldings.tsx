@@ -4,7 +4,15 @@ import { socket } from '@/socket';
 import { cancelOrder } from '@/api/order';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
-import { ArrowUpRight, ArrowDownRight, Package, Loader2, X } from 'lucide-react';
+import {
+	ArrowUpRight,
+	ArrowDownRight,
+	Package,
+	Loader2,
+	X,
+	ChevronLeft,
+	ChevronRight,
+} from 'lucide-react';
 
 interface Position {
 	yesQuantity: number;
@@ -36,10 +44,13 @@ interface UserHoldingsProps {
 
 export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldingsProps) {
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const user = useAuthStore((s) => s.user);
 	const [position, setPosition] = useState<Position | null>(null);
 	const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [cancellingId, setCancellingId] = useState<string | null>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 5;
 
 	const fetchPosition = async () => {
 		try {
@@ -56,7 +67,7 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 	};
 
 	useEffect(() => {
-		if (!isAuthenticated || !marketId) return;
+		if (!isAuthenticated || !marketId || !user?.id) return;
 		fetchPosition();
 
 		const handlePortfolioUpdate = () => {
@@ -68,7 +79,7 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 		return () => {
 			socket.off('PORTFOLIO_UPDATE', handlePortfolioUpdate);
 		};
-	}, [isAuthenticated, marketId]);
+	}, [isAuthenticated, marketId, user?.id]);
 
 	if (!isAuthenticated) return null;
 
@@ -121,6 +132,12 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 	const noCurrentValue = noAvailable * noPrice;
 	const yesPnL = yesCurrentValue - yesInvested;
 	const noPnL = noCurrentValue - noInvested;
+
+	const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
+	const paginatedOrders = activeOrders.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage,
+	);
 
 	return (
 		<div className="mb-6 bg-card dark:bg-[#111827] border border-border rounded-xl overflow-hidden shadow-sm">
@@ -224,7 +241,7 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 						</span>
 					</div>
 					<div className="p-4 space-y-2.5">
-						{activeOrders.map((order) => (
+						{paginatedOrders.map((order) => (
 							<div
 								key={order.id}
 								className="flex items-center justify-between py-3 px-4 bg-background border border-border rounded-xl shadow-sm hover:border-primary/30 transition-colors"
@@ -270,6 +287,27 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 							</div>
 						))}
 					</div>
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-5 py-3 border-t border-border/50">
+							<button
+								onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+								disabled={currentPage === 1}
+								className="p-1 rounded-md hover:bg-muted disabled:opacity-50 transition-colors"
+							>
+								<ChevronLeft size={16} />
+							</button>
+							<span className="text-xs font-medium text-muted-foreground">
+								Page {currentPage} of {totalPages}
+							</span>
+							<button
+								onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+								disabled={currentPage === totalPages}
+								className="p-1 rounded-md hover:bg-muted disabled:opacity-50 transition-colors"
+							>
+								<ChevronRight size={16} />
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
