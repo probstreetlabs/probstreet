@@ -8,7 +8,7 @@ export const TradeExecutionSchema = z.object({
 	takerOrderId: z.string().min(1),
 	stockType: z.enum(['YES', 'NO']),
 	takerAction: z.enum(['BUY', 'SELL']),
-	price: z.coerce.number().positive(),
+	price: z.coerce.number().nonnegative(),
 	quantity: z.coerce.number().positive(),
 	matchType: z.enum(['STANDARD', 'MINT', 'MERGE']),
 });
@@ -18,7 +18,7 @@ export const OrderPlacedSchema = z.object({
 	marketId: z.string().min(1),
 	side: z.enum(['YES', 'NO']),
 	action: z.enum(['BUY', 'SELL']),
-	price: z.coerce.number().positive(),
+	price: z.coerce.number().nonnegative(),
 	originalQuantity: z.coerce.number().positive(),
 });
 

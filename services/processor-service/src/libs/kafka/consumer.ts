@@ -1,11 +1,13 @@
 import { consumer } from './client';
+import { routeEvent } from '@/router';
 import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
-import { routeEvent } from '@/router';
+import { initDLQTable, pushToDLQ } from '@/libs/dlq';
 import { produceToRetryTopic } from './retryProducer';
 import { KafkaMessageSchema } from '@/validations/kafka';
 
 export const startConsumer = async () => {
+	await initDLQTable();
 	await consumer.connect();
 	await consumer.subscribe({ topics: ['process_db', 'process_db_retry'], fromBeginning: true });
 
@@ -38,12 +40,24 @@ export const startConsumer = async () => {
 					'DB update failed or validation error, sending to retry topic',
 				);
 
-				let retryPayload = rawValue;
+				let retryPayloadObj: any = {};
 				try {
-					retryPayload = JSON.parse(rawValue);
+					retryPayloadObj = JSON.parse(rawValue);
 				} catch (e) {}
 
-				await produceToRetryTopic(retryPayload);
+				const currentRetryCount = retryPayloadObj.retryCount || 0;
+				if (currentRetryCount >= 5) {
+					logger.error(
+						{ error, rawValue },
+						'Message failed > 5 times. Pushing to DLQ and skipping.',
+					);
+					const errMessage = error instanceof Error ? error.message : String(error);
+					await pushToDLQ(retryPayloadObj.type || 'UNKNOWN', retryPayloadObj, errMessage);
+				} else {
+					retryPayloadObj.retryCount = currentRetryCount + 1;
+					const retryPayloadStr = JSON.stringify(retryPayloadObj);
+					await produceToRetryTopic(retryPayloadStr);
+				}
 
 				await consumer.commitOffsets([
 					{ topic, partition, offset: (Number(message.offset) + 1).toString() },
