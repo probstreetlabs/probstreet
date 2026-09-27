@@ -1,7 +1,7 @@
 import { api } from '@/lib/axios';
 
 export const getBalance = () => {
-	return api.get('/balance/get');
+	return api.get('/balance');
 };
 
 export const getDepositAmount = () => {

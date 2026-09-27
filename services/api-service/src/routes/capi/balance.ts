@@ -4,9 +4,7 @@ import { deposit, getBalance, getDepositAmount, withdraw } from '@/controllers/b
 
 export const balanceRoutes = new Hono();
 
-balanceRoutes.get('/get', authorization, getBalance);
+balanceRoutes.get('/', authorization, getBalance);
 balanceRoutes.post('/deposit', authorization, deposit);
 balanceRoutes.post('/withdraw', authorization, withdraw);
-
-// get deposit ammount
 balanceRoutes.get('/deposit', authorization, getDepositAmount);
