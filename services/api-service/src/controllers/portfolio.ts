@@ -77,22 +77,34 @@ export const getPortfolioSummary = async (c: Context) => {
 		const totalInvested = Number(result[0].totalInvested);
 		const totalCurrentValue = Number(result[0].totalCurrentValue);
 
-		let netProfit = 0;
+		let grossWinnings = 0;
 		try {
 			const score = await redis.zscore('leaderboard:all_time', user.id);
-			netProfit = score ? parseFloat(score) : 0;
+			grossWinnings = score ? parseFloat(score) : 0;
 		} catch (err) {
-			logger.warn({ context: 'GET_PORTFOLIO_SUMMARY', message: 'Failed to fetch netProfit' });
+			logger.warn({ context: 'GET_PORTFOLIO_SUMMARY', message: 'Failed to fetch grossWinnings' });
 		}
 
 		const unrealizedPnL = totalCurrentValue - totalInvested;
-		const totalPnL = netProfit;
 
 		const userRecord = await prisma.user.findUnique({
 			where: { id: user.id },
 			include: { wallet: true },
 		});
 		const walletBalance = Number(userRecord?.wallet?.balance || 0);
+		const walletLocked = Number(userRecord?.wallet?.locked || 0);
+
+		const deposits = await prisma.transaction.aggregate({
+			where: {
+				userId: user.id,
+				type: 'DEPOSIT',
+				status: 'SUCCESS',
+			},
+			_sum: { amount: true },
+		});
+		const totalDeposits = Number(deposits._sum.amount || 0);
+
+		const totalPnL = walletBalance + walletLocked - totalDeposits;
 
 		return c.json({
 			success: true,
@@ -100,6 +112,7 @@ export const getPortfolioSummary = async (c: Context) => {
 				totalInvested,
 				totalCurrentValue,
 				totalPnL,
+				grossWinnings,
 				unrealizedPnL,
 				walletBalance,
 			},

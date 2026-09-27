@@ -243,6 +243,7 @@ export const getPublicProfile = async (c: Context) => {
 				bio: true,
 				avatarUrl: true,
 				createdAt: true,
+				kycVerificationStatus: true,
 			},
 		});
 
@@ -255,48 +256,63 @@ export const getPublicProfile = async (c: Context) => {
 				404,
 			);
 
-		const [tradeStats, openPositionsCount, netProfit, positions] = await Promise.all([
-			prisma.trade.aggregate({
-				where: {
-					OR: [{ makerId: user.id }, { takerId: user.id }],
-				},
-				_count: { id: true },
-			}),
-
-			prisma.position.count({
-				where: {
-					userId: user.id,
-					OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
-				},
-			}),
-
-			redis
-				.zscore('leaderboard:all_time', user.id)
-				.then((score) => (score ? parseFloat(score) : 0))
-				.catch(() => {
-					logger.error({ context: 'GET_PUBLIC_PROFILE', message: 'Failed to get net profit' });
-					return 0;
+		const [tradeStats, openPositionsCount, netProfit, positions, recentActivity] =
+			await Promise.all([
+				prisma.trade.aggregate({
+					where: {
+						OR: [{ makerId: user.id }, { takerId: user.id }],
+					},
+					_count: { id: true },
 				}),
 
-			prisma.position.findMany({
-				where: { userId: user.id },
-				take: 50,
-				include: {
-					market: {
-						select: {
-							id: true,
-							title: true,
-							symbol: true,
-							yesPrice: true,
-							noPrice: true,
-							thumbnail: true,
-							status: true,
-							endTime: true,
+				prisma.position.count({
+					where: {
+						userId: user.id,
+						OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
+					},
+				}),
+
+				redis
+					.zscore('leaderboard:all_time', user.id)
+					.then((score) => (score ? parseFloat(score) : 0))
+					.catch(() => {
+						logger.error({ context: 'GET_PUBLIC_PROFILE', message: 'Failed to get net profit' });
+						return 0;
+					}),
+
+				prisma.position.findMany({
+					where: { userId: user.id },
+					take: 50,
+					include: {
+						market: {
+							select: {
+								id: true,
+								title: true,
+								symbol: true,
+								yesPrice: true,
+								noPrice: true,
+								thumbnail: true,
+								status: true,
+								endTime: true,
+							},
 						},
 					},
-				},
-			}),
-		]);
+				}),
+
+				prisma.order.findMany({
+					where: {
+						userId: user.id,
+						status: { not: 'FAILED' },
+					},
+					include: {
+						market: {
+							select: { id: true, title: true, symbol: true, thumbnail: true },
+						},
+					},
+					orderBy: { createdAt: 'desc' },
+					take: 50,
+				}),
+			]);
 
 		return c.json({
 			success: true,
@@ -306,12 +322,14 @@ export const getPublicProfile = async (c: Context) => {
 				bio: user.bio,
 				avatarUrl: user.avatarUrl,
 				joinedAt: user.createdAt,
+				kycVerificationStatus: user.kycVerificationStatus,
 				stats: {
 					tradesCount: tradeStats._count.id,
 					openPositions: openPositionsCount,
 					netProfit: Math.round(netProfit * 100) / 100,
 				},
 				positions,
+				recentActivity,
 			},
 		});
 	} catch (error: any) {
