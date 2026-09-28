@@ -1,7 +1,9 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
+import { EVENTS } from '@/config/constants';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
+import { pushToQueue } from '@/libs/redis/queue';
 import { client as redis } from '@/libs/redis/connection';
 
 export const getMarketPosition = async (c: Context) => {
@@ -67,11 +69,14 @@ export const getPortfolioSummary = async (c: Context) => {
 
 		const result: any = await prisma.$queryRaw`
 			SELECT
-				COALESCE(SUM(p.yes_invested + p.no_invested), 0) as "totalInvested",
+				COALESCE(SUM(
+					(CASE WHEN p.yes_quantity > 0 THEN p.yes_invested ELSE 0 END) +
+					(CASE WHEN p.no_quantity > 0 THEN p.no_invested ELSE 0 END)
+				), 0) as "totalInvested",
 				COALESCE(SUM((p.yes_quantity + p.yes_locked) * m.yes_price + (p.no_quantity + p.no_locked) * m.no_price), 0) as "totalCurrentValue"
 			FROM positions p
 			JOIN markets m ON p.market_id = m.id
-			WHERE p.user_id = ${user.id} AND m.status = 'OPEN'
+			WHERE p.user_id = ${user.id} AND m.status IN ('OPEN', 'CLOSED', 'RESOLVING')
 		`;
 
 		const totalInvested = Number(result[0].totalInvested);
@@ -87,12 +92,20 @@ export const getPortfolioSummary = async (c: Context) => {
 
 		const unrealizedPnL = totalCurrentValue - totalInvested;
 
-		const userRecord = await prisma.user.findUnique({
-			where: { id: user.id },
-			include: { wallet: true },
-		});
-		const walletBalance = Number(userRecord?.wallet?.balance || 0);
-		const walletLocked = Number(userRecord?.wallet?.locked || 0);
+		const engineResponse = await pushToQueue(EVENTS.GET_BALANCE, { userId: user.id });
+		let walletBalance = 0;
+		let walletLocked = 0;
+		if (engineResponse.success && engineResponse.data) {
+			walletBalance = Number(engineResponse.data.amount || 0);
+			walletLocked = Number(engineResponse.data.locked || 0);
+		} else {
+			const userRecord = await prisma.user.findUnique({
+				where: { id: user.id },
+				include: { wallet: true },
+			});
+			walletBalance = Number(userRecord?.wallet?.balance || 0);
+			walletLocked = Number(userRecord?.wallet?.locked || 0);
+		}
 
 		const deposits = await prisma.transaction.aggregate({
 			where: {
@@ -104,7 +117,7 @@ export const getPortfolioSummary = async (c: Context) => {
 		});
 		const totalDeposits = Number(deposits._sum.amount || 0);
 
-		const totalPnL = walletBalance + walletLocked - totalDeposits;
+		const totalPnL = walletBalance + walletLocked + totalCurrentValue - totalDeposits;
 
 		return c.json({
 			success: true,
@@ -115,6 +128,7 @@ export const getPortfolioSummary = async (c: Context) => {
 				grossWinnings,
 				unrealizedPnL,
 				walletBalance,
+				walletLocked,
 			},
 		});
 	} catch (error: any) {

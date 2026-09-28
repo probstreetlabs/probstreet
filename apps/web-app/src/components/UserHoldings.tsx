@@ -194,7 +194,7 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 						<div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl transition-all hover:bg-red-500/10 gap-3">
 							<div className="flex items-center gap-3.5">
 								<div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shadow-sm shrink-0">
-									<ArrowDownRight size={20} className="text-red-600 dark:text-red-400" />
+									<ArrowUpRight size={20} className="text-red-600 dark:text-red-400" />
 								</div>
 								<div>
 									<div className="flex items-center gap-2">
@@ -244,38 +244,27 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 						{paginatedOrders.map((order) => (
 							<div
 								key={order.id}
-								className="flex items-center justify-between py-3 px-4 bg-background border border-border rounded-xl shadow-sm hover:border-primary/30 transition-colors"
+								className="flex items-center justify-between py-3 px-4 bg-background border border-border rounded-xl hover:border-primary/30 transition-colors"
 							>
-								<div className="flex flex-col gap-1">
-									<div className="flex items-center gap-2">
-										<span
-											className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-												order.orderType === 'SELL'
-													? 'bg-red-500/10 text-red-500 border border-red-500/20'
-													: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-											}`}
-										>
-											{order.orderType}
-										</span>
-										<span
-											className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-												order.stockType === 'YES'
-													? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-													: 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
-											}`}
-										>
-											{order.stockType}
+								<div className="flex flex-col gap-0.5">
+									<div className="text-sm font-semibold text-foreground">
+										{order.orderType === 'BUY' ? 'Buying' : 'Selling'}{' '}
+										<span className="font-bold">{order.stockType}</span>
+									</div>
+									<div className="text-xs font-medium text-muted-foreground">
+										<span className="text-foreground font-semibold">
+											{order.quantity - order.filledQuantity}
+										</span>{' '}
+										shares pending at{' '}
+										<span className="text-foreground font-semibold">
+											₹{Number(order.price).toFixed(2)}
 										</span>
 									</div>
-									<span className="text-xs font-semibold text-muted-foreground mt-0.5">
-										{order.quantity - order.filledQuantity} shares @ ₹
-										{Number(order.price).toFixed(1)}
-									</span>
 								</div>
 								<button
 									onClick={() => handleCancel(order.id)}
 									disabled={cancellingId === order.id}
-									className="p-2 rounded-lg bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 text-red-500 transition-colors disabled:opacity-50 cursor-pointer"
+									className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-foreground transition-colors disabled:opacity-50 cursor-pointer border border-border"
 									title="Cancel order"
 								>
 									{cancellingId === order.id ? (
