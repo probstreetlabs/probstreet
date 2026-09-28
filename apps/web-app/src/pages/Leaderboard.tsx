@@ -54,10 +54,11 @@ export default function LeaderboardPage() {
 											setTimeframe(tf);
 											setIsMobileSelectOpen(false);
 										}}
-										className={`w-full text-left px-3 py-2 text-xs font-medium transition ${timeframe === tf
-											? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-semibold'
-											: 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-											}`}
+										className={`w-full text-left px-3 py-2 text-xs font-medium transition ${
+											timeframe === tf
+												? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-semibold'
+												: 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+										}`}
 									>
 										{timeframeLabels[tf]}
 									</button>
@@ -67,12 +68,24 @@ export default function LeaderboardPage() {
 					</div>
 
 					<div className="hidden md:inline-flex mb-2 w-70">
-						<Tabs value={timeframe} onValueChange={(val: any) => setTimeframe(val)} className="w-full">
+						<Tabs
+							value={timeframe}
+							onValueChange={(val: any) => setTimeframe(val)}
+							className="w-full"
+						>
 							<TabsList variant="line" className="w-full justify-between">
-								<TabsTrigger className='cursor-pointer' value="today">Today</TabsTrigger>
-								<TabsTrigger className='cursor-pointer' value="weekly">Weekly</TabsTrigger>
-								<TabsTrigger className='cursor-pointer' value="monthly">Monthly</TabsTrigger>
-								<TabsTrigger className='cursor-pointer' value="all_time">Overall</TabsTrigger>
+								<TabsTrigger className="cursor-pointer" value="today">
+									Today
+								</TabsTrigger>
+								<TabsTrigger className="cursor-pointer" value="weekly">
+									Weekly
+								</TabsTrigger>
+								<TabsTrigger className="cursor-pointer" value="monthly">
+									Monthly
+								</TabsTrigger>
+								<TabsTrigger className="cursor-pointer" value="all_time">
+									Overall
+								</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					</div>
@@ -93,7 +106,10 @@ export default function LeaderboardPage() {
 							{Array.from({ length: 10 }).map((_, i) => {
 								const rankNum = i + 1;
 								return (
-									<div key={i} className="px-2 md:px-3 py-3 grid grid-cols-12 items-center animate-pulse">
+									<div
+										key={i}
+										className="px-2 md:px-3 py-3 grid grid-cols-12 items-center animate-pulse"
+									>
 										<div className="col-span-6 md:col-span-6 flex items-center gap-3 md:gap-4">
 											<div className="w-5 md:w-7 flex items-center justify-center shrink-0">
 												{rankNum === 1 ? (
@@ -142,12 +158,13 @@ export default function LeaderboardPage() {
 									<Link
 										to={`/profile/${item.username}`}
 										key={item.userId}
-										className={`px-2 md:px-3 py-3 grid grid-cols-12 items-center transition-colors ${isMe
-											? 'bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20'
-											: idx % 2 === 0
-												? 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
-												: 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-											}`}
+										className={`px-2 md:px-3 py-3 grid grid-cols-12 items-center transition-colors ${
+											isMe
+												? 'bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20'
+												: idx % 2 === 0
+													? 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
+													: 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+										}`}
 									>
 										<div className="col-span-6 md:col-span-6 flex items-center gap-3 md:gap-4 overflow-hidden">
 											<div className="w-5 md:w-7 flex items-center justify-center shrink-0">
@@ -184,10 +201,11 @@ export default function LeaderboardPage() {
 
 											<div className="truncate">
 												<span
-													className={`text-[10px] md:text-sm font-semibold truncate block ${isMe
-														? 'text-blue-600 dark:text-blue-400 font-bold'
-														: 'text-gray-900 dark:text-white'
-														}`}
+													className={`text-[10px] md:text-sm font-semibold truncate block ${
+														isMe
+															? 'text-blue-600 dark:text-blue-400 font-bold'
+															: 'text-gray-900 dark:text-white'
+													}`}
 												>
 													{displayName}
 												</span>
