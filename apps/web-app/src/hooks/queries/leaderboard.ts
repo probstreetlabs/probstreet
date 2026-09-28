@@ -32,6 +32,6 @@ export function useLeaderboardQuery(timeframe: string = 'all_time') {
 			const res = await api.get(`/leaderboard?timeframe=${timeframe}`);
 			return res.data;
 		},
-		staleTime: 30 * 1000,
+		staleTime: 3 * 60 * 1000,
 	});
 }
