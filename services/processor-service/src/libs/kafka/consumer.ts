@@ -40,23 +40,26 @@ export const startConsumer = async () => {
 					'DB update failed or validation error, sending to retry topic',
 				);
 
-				let retryPayloadObj: any = {};
-				try {
-					retryPayloadObj = JSON.parse(rawValue);
-				} catch (e) {}
+				const currentRetryCount = parseInt(message.headers?.retryCount?.toString() || '0', 10);
 
-				const currentRetryCount = retryPayloadObj.retryCount || 0;
 				if (currentRetryCount >= 5) {
 					logger.error(
 						{ error, rawValue },
 						'Message failed > 5 times. Pushing to DLQ and skipping.',
 					);
 					const errMessage = error instanceof Error ? error.message : String(error);
-					await pushToDLQ(retryPayloadObj.type || 'UNKNOWN', retryPayloadObj, errMessage);
+
+					let eventType = 'UNKNOWN';
+					let payloadObj = { raw: rawValue };
+					try {
+						const parsed = JSON.parse(rawValue);
+						eventType = parsed.type || 'UNKNOWN';
+						payloadObj = parsed;
+					} catch (e) {}
+
+					await pushToDLQ(eventType, payloadObj, errMessage);
 				} else {
-					retryPayloadObj.retryCount = currentRetryCount + 1;
-					const retryPayloadStr = JSON.stringify(retryPayloadObj);
-					await produceToRetryTopic(retryPayloadStr);
+					await produceToRetryTopic(rawValue, currentRetryCount + 1);
 				}
 
 				await consumer.commitOffsets([

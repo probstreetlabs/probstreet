@@ -1,8 +1,13 @@
 import { producer } from './client';
 
-export const produceToRetryTopic = async (message: any) => {
+export const produceToRetryTopic = async (message: string, retryCount: number) => {
 	await producer.send({
 		topic: 'process_db_retry',
-		messages: [{ value: JSON.stringify(message) }],
+		messages: [
+			{
+				value: message,
+				headers: { retryCount: retryCount.toString() },
+			},
+		],
 	});
 };
