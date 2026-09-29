@@ -1,4 +1,5 @@
 import api from '@/config/axios';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
@@ -61,7 +62,7 @@ export default function ProviderSelect({
 					})
 					.catch((err) => {
 						console.error('Discord Auth Failed', err);
-						alert('Discord login failed');
+						toast.error(err?.response?.data?.error || 'Discord login failed. Please try again.');
 					})
 					.finally(() => setLoadingProvider(null));
 			}
@@ -87,7 +88,7 @@ export default function ProviderSelect({
 				})
 				.catch((err) => {
 					console.error('Telegram Auth Failed', err);
-					alert('Telegram login failed');
+					toast.error(err?.response?.data?.error || 'Telegram login failed. Please try again.');
 				})
 				.finally(() => setLoadingProvider(null));
 		};
@@ -154,7 +155,7 @@ export default function ProviderSelect({
 					})
 					.catch((err) => {
 						console.error('Telegram Auth Failed', err);
-						alert('Telegram login failed');
+						toast.error(err?.response?.data?.error || 'Telegram login failed. Please try again.');
 					})
 					.finally(() => setLoadingProvider(null));
 			} else {
@@ -162,7 +163,7 @@ export default function ProviderSelect({
 		} else if (provider === 'discord') {
 			const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
 			if (!clientId) {
-				alert('Discord Client ID is missing in frontend .env (VITE_DISCORD_CLIENT_ID)');
+				toast.error('Discord login is not configured. Please contact support.');
 				return;
 			}
 			const redirectUri = encodeURIComponent(window.location.origin + '/');
@@ -176,7 +177,7 @@ export default function ProviderSelect({
 				`width=${width},height=${height},left=${left},top=${top}`,
 			);
 		} else {
-			alert(`${provider} OAuth coming soon!`);
+			toast.error(`${provider} login is not available yet. Stay tuned!`);
 		}
 	};
 
@@ -188,7 +189,8 @@ export default function ProviderSelect({
 			await api.post('/auth/init-signin', { email });
 			onSelectEmail(email);
 		} catch (error: any) {
-			alert(error.response?.data?.error || 'Failed to send OTP');
+			const msg = error.response?.data?.error || 'Failed to send OTP. Please try again.';
+			toast.error(msg);
 		} finally {
 			setIsSendingOtp(false);
 		}

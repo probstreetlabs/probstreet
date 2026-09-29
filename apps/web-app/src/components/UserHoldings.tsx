@@ -109,13 +109,13 @@ export default function UserHoldings({ marketId, yesPrice, noPrice }: UserHoldin
 		try {
 			const res = await cancelOrder(orderId, marketId);
 			if (res.data?.success) {
-				toast.success('Order cancelled');
+				toast.success('Order cancelled successfully');
 				fetchPosition();
 			} else {
-				toast.error(res.data?.error || 'Failed to cancel');
+				toast.error(res.data?.error || 'Failed to cancel order');
 			}
 		} catch {
-			toast.error('Failed to cancel order');
+			toast.error('Failed to cancel order. Please try again');
 		} finally {
 			setCancellingId(null);
 		}

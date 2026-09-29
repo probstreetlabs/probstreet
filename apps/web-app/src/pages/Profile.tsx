@@ -112,22 +112,24 @@ export default function ProfilePage() {
 
 	if (notFound || !profile) {
 		return (
-			<div className="flex flex-col justify-center items-center min-h-[70vh] gap-4 px-4">
+			<div className="flex flex-col justify-center items-center md:min-h-[85vh] min-h-[80vh] gap-4 px-4">
 				<img
 					src={notFoundImg}
 					alt="Not Found"
-					className="w-64 h-64 md:w-80 md:h-80 object-contain opacity-90"
+					className="w-52 h-52 md:w-72 md:h-72 object-contain"
 				/>
 				<div className="text-center space-y-2">
-					<p className="text-3xl font-bold text-gray-900 dark:text-white">Profile not found</p>
-					<p className="text-gray-500 dark:text-gray-400 text-base max-w-sm mx-auto">
-						@{username} doesn't seem to exist on Probstreet. They might have changed their username
-						or deleted their account.
+					<p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
+						Profile not found
+					</p>
+					<p className="text-gray-500 dark:text-gray-400 text-sm md:text-base max-w-sm mx-auto">
+						<span className="font-medium text-gray-700 dark:text-gray-300">@{username}</span>{' '}
+						doesn't exist on Probstreet.
 					</p>
 				</div>
 				<Link
 					to="/events"
-					className="mt-4 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+					className="mt-2 px-6 py-2.5 md:text-sm text-xs bg-gray-900 dark:bg-white text-white dark:text-black font-semibold rounded-md hover:opacity-90 transition-opacity"
 				>
 					Browse Markets
 				</Link>

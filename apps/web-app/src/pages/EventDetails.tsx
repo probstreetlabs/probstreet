@@ -17,6 +17,7 @@ import defaultThumbnail from '@/assets/images/logo.avif';
 import OrderbookLadder from '@/components/OrderbookLadder';
 import LiveMarketTracker from '@/components/LiveMarketTracker';
 import PriceAlertModal from '@/components/modals/PriceAlertModal';
+import { toast } from 'sonner';
 import { Bookmark, Share2, RefreshCcw, BellRing, UserX, Loader2 } from 'lucide-react';
 
 interface TradeExecutedEvent {
@@ -306,12 +307,15 @@ export default function EventDetails() {
 			if (isBookmarked) {
 				await api.delete(`/profile/watchlist/${targetId}`);
 				setIsBookmarked(false);
+				toast.success('Removed from watchlist');
 			} else {
 				await api.post('/profile/watchlist', { marketId: targetId });
 				setIsBookmarked(true);
+				toast.success('🔖 Added to watchlist');
 			}
 		} catch (error) {
 			console.error('Failed to toggle bookmark', error);
+			toast.error('Failed to update watchlist. Please try again');
 		}
 	};
 

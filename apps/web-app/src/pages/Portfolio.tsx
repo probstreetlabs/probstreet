@@ -74,13 +74,13 @@ export default function Portfolio() {
 				row.market.symbol,
 				'SELL',
 				row.currentPrice,
-				'LIMIT', // Engine handles LIMIT by default usually
+				'LIMIT',
 				row.qty,
 				row.marketId,
 			);
-			toast.success(`Sell order placed for ${row.qty} ${row.side} shares!`);
+			toast.success(`Sell order placed for ${row.qty} ${row.side} shares`);
 		} catch (err: any) {
-			toast.error(err.response?.data?.error || 'Failed to place sell order');
+			toast.error(err.response?.data?.error || 'Failed to place sell order. Please try again');
 		} finally {
 			setProcessing(null);
 		}
@@ -90,9 +90,9 @@ export default function Portfolio() {
 		try {
 			setProcessing(`cancel-${order.id}`);
 			await cancelOrder(order.id, order.marketId);
-			toast.success('Order cancelled successfully!');
+			toast.success('Order cancelled successfully');
 		} catch (err: any) {
-			toast.error(err.response?.data?.error || 'Failed to cancel order');
+			toast.error(err.response?.data?.error || 'Failed to cancel order. Please try again');
 		} finally {
 			setProcessing(null);
 		}

@@ -1,5 +1,6 @@
 import { api } from '@/lib/axios';
 import { socket } from '@/socket';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import { useModalStore } from '@/store/modal';
@@ -141,7 +142,7 @@ export default function EventsPage() {
 				});
 			}
 		} catch (error) {
-			console.error('Failed to toggle bookmark', error);
+			toast.error('Failed to update watchlist. Please try again');
 		}
 	};
 

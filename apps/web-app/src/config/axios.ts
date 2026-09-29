@@ -12,6 +12,37 @@ api.interceptors.response.use(
 	async (error) => {
 		const originalRequest = error.config;
 
+		// Global 429 Rate Limit handling
+		if (error.response?.status === 429) {
+			const { toast } = await import('sonner');
+			const retryAfter = error.response.headers['retry-after'];
+			const msg = retryAfter
+				? `Too many requests. Please wait ${retryAfter}s before trying again.`
+				: 'Too many requests. Please slow down and try again in a moment.';
+			toast.error(msg, { id: 'rate-limit', duration: 5000 });
+			return Promise.reject(error);
+		}
+
+		// Global 5xx Server Error handling (but not for polling / silent fetches)
+		if (error.response?.status >= 500 && !originalRequest._silent) {
+			const { toast } = await import('sonner');
+			toast.error('Something went wrong on our end. Please try again shortly.', {
+				id: 'server-error',
+				duration: 4000,
+			});
+			return Promise.reject(error);
+		}
+
+		// Network error (no response at all)
+		if (!error.response && !originalRequest._silent) {
+			const { toast } = await import('sonner');
+			toast.error('Network error — please check your connection.', {
+				id: 'network-error',
+				duration: 4000,
+			});
+			return Promise.reject(error);
+		}
+
 		// If error is 401 and we haven't retried yet
 		if (error.response?.status === 401 && !originalRequest._retry) {
 			// Skip refresh logic if this was already a refresh call, login call, logout, or initial session check
@@ -67,6 +98,27 @@ adminApi.interceptors.response.use(
 	(response) => response,
 	async (error) => {
 		const originalRequest = error.config;
+
+		// Global 429 Rate Limit handling
+		if (error.response?.status === 429) {
+			const { toast } = await import('sonner');
+			const retryAfter = error.response.headers['retry-after'];
+			const msg = retryAfter
+				? `Too many requests. Please wait ${retryAfter}s before trying again.`
+				: 'Too many requests. Please slow down and try again in a moment.';
+			toast.error(msg, { id: 'rate-limit', duration: 5000 });
+			return Promise.reject(error);
+		}
+
+		// Global 5xx Server Error handling
+		if (error.response?.status >= 500 && !originalRequest._silent) {
+			const { toast } = await import('sonner');
+			toast.error('Something went wrong on our end. Please try again shortly.', {
+				id: 'server-error',
+				duration: 4000,
+			});
+			return Promise.reject(error);
+		}
 
 		if (error.response?.status === 401 && !originalRequest._retry) {
 			originalRequest._retry = true;

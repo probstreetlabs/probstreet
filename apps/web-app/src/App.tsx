@@ -135,7 +135,14 @@ function App() {
 
 	return (
 		<BrowserRouter>
-			<Toaster position="bottom-center" richColors theme="dark" />
+			<Toaster
+				position="bottom-right"
+				richColors
+				theme="system"
+				toastOptions={{
+					style: { marginBottom: 'calc(env(safe-area-inset-bottom) + 4px)' },
+				}}
+			/>
 			<AppContent />
 		</BrowserRouter>
 	);

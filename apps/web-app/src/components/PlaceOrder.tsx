@@ -119,7 +119,7 @@ export default function PlaceOrder({
 	const handleAction = () => {
 		if (isSplitMerge) {
 			if (numShares <= 0) {
-				toast.error('Enter valid quantity');
+				toast.error('Please enter a valid quantity');
 				return;
 			}
 			const mutation = orderType === 'SPLIT' ? splitShares : mergeShares;
@@ -145,7 +145,7 @@ export default function PlaceOrder({
 
 		if (isMarket) {
 			if (displayShares <= 0) {
-				toast.error('Enter a valid amount');
+				toast.error('Enter a valid amount to see how many shares you get');
 				return;
 			}
 			placeOrder.mutate(
@@ -161,27 +161,31 @@ export default function PlaceOrder({
 				{
 					onSuccess: (res) => {
 						if (res.data?.success) {
-							toast.success(`Order placed: ${action} ${activeTab} x ${displayShares}`);
+							toast.success(
+								`${action === 'BUY' ? 'Bought' : 'Sold'} ${displayShares} ${activeTab} shares @ ₹${currentMarketPrice.toFixed(2)} each`,
+							);
 							queryClient.invalidateQueries({ queryKey: ['balance'] });
 							queryClient.invalidateQueries({ queryKey: ['portfolio'] });
 							onOrderPlaced?.();
 							setAmount('');
 						} else {
-							toast.error(res.data?.error || res.data?.message || 'Failed');
+							toast.error(
+								res.data?.error || res.data?.message || 'Order failed — please try again',
+							);
 						}
 					},
-					onError: () => toast.error('Error placing order'),
+					onError: () => toast.error('Network error. Please check your connection and try again'),
 				},
 			);
 		} else {
 			// Limit
 			const limitPrice = Number(activePrice) || 0;
 			if (limitPrice <= 0) {
-				toast.error('Enter valid price');
+				toast.error('Please enter a valid limit price');
 				return;
 			}
 			if (numShares <= 0) {
-				toast.error('Enter valid shares');
+				toast.error('Please enter the number of shares');
 				return;
 			}
 			placeOrder.mutate(
@@ -197,16 +201,20 @@ export default function PlaceOrder({
 				{
 					onSuccess: (res) => {
 						if (res.data?.success) {
-							toast.success(`Order placed: ${action} ${activeTab} x ${numShares}`);
+							toast.success(
+								`${action === 'BUY' ? 'Limit order placed' : 'Limit sell order placed'}: ${numShares} ${activeTab} @ ₹${Number(activePrice).toFixed(2)}`,
+							);
 							queryClient.invalidateQueries({ queryKey: ['balance'] });
 							queryClient.invalidateQueries({ queryKey: ['portfolio'] });
 							onOrderPlaced?.();
 							setShares(0);
 						} else {
-							toast.error(res.data?.error || res.data?.message || 'Failed');
+							toast.error(
+								res.data?.error || res.data?.message || 'Order failed — please try again',
+							);
 						}
 					},
-					onError: () => toast.error('Error placing order'),
+					onError: () => toast.error('Network error. Please check your connection and try again'),
 				},
 			);
 		}

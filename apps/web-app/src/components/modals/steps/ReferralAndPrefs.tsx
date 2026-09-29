@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '@/config/axios';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useModalStore } from '@/store/modal';
@@ -29,7 +30,9 @@ export default function ReferralAndPrefs() {
 			closeOnboardModal();
 			window.location.reload(); // Reload to hydrate fully and load UI
 		} catch (error: any) {
-			alert(error.response?.data?.error || 'Failed to complete onboarding');
+			toast.error(
+				error.response?.data?.error || 'Failed to complete onboarding. Please try again.',
+			);
 		} finally {
 			setIsSubmittingReferral(false);
 		}
@@ -41,7 +44,7 @@ export default function ReferralAndPrefs() {
 			animate={{ opacity: 1, scale: 1 }}
 			exit={{ opacity: 0, scale: 0.98 }}
 			transition={{ duration: 0.3 }}
-			className="flex flex-col h-full justify-center max-w-[333px] mx-auto w-full py-4 md:py-2"
+			className="flex flex-col h-full justify-center max-w-83.25 mx-auto w-full py-4 md:py-2"
 		>
 			<div className="text-left mb-6">
 				<h2 className="text-xl font-semibold text-black dark:text-white tracking-tight">

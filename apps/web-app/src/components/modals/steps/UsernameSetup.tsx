@@ -1,4 +1,5 @@
 import api from '@/config/axios';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -56,7 +57,7 @@ export default function UsernameSetup({ onNext }: UsernameSetupProps) {
 			await api.post('/onboarding/username', { username });
 			onNext();
 		} catch (error: any) {
-			alert(error.response?.data?.error || 'Failed to set username');
+			toast.error(error.response?.data?.error || 'Failed to set username. Please try again.');
 		}
 	};
 

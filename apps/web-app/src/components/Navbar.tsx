@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { socket } from '@/socket';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -175,6 +176,7 @@ export default function Navbar() {
 			useAuthStore.getState().logout();
 		} catch (error) {
 			console.error('Logout failed', error);
+			toast.error('Logout failed. Please try again.');
 		}
 	};
 

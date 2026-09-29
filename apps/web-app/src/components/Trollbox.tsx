@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { socket } from '@/socket';
 import { api } from '@/lib/axios';
 import { useAuthStore } from '@/store/auth';
@@ -94,7 +95,8 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 				});
 			}
 		} catch (err: any) {
-			console.error(err?.response?.data?.message || 'Failed to send');
+			console.error(err?.response?.data?.message || 'Failed to send message');
+			toast.error(err?.response?.data?.message || 'Failed to send message. Please try again.');
 		} finally {
 			setSending(false);
 		}
@@ -105,7 +107,8 @@ export default function Trollbox({ symbol }: TrollboxProps) {
 			await api.delete(`/market/${symbol}/comments/${msgId}`);
 			setMessages((prev) => prev.filter((m) => m.id !== msgId));
 		} catch (err) {
-			console.error('Failed to delete message');
+			console.error('Failed to delete message', err);
+			toast.error('Failed to delete message. Please try again.');
 		}
 	};
 
