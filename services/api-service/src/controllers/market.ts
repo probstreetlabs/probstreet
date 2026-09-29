@@ -173,12 +173,14 @@ export const createMarket = async (c: Context) => {
 					});
 				}
 			} catch (err: any) {
-				captureError(err, {
-					tags: {
-						controller: 'market',
-						action: 'CREATEMARKET',
-					},
-				});
+				if (err.name !== 'AbortError') {
+					captureError(err, {
+						tags: {
+							controller: 'market',
+							action: 'CREATEMARKET',
+						},
+					});
+				}
 				logger.warn(
 					{ err: err.message, symbol: coinPair },
 					'Failed to fetch start price from Binance',
@@ -222,12 +224,14 @@ export const createMarket = async (c: Context) => {
 					}
 				}
 			} catch (err: any) {
-				captureError(err, {
-					tags: {
-						controller: 'market',
-						action: 'CREATEMARKET',
-					},
-				});
+				if (err.name !== 'AbortError') {
+					captureError(err, {
+						tags: {
+							controller: 'market',
+							action: 'CREATEMARKET',
+						},
+					});
+				}
 				logger.warn(
 					{ err: err.message, id: newMarket.id },
 					'Failed to fetch start price from Finnhub',
@@ -825,12 +829,11 @@ export const getMarketDetails = async (c: Context) => {
 			);
 		}
 
-		logger.info(
+		logger.debug(
 			{
 				context: 'GET_MARKET_DETAILS_SUCCESS',
 				symbol,
 				engineMessage: response.message,
-				dataPreview: response.data ? JSON.stringify(response.data).slice(0, 200) : null,
 			},
 			'Successfully retrieved market details from engine',
 		);

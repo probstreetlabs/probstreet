@@ -6,6 +6,7 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client';
 const influxDB = new InfluxDB({
 	url: ENV.INFLUX_URL,
 	token: ENV.INFLUX_TOKEN,
+	timeout: 60000,
 });
 
 export const writeApi = influxDB.getWriteApi(ENV.INFLUX_ORG, ENV.INFLUX_BUCKET, 'ms');

@@ -116,14 +116,16 @@ export async function checkAndResolveCryptoMarkets() {
 					currentPrice = parseFloat(data.price);
 				}
 			} catch (err: any) {
-				captureError(err, {
-					tags: {
-						controller: 'cron',
-						action: 'RESOLVE_SINGLE_MARKET_CRYPTO',
-						marketId: market.id,
-						symbol: market.symbol,
-					},
-				});
+				if (err.name !== 'AbortError') {
+					captureError(err, {
+						tags: {
+							controller: 'cron',
+							action: 'RESOLVE_SINGLE_MARKET_CRYPTO',
+							marketId: market.id,
+							symbol: market.symbol,
+						},
+					});
+				}
 				logger.warn(
 					{ pair: detected.pair, err: err.message },
 					'Failed to fetch Binance ticker in crypto resolver',

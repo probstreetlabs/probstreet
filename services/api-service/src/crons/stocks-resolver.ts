@@ -61,14 +61,16 @@ export async function checkAndResolveStocksMarkets() {
 					}
 				}
 			} catch (err: any) {
-				captureError(err, {
-					tags: {
-						controller: 'cron',
-						action: 'RESOLVE_SINGLE_MARKET_STOCKS',
-						marketId: market.id,
-						symbol: market.symbol,
-					},
-				});
+				if (err.name !== 'AbortError') {
+					captureError(err, {
+						tags: {
+							controller: 'cron',
+							action: 'RESOLVE_SINGLE_MARKET_STOCKS',
+							marketId: market.id,
+							symbol: market.symbol,
+						},
+					});
+				}
 				logger.warn(
 					{ symbol: market.symbol, err: err.message },
 					'Failed to fetch Finnhub quote in stocks resolver',

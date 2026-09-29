@@ -120,9 +120,11 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				};
 			}
 		} catch (err: any) {
-			captureError(err, {
-				tags: { controller: 'live_data', action: 'FETCH_CRYPTO', symbol: market.symbol },
-			});
+			if (err.name !== 'AbortError') {
+				captureError(err, {
+					tags: { controller: 'live_data', action: 'FETCH_CRYPTO', symbol: market.symbol },
+				});
+			}
 			logger.warn(
 				{ coin: effectiveCoin, err: err.message },
 				'Failed to fetch Binance crypto live ticker',
@@ -217,9 +219,11 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				}
 			}
 		} catch (sportsErr: any) {
-			captureError(sportsErr, {
-				tags: { controller: 'live_data', action: 'FETCH_SPORTS', symbol: market.symbol },
-			});
+			if (sportsErr.name !== 'AbortError') {
+				captureError(sportsErr, {
+					tags: { controller: 'live_data', action: 'FETCH_SPORTS', symbol: market.symbol },
+				});
+			}
 			logger.warn(
 				{ symbol: market.symbol, err: sportsErr.message },
 				'Failed to fetch sports match feed',
@@ -279,9 +283,11 @@ async function _fetchLiveMarketData(market: any): Promise<any> {
 				}
 			}
 		} catch (err: any) {
-			captureError(err, {
-				tags: { controller: 'live_data', action: 'FETCH_STOCKS', symbol: market.symbol },
-			});
+			if (err.name !== 'AbortError') {
+				captureError(err, {
+					tags: { controller: 'live_data', action: 'FETCH_STOCKS', symbol: market.symbol },
+				});
+			}
 			logger.warn(
 				{ symbol: market.symbol, err: err.message },
 				'Failed to fetch Finnhub live ticker',
