@@ -1,16 +1,24 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
 import { captureError } from '@/libs/sentry';
-import { prisma } from '@probstreet/database';
+import { prisma, Prisma } from '@probstreet/database';
 import { client as redis } from '@/libs/redis/connection';
 
-export const syncLeaderboardFromDB = async (redisKey: string) => {
+export const syncLeaderboardFromDB = async (redisKey: string, startDate?: Date, endDate?: Date) => {
 	try {
-		logger.info({ redisKey }, 'Hydrating Redis leaderboard from PostgreSQL...');
+		logger.info({ redisKey }, 'Hydrating Redis leaderboard from database...');
+
+		const whereClause: any = { type: 'WINNINGS' };
+
+		if (startDate || endDate) {
+			whereClause.createdAt = {};
+			if (startDate) whereClause.createdAt.gte = startDate;
+			if (endDate) whereClause.createdAt.lt = endDate;
+		}
 
 		const earnings = await prisma.ledgerEntry.groupBy({
 			by: ['toAccount'],
-			where: { type: 'WINNINGS' },
+			where: whereClause,
 			_sum: { amount: true },
 		});
 
@@ -19,6 +27,8 @@ export const syncLeaderboardFromDB = async (redisKey: string) => {
 		}
 
 		const pipeline = redis.pipeline();
+
+		pipeline.del(redisKey);
 
 		for (const item of earnings) {
 			if (item.toAccount && item._sum.amount) {
@@ -29,7 +39,9 @@ export const syncLeaderboardFromDB = async (redisKey: string) => {
 			}
 		}
 		await pipeline.exec();
-		await redis.expire(redisKey, 86400);
+		if (!redisKey.includes('all_time')) {
+			await redis.expire(redisKey, 86400 * 7);
+		}
 
 		logger.info({ redisKey, count: earnings.length }, 'Successfully hydrated Redis leaderboard');
 	} catch (error) {
@@ -50,24 +62,34 @@ export const getLeaderboard = async (c: Context) => {
 
 		let redisKey = 'leaderboard:all_time';
 
+		let startDate: Date | undefined;
+		let endDate: Date | undefined;
+
 		if (timeframe === 'today') {
 			const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 			redisKey = `leaderboard:today:${todayStr}`;
+			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+			endDate = new Date(startDate.getTime() + 86400000);
 		} else if (timeframe === 'monthly') {
 			const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 			redisKey = `leaderboard:monthly:${yearMonth}`;
+			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+			endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 		} else if (timeframe === 'weekly') {
 			const startOfYear = new Date(now.getFullYear(), 0, 1);
 			const weekNum = Math.ceil(
 				((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7,
 			);
 			redisKey = `leaderboard:weekly:${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+			const day = now.getDay() || 7;
+			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+			endDate = new Date(startDate.getTime() + 7 * 86400000);
 		}
 
 		const exists = await redis.exists(redisKey);
 
 		if (!exists) {
-			await syncLeaderboardFromDB(redisKey);
+			await syncLeaderboardFromDB(redisKey, startDate, endDate);
 		}
 
 		const rawResults = await redis.zrevrange(redisKey, 0, 99, 'WITHSCORES');
@@ -104,28 +126,23 @@ export const getLeaderboard = async (c: Context) => {
 
 		const userMap = new Map(users.map((u) => [u.id, u]));
 
-		// Query exact trade records for all users (both maker & taker trades)
-		const trades = await prisma.trade.findMany({
-			where: {
-				OR: [{ makerId: { in: userIds } }, { takerId: { in: userIds } }],
-			},
-			select: {
-				makerId: true,
-				takerId: true,
-				price: true,
-				quantity: true,
-			},
-		});
-
 		const volumeMap = new Map<string, number>();
 
-		for (const trade of trades) {
-			const tradeVal = Number(trade.price) * trade.quantity;
-			if (trade.makerId) {
-				volumeMap.set(trade.makerId, (volumeMap.get(trade.makerId) || 0) + tradeVal);
-			}
-			if (trade.takerId && trade.takerId !== trade.makerId) {
-				volumeMap.set(trade.takerId, (volumeMap.get(trade.takerId) || 0) + tradeVal);
+		if (userIds.length > 0) {
+			const tradeVolumes: { userId: string; volume: Prisma.Decimal }[] = await prisma.$queryRaw`
+				SELECT 
+					"userId", 
+					SUM(volume) as volume 
+				FROM (
+					SELECT maker_id as "userId", (price * quantity) as volume FROM trades WHERE maker_id IN (${Prisma.join(userIds)})
+					UNION ALL
+					SELECT taker_id as "userId", (price * quantity) as volume FROM trades WHERE taker_id IN (${Prisma.join(userIds)}) AND taker_id != maker_id
+				) AS user_trades
+				GROUP BY "userId"
+			`;
+
+			for (const tv of tradeVolumes) {
+				volumeMap.set(tv.userId, Number(tv.volume));
 			}
 		}
 
