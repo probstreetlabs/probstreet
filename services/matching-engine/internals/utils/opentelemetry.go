@@ -17,6 +17,7 @@ import (
 
 func SetupOTel(serviceName string) func() {
 	appEnv := os.Getenv("APP_ENV")
+
 	if appEnv == "" {
 		appEnv = os.Getenv("NODE_ENV")
 	}
@@ -25,7 +26,7 @@ func SetupOTel(serviceName string) func() {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 	if appEnv == "development" || appEnv == "dev" || appEnv == "" || headersStr == "" || endpoint == "" {
-		log.Info().Msg("OpenTelemetry is disabled (development mode or missing config)")
+		log.Info().Msg("OpenTelemetry is disabled (development mode)")
 		return func() {}
 	}
 
@@ -46,7 +47,6 @@ func SetupOTel(serviceName string) func() {
 		"api-key": headersStr,
 	}
 
-	// Trace Exporter
 	traceExporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpointURL(endpoint+"/v1/traces"),
 		otlptracehttp.WithHeaders(headers),
@@ -81,7 +81,6 @@ func SetupOTel(serviceName string) func() {
 	log.Info().Msg("OpenTelemetry initialized successfully")
 
 	return func() {
-		// Shutdown logic
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if tp, ok := otel.GetTracerProvider().(*sdktrace.TracerProvider); ok {

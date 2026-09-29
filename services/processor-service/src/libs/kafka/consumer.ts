@@ -79,7 +79,7 @@ export const startConsumer = async () => {
 
 	process.on('SIGINT', async () => {
 		await consumer.disconnect();
-		logger.info('Consumer disconnected');
+		logger.info('Consumer disconnected successfully');
 		process.exit();
 	});
 };

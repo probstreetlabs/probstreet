@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -16,9 +17,10 @@ export const initDLQTable = async () => {
 				failed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 		`);
-		logger.info('DLQ table initialized');
+		logger.info('DLQ table initialized successfully');
 	} catch (error) {
 		logger.error({ error }, 'Failed to initialize DLQ table');
+		captureError(error, { tags: { action: 'DLQ_INIT_FAIL', controller: 'dlq' } });
 	}
 };
 
@@ -31,5 +33,9 @@ export const pushToDLQ = async (eventType: string, payload: any, errorMessage: s
 		logger.info({ eventType }, 'Pushed message to DLQ');
 	} catch (error) {
 		logger.error({ error, payload }, 'Failed to push message to DLQ');
+		captureError(error, {
+			tags: { action: 'DLQ_PUSH_FAIL', controller: 'dlq' },
+			contexts: { payload },
+		});
 	}
 };

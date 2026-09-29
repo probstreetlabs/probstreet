@@ -1,4 +1,5 @@
 import { ENV } from '@/config/env';
+import { logger } from '@/libs/logger';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
@@ -11,6 +12,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 
 export const initTelemetry = (serviceName: string) => {
 	if (ENV.NODE_ENV === 'development' || !ENV.NEW_RELIC_API_KEY) {
+		logger.info('OpenTelemetry is disabled (development mode)');
 		return;
 	}
 
@@ -48,6 +50,7 @@ export const initTelemetry = (serviceName: string) => {
 	});
 
 	sdk.start();
+	logger.info('OpenTelemetry initialized successfully');
 
 	process.on('SIGTERM', () => {
 		sdk

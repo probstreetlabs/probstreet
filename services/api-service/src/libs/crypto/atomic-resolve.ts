@@ -1,29 +1,21 @@
+import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
 import { Market } from '@probstreet/database';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { sendNotification } from '@/libs/notification/dispatcher';
-import { logger } from '@/libs/logger';
 
-/**
- * Atomically flip market status OPEN → RESOLVING.
- * Returns the market if acquired, null if already taken.
- * Uses Prisma's updateMany with WHERE status='OPEN' for atomic CAS.
- */
 export async function tryAcquireResolve(marketId: string): Promise<Market | null> {
 	const result = await prisma.market.updateMany({
 		where: { id: marketId, status: 'OPEN' },
-		data: { status: 'RESOLVING' as any }, // casting because it is an enum that we just added
+		data: { status: 'RESOLVING' as any },
 	});
 
-	if (result.count === 0) return null; // Someone else got it
+	if (result.count === 0) return null;
 
 	return prisma.market.findUnique({ where: { id: marketId } });
 }
 
-/**
- * Complete the resolution: push to queue + flip RESOLVING → CLOSED.
- * If queue push fails, rollback to OPEN.
- */
 export async function completeResolve(
 	market: Market,
 	verdict: 'YES' | 'NO',
@@ -44,7 +36,21 @@ export async function completeResolve(
 			{ marketId: market.id, response: queueResponse },
 			'Failed to push to queue. Rolling back to OPEN.',
 		);
-		// Rollback — release the lock
+		captureError(
+			new Error(`Failed to resolve market in engine: ${queueResponse.message || 'Unknown error'}`),
+			{
+				tags: {
+					controller: 'atomic-resolve',
+					action: 'RESOLVE_MARKET_FAIL',
+					marketId: market.id,
+					symbol: market.symbol,
+				},
+				contexts: {
+					queueResponse,
+				},
+			},
+		);
+
 		await prisma.market.update({
 			where: { id: market.id },
 			data: { status: 'OPEN' },
@@ -57,7 +63,6 @@ export async function completeResolve(
 		data: { status: 'CLOSED', oracleStatus: 'RESOLVED' },
 	});
 
-	// Log + notify
 	await Promise.all([
 		prisma.oracleLog.create({
 			data: {

@@ -25,9 +25,9 @@ func ConnectRedis() *redis.Client {
 
 	if err != nil {
 		utils.CaptureError(err, map[string]string{"controller": "redis", "action": "PING_FAIL"}, nil)
-		log.Error().Err(err).Msg("Failed to connect to Redis")
+		log.Error().Msgf("Failed to connect to Redis instance : %v", err.Error())
 	} else {
-		log.Info().Msg("connected to redis")
+		log.Info().Msg("Redis instance connected successfully")
 	}
 
 	return client

@@ -35,7 +35,7 @@ func InitProducer() {
 
 		if err != nil {
 			utils.CaptureError(err, map[string]string{"controller": "kafka", "action": "NEW_PRODUCER"}, nil)
-			log.Fatal().Err(err).Msg("Failed to create Kafka producer")
+			log.Fatal().Msgf("Failed to connect to Kafka instance : %v", err.Error())
 		}
 		producerInstance = producer
 
@@ -45,15 +45,17 @@ func InitProducer() {
 				case *kafka.Message:
 					if ev.TopicPartition.Error != nil {
 						utils.CaptureError(ev.TopicPartition.Error, map[string]string{"controller": "kafka", "action": "DELIVERY_REPORT_ERROR"}, nil)
-						log.Error().Err(ev.TopicPartition.Error).Msg("Kafka delivery failed")
+						log.Error().Msgf("Kafka delivery failed : %v", ev.TopicPartition.Error.Error())
 					} else {
-						log.Debug().Msgf("Delivered to %v", ev.TopicPartition)
+						log.Debug().
+							Interface("topicPartition", ev.TopicPartition).
+							Msg("Kafka message delivered successfully")
 					}
 				}
 			}
 		}()
 
-		log.Info().Msg("Kafka Producer connected")
+		log.Info().Msg("Kafka Producer is connected successfully")
 	})
 }
 
@@ -92,5 +94,6 @@ func CloseProducer() {
 	if producerInstance != nil {
 		producerInstance.Flush(5000)
 		producerInstance.Close()
+		log.Info().Msg("Kafka Producer is disconnected successfully")
 	}
 }

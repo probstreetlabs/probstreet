@@ -8,7 +8,7 @@ export function startNotificationCleanupCron() {
 
 	cron.schedule('0 0 * * *', async () => {
 		try {
-			logger.info('Running notification cleanup...');
+			logger.debug('Running notification cleanup...');
 
 			const now = new Date();
 			const thirtySixHoursAgo = new Date(now.getTime() - 36 * 60 * 60 * 1000);
@@ -41,7 +41,7 @@ export function startNotificationCleanupCron() {
 				logger.info(`Deleted ${unreadDeleted.count} unread notifications older than 14 days.`);
 			}
 
-			logger.info('Notification cleanup finished.');
+			logger.debug('Notification cleanup finished.');
 		} catch (error) {
 			captureError(error, {
 				tags: {

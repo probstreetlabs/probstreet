@@ -45,8 +45,6 @@ export const sendNotification = async (event: NotificationEvent): Promise<void> 
 				body: JSON.stringify({ body: event }),
 			},
 		);
-
-		logger.info({ event: event.type }, 'Notification event dispatched to Cloudflare Queue');
 	} catch (err: any) {
 		captureError(err, {
 			tags: { controller: 'dispatcher', action: 'SEND_NOTIFICATION' },

@@ -11,7 +11,7 @@ export function startOracleResolverCron() {
 
 	cron.schedule('*/1 * * * *', async () => {
 		try {
-			logger.info('Checking for markets requiring oracle resolution...');
+			logger.debug('Checking for markets requiring oracle resolution...');
 
 			const now = new Date();
 

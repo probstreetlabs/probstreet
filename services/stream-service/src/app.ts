@@ -15,9 +15,11 @@ app.route('/api/v1', routes);
 
 app.onError((err, c) => {
 	const status = 'status' in err ? (err as any).status : 500;
+
 	if (status >= 500) {
 		captureError(err, { tags: { controller: 'global', action: 'UNHANDLED_EXCEPTION' } });
 	}
+
 	return c.json({ success: false, error: 'Internal server error' }, status);
 });
 
@@ -33,40 +35,34 @@ export const io = new Server(httpServer, {
 });
 
 io.on('connection', (socket) => {
-	logger.info(`Client connected: ${socket.id}`);
+	logger.debug(`Client connected SOCKET ID : ${socket.id}`);
 
 	socket.on('SUBSCRIBE_TICKERS', (symbols: string | string[]) => {
 		const list = Array.isArray(symbols) ? symbols : [symbols];
 		list.forEach((sym) => socket.join(`ticker:${sym}`));
-		logger.info(`Client ${socket.id} subscribed tickers: ${list}`);
 	});
 
 	socket.on('UNSUBSCRIBE_TICKERS', (symbols: string | string[]) => {
 		const list = Array.isArray(symbols) ? symbols : [symbols];
 		list.forEach((sym) => socket.leave(`ticker:${sym}`));
-		logger.info(`Client ${socket.id} unsubscribed tickers: ${list}`);
 	});
 
 	socket.on('SUBSCRIBE_MARKET', (symbol: string) => {
 		socket.join(`market:${symbol}`);
-		logger.info(`Client ${socket.id} subscribed full market: ${symbol}`);
 	});
 
 	socket.on('UNSUBSCRIBE_MARKET', (symbol: string) => {
 		socket.leave(`market:${symbol}`);
-		logger.info(`Client ${socket.id} unsubscribed full market: ${symbol}`);
 	});
 
 	socket.on('SUBSCRIBE_USER', (userId: string) => {
 		socket.join(`user:${userId}`);
 		socket.join(userId);
-		logger.info(`Client ${socket.id} subscribed user: ${userId}`);
 	});
 
 	socket.on('UNSUBSCRIBE_USER', (userId: string) => {
 		socket.leave(`user:${userId}`);
 		socket.leave(userId);
-		logger.info(`Client ${socket.id} unsubscribed user: ${userId}`);
 	});
 
 	socket.on('SUBSCRIBE', (room: string) => {
@@ -84,6 +80,6 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('disconnect', () => {
-		logger.info(`Client disconnected: ${socket.id}`);
+		logger.debug(`Client disconnected SOCKET ID : ${socket.id}`);
 	});
 });

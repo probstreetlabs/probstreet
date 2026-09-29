@@ -13,7 +13,10 @@ async function startStreamService() {
 		await startStreamSubscriber();
 
 		httpServer.listen(ENV.PORT, () => {
-			logger.info(`Stream service running on port ${ENV.PORT}`);
+			if (ENV.NODE_ENV === 'development') {
+				logger.info(`Stream service running on port ${ENV.PORT}`);
+			}
+			logger.info('Stream service started successfully');
 		});
 	} catch (err) {
 		if (ENV.NODE_ENV === 'production' || ENV.NODE_ENV === 'staging') {

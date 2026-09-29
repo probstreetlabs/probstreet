@@ -6,12 +6,14 @@ import { redisSubscriber } from '@/libs/redis/client';
 export const startStreamSubscriber = async () => {
 	await redisSubscriber.subscribe('stream:data', (err) => {
 		if (err) {
+			captureError(err, { tags: { controller: 'redis_subscriber', action: 'SUBSCRIBE_DATA' } });
 			logger.error('Failed to subscribe to stream:data: ' + err.message);
 		}
 	});
 
 	await redisSubscriber.psubscribe('chat:*', (err) => {
 		if (err) {
+			captureError(err, { tags: { controller: 'redis_subscriber', action: 'SUBSCRIBE_CHAT' } });
 			logger.error('Failed to psubscribe to chat:*: ' + err.message);
 		} else {
 			logger.info('Subscribed to chat:* channels');
@@ -29,7 +31,6 @@ export const startStreamSubscriber = async () => {
 			}
 
 			const type = data.type;
-			logger.info(`Redis message received: symbol=${symbol} type=${type || 'UNSET'}`);
 
 			if (type === 'TICKER') {
 				io.to(`ticker:${symbol}`).emit('TICKER', data);
@@ -65,8 +66,6 @@ export const startStreamSubscriber = async () => {
 		try {
 			const symbol = channel.replace('chat:', '');
 			const data = JSON.parse(message);
-
-			logger.info(`Chat message received for market: ${symbol}`);
 
 			io.to(`market:${symbol}`).emit('CHAT_MESSAGE', data);
 		} catch (e) {

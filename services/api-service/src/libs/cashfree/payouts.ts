@@ -112,7 +112,8 @@ export async function triggerCashfreePayout(request: PayoutRequest): Promise<any
 		return data;
 	} catch (error) {
 		captureError(error, {
-			tags: { controller: 'payouts', action: 'TRIGGER_PAYOUT', provider: 'cashfree' },
+			tags: { controller: 'payouts', action: 'ERROR' },
+			contexts: { message: 'Error triggering Cashfree Payouts v2' },
 		});
 		logger.error({ error, request }, 'Error triggering Cashfree Payouts v2');
 		throw error;
@@ -140,7 +141,8 @@ export async function getPayoutStatusV2(transferId: string): Promise<any> {
 		return await response.json();
 	} catch (error) {
 		captureError(error, {
-			tags: { controller: 'payouts', action: 'FETCH_STATUS', provider: 'cashfree' },
+			tags: { controller: 'payouts', action: 'ERROR' },
+			contexts: { message: 'Error fetching Payout v2 status' },
 		});
 		logger.error({ error, transferId }, 'Error fetching Payout v2 status');
 		return null;

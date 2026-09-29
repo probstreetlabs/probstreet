@@ -1,11 +1,7 @@
 import Redis from 'ioredis';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
-
-/**
- * General Redis client for cache, rate-limit, queue push.
- * Non-blocking operations only.
- */
+import { captureError } from '@/libs/sentry';
 
 export const client = new Redis({
 	host: ENV.REDIS_HOST,
@@ -14,16 +10,15 @@ export const client = new Redis({
 });
 
 client.on('connect', () => {
-	logger.info('Connected to Redis client');
+	logger.info('Redis instance connected successfully');
 });
 
-client.on('error', () => {
-	logger.error('Failed to connect to Redis client');
+client.on('error', (error) => {
+	captureError(error || new Error('Redis connection error'), {
+		tags: { action: 'REDIS_ERROR', controller: 'redis_client' },
+	});
+	logger.error(`Failed to connect to Redis instance : ${error.message}`);
 });
-
-/**
- * Pub/Sub dedicated client (used only for `.subscribe()`).
- */
 
 export const pubsubClient = new Redis({
 	host: ENV.REDIS_PUBSUB_HOST,
@@ -32,9 +27,12 @@ export const pubsubClient = new Redis({
 });
 
 pubsubClient.on('connect', () => {
-	logger.info('PubSub client is connected');
+	logger.info('Redis PubSub instance connected successfully');
 });
 
-pubsubClient.on('error', () => {
-	logger.error('PubSub client connection failed');
+pubsubClient.on('error', (error) => {
+	captureError(error || new Error('Redis pubsub connection error'), {
+		tags: { action: 'REDIS_PUBSUB_ERROR', controller: 'redis_pubsub' },
+	});
+	logger.error(`Failed to connect to Redis PubSub instance : ${error.message}`);
 });

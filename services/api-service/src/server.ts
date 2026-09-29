@@ -18,7 +18,11 @@ const server = Bun.serve({
 	idleTimeout: 60,
 });
 
-logger.info(`API service is running at ${server.hostname}:${server.port}`);
+if (ENV.NODE_ENV === 'development') {
+	logger.info(`API service started successfully at ${server.hostname}:${server.port}`);
+} else {
+	logger.info(`API service started successfully`);
+}
 
 startPriceAlertCron();
 startNotificationCleanupCron();

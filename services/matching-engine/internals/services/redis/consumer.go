@@ -32,7 +32,6 @@ func Consumer(ctx context.Context, client *redis.Client) {
 
 			if err != nil {
 				if err == redis.Nil {
-					// Expected timeout
 					return
 				}
 				utils.CaptureError(err, map[string]string{"controller": "consumer", "action": "REDIS_BRPOP"}, nil)
@@ -55,7 +54,7 @@ func Consumer(ctx context.Context, client *redis.Client) {
 				return
 			}
 
-			log.Info().
+			log.Debug().
 				Str("eventType", data.EventType).
 				Str("responseId", data.ResponseId).
 				Interface("data", data.Data).
@@ -82,8 +81,6 @@ func Consumer(ctx context.Context, client *redis.Client) {
 			if err != nil {
 				utils.CaptureError(err, map[string]string{"controller": "consumer", "action": "PUBLISH_RESPONSE"}, map[string]map[string]interface{}{"redis": {"responseId": response.ResponseId}})
 				log.Error().Err(err).Str("responseId", response.ResponseId).Msg("Failed to send response to api")
-			} else {
-				log.Info().Str("responseId", response.ResponseId).Msg("Response send to api successfully")
 			}
 		}()
 	}

@@ -1,8 +1,10 @@
 import { ENV } from '@/config/env';
 import * as Sentry from '@sentry/bun';
+import { logger } from '@/libs/logger';
 
 export const setupSentry = () => {
 	if (ENV.NODE_ENV === 'development' || !ENV.SENTRY_DSN) {
+		logger.info('Sentry is disabled (development mode)');
 		return;
 	}
 
@@ -11,6 +13,8 @@ export const setupSentry = () => {
 		environment: ENV.NODE_ENV,
 		release: process.env.SENTRY_RELEASE,
 	});
+
+	logger.info('Sentry initialized successfully');
 
 	process.on('unhandledRejection', (reason) => {
 		Sentry.captureException(reason);

@@ -28,7 +28,6 @@ export const recordTradeExecution = async (data: unknown) => {
 
 	try {
 		if (makerId === 'System' || !marketId) {
-			logger.info('Skipping malformed System message');
 			return;
 		}
 

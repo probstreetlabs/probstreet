@@ -16,7 +16,7 @@ func SetupSentry() {
 	dsn := os.Getenv("SENTRY_DSN")
 
 	if appEnv == "development" || appEnv == "dev" || appEnv == "" || dsn == "" {
-		log.Info().Msg("Sentry is disabled (development mode or no DSN)")
+		log.Info().Msg("Sentry is disabled (development mode)")
 		return
 	}
 
@@ -27,9 +27,9 @@ func SetupSentry() {
 	})
 
 	if err != nil {
-		log.Error().Err(err).Msg("sentry.Init failed")
+		log.Error().Msgf("Failed to initialize Sentry : %v", err.Error())
 	} else {
-		log.Info().Msg("Sentry initialized")
+		log.Info().Msg("Sentry initialized successfully")
 	}
 }
 

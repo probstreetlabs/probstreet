@@ -21,36 +21,29 @@ import (
 
 func main() {
 
-	// load env variables
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("Failed to load env")
+		fmt.Println("Failed to load Enviourment variables")
 	}
 
-	// Initialize zerolog logger
 	utils.InitLogger()
-	log.Info().Msg("Logger initialized")
+	log.Info().Msg("Logger initialized successfully")
 
-	// Initialize Sentry
 	utils.SetupSentry()
 	defer sentry.Flush(2 * time.Second)
 
-	// Initialize OpenTelemetry
 	shutdownOTel := utils.SetupOTel("probstreet-matching-engine")
 	defer shutdownOTel()
 
-	// connect to redis
 	client := redis.ConnectRedis()
 
-	// conect to kafka
 	kafka.InitProducer()
 	defer kafka.CloseProducer()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize engine
 	engine.InitEngine(client)
-	log.Info().Msg("Matching engine initialized")
+	log.Info().Msg("Matching engine initialized successfully")
 
 	sigCh := make(chan os.Signal, 1)
 	

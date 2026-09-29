@@ -10,7 +10,7 @@ async function startProcessor() {
 	await connectProducer();
 	await startConsumer();
 
-	logger.info('Processor service is running and ready to process');
+	logger.info('Processor service is running and ready to process events');
 
 	process.on('SIGINT', async () => {
 		await disconnectProducer();

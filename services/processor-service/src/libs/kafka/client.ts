@@ -23,10 +23,10 @@ export const consumer = kafkaClient.consumer({ groupId: 'group-1' });
 
 export const connectProducer = async () => {
 	await producer.connect();
-	logger.info('Kafka Producer is connected');
+	logger.info('Kafka Producer is connected successfully');
 };
 
 export const disconnectProducer = async () => {
 	await producer.disconnect();
-	logger.info('Kafka Producer is disconnected');
+	logger.info('Kafka Producer is disconnected successfully');
 };

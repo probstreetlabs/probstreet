@@ -1,8 +1,8 @@
 import { Market } from '@probstreet/database';
 import { prisma } from '@probstreet/database';
 
-const REQUIRED_CONFIRMATIONS = 2; // Must be confirmed 2 consecutive times
-const CONFIRMATION_WINDOW_MS = 30_000; // Within 30 seconds
+const REQUIRED_CONFIRMATIONS = 2;
+const CONFIRMATION_WINDOW_MS = 30_000;
 
 export async function checkWickConfirmation(
 	market: Market,
@@ -13,7 +13,6 @@ export async function checkWickConfirmation(
 	const isHit = isConditionMet(currentPrice, targetValue, condition);
 
 	if (!isHit) {
-		// Reset counter — price fell back, wick confirmed
 		if (market.wickConfirmCount > 0) {
 			await prisma.market.update({
 				where: { id: market.id },
@@ -23,7 +22,6 @@ export async function checkWickConfirmation(
 		return { confirmed: false, count: 0 };
 	}
 
-	// Price is past target
 	const newCount = market.wickConfirmCount + 1;
 	const firstSeen = market.wickFirstSeenAt || new Date();
 
@@ -32,7 +30,6 @@ export async function checkWickConfirmation(
 		data: { wickConfirmCount: newCount, wickFirstSeenAt: firstSeen },
 	});
 
-	// Check: enough confirmations AND within time window?
 	const elapsed = Date.now() - firstSeen.getTime();
 	if (newCount >= REQUIRED_CONFIRMATIONS && elapsed <= CONFIRMATION_WINDOW_MS) {
 		return { confirmed: true, count: newCount };

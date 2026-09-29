@@ -11,8 +11,12 @@ if (ENV.SNAPSHOT_DB_URL) {
 		max: 10,
 	});
 
+	snapshotDbPool.on('connect', () => {
+		logger.info('Snapshot DB connected successfully');
+	});
+
 	snapshotDbPool.on('error', (err) => {
-		logger.error({ err }, 'Unexpected error on idle snapshot DB client');
+		logger.error(`Failed to connect to Snapshot DB : ${err.message}`);
 	});
 }
 

@@ -1,6 +1,7 @@
-import { InfluxDB, Point } from '@influxdata/influxdb-client';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
+import { captureError } from '@/libs/sentry';
+import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 const influxDB = new InfluxDB({
 	url: ENV.INFLUX_URL,
@@ -48,6 +49,7 @@ setInterval(async () => {
 		try {
 			await writeApi.flush();
 		} catch (error) {
+			captureError(error, { tags: { controller: 'influxdb', action: 'FLUSH' } });
 			logger.error({ error }, 'Failed to flush InfluxDB writeApi');
 		}
 	}

@@ -84,9 +84,8 @@ export const createLogger = (serviceName: string) => {
 							'api-key': apiKey,
 						},
 						body: JSON.stringify(payload),
-					}).catch(() => {}); 
-				} catch (e) {
-				}
+					}).catch(() => {});
+				} catch (e) {}
 			},
 		};
 		streams.push({ stream: otelStream });
