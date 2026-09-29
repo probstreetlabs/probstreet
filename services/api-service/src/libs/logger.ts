@@ -1,3 +1,3 @@
 import { createLogger } from '@probstreet/logger';
 
-export const logger = createLogger('api-service');
+export const logger = createLogger('probstreet-api-service');

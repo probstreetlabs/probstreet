@@ -53,7 +53,7 @@ func InitProducer() {
 			}
 		}()
 
-		log.Info().Msg("📡 Kafka Producer connected")
+		log.Info().Msg("Kafka Producer connected")
 	})
 }
 

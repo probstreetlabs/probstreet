@@ -39,7 +39,14 @@ func InitLogger() {
 			Logger()
 	} else {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-		log.Logger = zerolog.New(os.Stdout).
+		
+		apiKey := os.Getenv("NEW_RELIC_API_KEY")
+		endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		
+		nrWriter := NewOTLPWriter("probstreet-matching-engine", apiKey, endpoint)
+		multi := zerolog.MultiLevelWriter(os.Stdout, nrWriter)
+
+		log.Logger = zerolog.New(multi).
 			Level(level).
 			With().
 			Str("service", SERVICE_NAME).

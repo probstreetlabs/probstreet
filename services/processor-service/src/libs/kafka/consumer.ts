@@ -5,6 +5,7 @@ import { captureError } from '@/libs/sentry';
 import { initDLQTable, pushToDLQ } from '@/libs/dlq';
 import { produceToRetryTopic } from './retryProducer';
 import { KafkaMessageSchema } from '@/validations/kafka';
+import { trace } from '@opentelemetry/api';
 
 export const startConsumer = async () => {
 	await initDLQTable();
@@ -25,7 +26,14 @@ export const startConsumer = async () => {
 				const eventType: string = parsedEvent.type;
 				const eventData: unknown = parsedEvent.data;
 
-				await routeEvent(eventType, eventData);
+				const tracer = trace.getTracer('probstreet-processor-service');
+				const span = tracer.startSpan(`process_db: ${eventType}`);
+
+				try {
+					await routeEvent(eventType, eventData);
+				} finally {
+					span.end();
+				}
 
 				await consumer.commitOffsets([
 					{ topic, partition, offset: (Number(message.offset) + 1).toString() },

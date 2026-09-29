@@ -203,7 +203,7 @@ export async function checkAndResolveCryptoMarkets() {
 }
 
 export function startCryptoResolverCron() {
-	logger.info('⚡ Starting Deterministic Crypto Resolver Cron (every 15s)');
+	logger.info('Starting Deterministic Crypto Resolver Cron (every 15s)');
 	cron.schedule('*/15 * * * * *', async () => {
 		await checkAndResolveCryptoMarkets();
 	});

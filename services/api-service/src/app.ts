@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/bun';
 import { swaggerUI } from '@hono/swagger-ui';
 import { swaggerDocument } from '@/docs/swagger';
 import { secureHeaders } from 'hono/secure-headers';
+import { httpInstrumentationMiddleware } from '@hono/otel';
 import {
 	aapiRoutes,
 	authRoutes,
@@ -29,6 +30,7 @@ import {
 
 const app = new Hono();
 
+app.use('*', httpInstrumentationMiddleware());
 app.use(logger());
 app.use(
 	cors({

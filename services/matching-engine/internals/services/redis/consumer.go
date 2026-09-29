@@ -11,6 +11,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel"
 )
 
 func Consumer(ctx context.Context, client *redis.Client) {
@@ -59,6 +60,11 @@ func Consumer(ctx context.Context, client *redis.Client) {
 				Str("responseId", data.ResponseId).
 				Interface("data", data.Data).
 				Msg("Successfully parsed queue payload")
+
+			tracer := otel.Tracer("probstreet-matching-engine")
+
+			_, span := tracer.Start(ctx, data.EventType)
+			defer span.End()
 
 			response := router.RouteEvent(data)
 

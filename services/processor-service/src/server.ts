@@ -1,10 +1,8 @@
+import './instrument';
 import { logger } from '@/libs/logger';
 import { setupSentry } from '@/libs/sentry';
-import { initTelemetry } from '@/libs/opentelemetry';
 import { startConsumer } from '@/libs/kafka/consumer';
 import { connectProducer, disconnectProducer } from '@/libs/kafka/client';
-
-initTelemetry('probstreet-processor-service');
 
 async function startProcessor() {
 	setupSentry();

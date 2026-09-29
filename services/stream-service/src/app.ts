@@ -5,8 +5,11 @@ import { logger } from '@/libs/logger';
 import { routes } from '@/routes/routes';
 import { captureError } from '@/libs/sentry';
 import { getRequestListener } from '@hono/node-server';
+import { httpInstrumentationMiddleware } from '@hono/otel';
 
 const app = new Hono();
+
+app.use('*', httpInstrumentationMiddleware());
 
 app.route('/api/v1', routes);
 
