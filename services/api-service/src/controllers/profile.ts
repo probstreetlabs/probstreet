@@ -146,8 +146,18 @@ export const getWatchlist = async (c: Context) => {
 		const user = c.get('user');
 		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
 
+		const page = parseInt(c.req.query('page') || '1');
+		const take = 7;
+		const skip = (page - 1) * take;
+
+		const totalCount = await prisma.watchlist.count({
+			where: { userId: user.id },
+		});
+
 		const watchlist = await prisma.watchlist.findMany({
 			where: { userId: user.id },
+			take,
+			skip,
 			include: {
 				market: {
 					select: {
@@ -178,6 +188,7 @@ export const getWatchlist = async (c: Context) => {
 				volume: Number(w.market.volume || 0),
 				category: w.market.category?.categoryName || 'Unknown',
 			})),
+			totalPages: Math.ceil(totalCount / take),
 		});
 	} catch (error: any) {
 		captureError(error, {
@@ -256,7 +267,29 @@ export const getPublicProfile = async (c: Context) => {
 				404,
 			);
 
-		const [tradeStats, openPositionsCount, netProfit, positions, recentActivity] =
+		const positionsPage = parseInt(c.req.query('positionsPage') || '1');
+		const historyPage = parseInt(c.req.query('historyPage') || '1');
+		const take = 7;
+		const skipPositions = (positionsPage - 1) * take;
+		const skipHistory = (historyPage - 1) * take;
+
+		const q = c.req.query('q') || '';
+		const filter = c.req.query('filter') || 'All';
+
+		const positionsWhere: any = { userId: user.id };
+		if (q) {
+			positionsWhere.market = { title: { contains: q, mode: 'insensitive' } };
+		}
+
+		const historyWhere: any = { userId: user.id, status: { not: 'FAILED' } };
+		if (q) {
+			historyWhere.market = { title: { contains: q, mode: 'insensitive' } };
+		}
+		if (filter !== 'All') {
+			historyWhere.orderType = filter as any;
+		}
+
+		const [tradeStats, openPositionsCount, netProfit, totalPositionsCount, positions, totalHistoryCount, recentActivity] =
 			await Promise.all([
 				prisma.trade.aggregate({
 					where: {
@@ -280,9 +313,14 @@ export const getPublicProfile = async (c: Context) => {
 						return 0;
 					}),
 
+				prisma.position.count({
+					where: positionsWhere,
+				}),
+
 				prisma.position.findMany({
-					where: { userId: user.id },
-					take: 50,
+					where: positionsWhere,
+					take,
+					skip: skipPositions,
 					include: {
 						market: {
 							select: {
@@ -299,18 +337,20 @@ export const getPublicProfile = async (c: Context) => {
 					},
 				}),
 
+				prisma.order.count({
+					where: historyWhere,
+				}),
+
 				prisma.order.findMany({
-					where: {
-						userId: user.id,
-						status: { not: 'FAILED' },
-					},
+					where: historyWhere,
 					include: {
 						market: {
 							select: { id: true, title: true, symbol: true, thumbnail: true },
 						},
 					},
 					orderBy: { createdAt: 'desc' },
-					take: 50,
+					take,
+					skip: skipHistory,
 				}),
 			]);
 
@@ -330,6 +370,8 @@ export const getPublicProfile = async (c: Context) => {
 				},
 				positions,
 				recentActivity,
+				positionsTotalPages: Math.ceil(totalPositionsCount / take),
+				historyTotalPages: Math.ceil(totalHistoryCount / take),
 			},
 		});
 	} catch (error: any) {

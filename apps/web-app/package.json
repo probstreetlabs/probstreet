@@ -39,6 +39,7 @@
 		"axios": "^1.11.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"cn": "^0.4.0",
 		"date-fns": "^4.4.0",
 		"framer-motion": "^12.43.0",
 		"i18next": "^26.3.6",

@@ -9,8 +9,6 @@ import {
 	Loader2,
 	Search,
 	ChevronDown,
-	ChevronLeft,
-	ChevronRight,
 	Share2,
 	Copy,
 	BadgeCheck,
@@ -18,6 +16,14 @@ import {
 import notFoundImg from '@/assets/images/404.avif';
 import emptyStateIcon from '@/assets/images/LogoutModal.svg';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface PublicProfile {
 	id: string;
@@ -50,7 +56,21 @@ interface PublicProfile {
 		};
 	}>;
 	recentActivity?: any[];
+	positionsTotalPages?: number;
+	historyTotalPages?: number;
 }
+
+const SkeletonLoader = ({ rows = 7 }: { rows?: number }) => (
+	<div className="w-full flex flex-col animate-pulse border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mt-4">
+		<div className="h-12 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800" />
+		{[...Array(rows)].map((_, i) => (
+			<div
+				key={i}
+				className="w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+			/>
+		))}
+	</div>
+);
 
 const generateMockChartData = () => {
 	const data = [];
@@ -73,8 +93,10 @@ export default function ProfilePage() {
 	const [positionsPage, setPositionsPage] = useState(1);
 	const [activityFilter, setActivityFilter] = useState('All');
 	const [activityPage, setActivityPage] = useState(1);
-	const itemsPerPage = 10;
 	const [chartData] = useState(() => generateMockChartData());
+
+	const [isPositionsLoading, setIsPositionsLoading] = useState(true);
+	const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
 	useEffect(() => {
 		if (!username) {
@@ -84,7 +106,10 @@ export default function ProfilePage() {
 
 		const fetchProfile = async () => {
 			try {
-				const res = await api.get(`/profile/${username}`);
+				if (activeTab === 'positions') setIsPositionsLoading(true);
+				else setIsHistoryLoading(true);
+
+				const res = await api.get(`/profile/${username}?positionsPage=${positionsPage}&historyPage=${activityPage}&q=${searchQuery}&filter=${activityFilter}`);
 				if (res.data?.success) {
 					setProfile(res.data.data);
 				} else {
@@ -96,11 +121,13 @@ export default function ProfilePage() {
 				}
 			} finally {
 				setLoading(false);
+				setIsPositionsLoading(false);
+				setIsHistoryLoading(false);
 			}
 		};
 
 		fetchProfile();
-	}, [username, navigate]);
+	}, [username, navigate, positionsPage, activityPage, activeTab]);
 
 	if (loading) {
 		return (
@@ -142,15 +169,6 @@ export default function ProfilePage() {
 	const joinedDate = new Date(profile.joinedAt).toLocaleDateString('en-IN', {
 		month: 'short',
 		year: 'numeric',
-	});
-
-	const filteredPositions = profile.positions.filter((pos) => {
-		// Only show open market positions — closed ones are in activity
-		if (pos.market?.status !== 'OPEN') return false;
-		const matchesSearch = (pos.market?.title || '')
-			.toLowerCase()
-			.includes(searchQuery.toLowerCase());
-		return matchesSearch;
 	});
 
 	return (
@@ -356,7 +374,7 @@ export default function ProfilePage() {
 								<div className="text-xs font-semibold text-gray-500 uppercase">NOW</div>
 								<div className="text-xs font-semibold text-gray-500 uppercase">VALUE</div>
 							</div>
-							{filteredPositions.length === 0 ? (
+							{!isPositionsLoading && (profile?.positions || []).length === 0 ? (
 								<div className="py-20 flex flex-col items-center justify-center gap-3 text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
 									<img src={emptyStateIcon} alt="Empty" className="w-20 h-20 object-contain mb-2" />
 									<p className="text-gray-900 dark:text-white font-semibold text-sm">
@@ -365,8 +383,10 @@ export default function ProfilePage() {
 								</div>
 							) : (
 								<div className="divide-y divide-gray-100 dark:divide-gray-800">
-									{(() => {
-										const positionsRows = filteredPositions.flatMap((pos) => {
+									{isPositionsLoading ? (
+										<SkeletonLoader rows={7} />
+									) : (() => {
+										const positionsRows = (profile?.positions || []).flatMap((pos) => {
 											const rows = [];
 											if (pos.yesQuantity > 0 || pos.yesInvested > 0) {
 												const qty = Number(pos.yesQuantity || 0);
@@ -413,11 +433,8 @@ export default function ProfilePage() {
 											return rows;
 										});
 
-										const totalPages = Math.ceil(positionsRows.length / itemsPerPage);
-										const paginatedRows = positionsRows.slice(
-											(positionsPage - 1) * itemsPerPage,
-											positionsPage * itemsPerPage,
-										);
+										const totalPages = profile?.positionsTotalPages || 1;
+										const paginatedRows = positionsRows;
 
 										return (
 											<>
@@ -472,27 +489,48 @@ export default function ProfilePage() {
 														</Link>
 													);
 												})}
-												{totalPages > 1 && (
-													<div className="flex items-center justify-center gap-4 px-6 py-4 w-full">
-														<button
-															onClick={() => setPositionsPage((p) => Math.max(1, p - 1))}
-															disabled={positionsPage === 1}
-															className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-														>
-															<ChevronLeft size={16} /> Previous
-														</button>
-														<span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
-															Page {positionsPage} of {totalPages}
-														</span>
-														<button
-															onClick={() => setPositionsPage((p) => Math.min(totalPages, p + 1))}
-															disabled={positionsPage === totalPages}
-															className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-														>
-															Next <ChevronRight size={16} />
-														</button>
+													<div
+														className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-gray-50/80 dark:bg-[#111827]'}`}
+													>
+														<Pagination>
+															<PaginationContent>
+																<PaginationItem>
+																	<PaginationPrevious
+																		href="#"
+																		onClick={(e) => {
+																			e.preventDefault();
+																			setPositionsPage((p) => Math.max(1, p - 1));
+																		}}
+																		className={positionsPage === 1 ? 'pointer-events-none opacity-50' : ''}
+																	/>
+																</PaginationItem>
+																{[...Array(totalPages)].map((_, i) => (
+																	<PaginationItem key={i}>
+																		<PaginationLink
+																			href="#"
+																			isActive={positionsPage === i + 1}
+																			onClick={(e) => {
+																				e.preventDefault();
+																				setPositionsPage(i + 1);
+																			}}
+																		>
+																			{i + 1}
+																		</PaginationLink>
+																	</PaginationItem>
+																))}
+																<PaginationItem>
+																	<PaginationNext
+																		href="#"
+																		onClick={(e) => {
+																			e.preventDefault();
+																			setPositionsPage((p) => Math.min(totalPages, p + 1));
+																		}}
+																		className={positionsPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+																	/>
+																</PaginationItem>
+															</PaginationContent>
+														</Pagination>
 													</div>
-												)}
 											</>
 										);
 									})()}
@@ -507,22 +545,21 @@ export default function ProfilePage() {
 				<div className="w-full overflow-x-auto scrollbar-hide pb-4">
 					<div className="min-w-150 flex flex-col rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
 						{(() => {
-							const historyData = profile.recentActivity || [];
-							const filteredHistory = historyData
-								.filter((act) =>
-									act.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()),
-								)
-								.filter((act) => activityFilter === 'All' || act.orderType === activityFilter);
+							const paginatedHistory = profile.recentActivity || [];
+							const totalPages = profile.historyTotalPages || 1;
 
-							if (filteredHistory.length === 0) {
-								return (
-									<>
-										<div className="grid grid-cols-[80px_1fr_170px_80px] gap-2 md:gap-4 px-4 md:px-6 py-4 border-b border-gray-400/25 bg-gray-50 dark:bg-gray-800/50">
-											<div className="text-xs font-semibold text-gray-500 uppercase">TYPE</div>
-											<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
-											<div className="text-xs font-semibold text-gray-500 uppercase">TOTAL</div>
-											<div className="text-xs font-semibold text-gray-500 uppercase">TIME</div>
-										</div>
+							return (
+								<>
+									<div className="grid grid-cols-[80px_1fr_170px_80px] gap-2 md:gap-4 px-4 md:px-6 py-4 border-b border-gray-400/25 bg-gray-50 dark:bg-gray-800/50">
+										<div className="text-xs font-semibold text-gray-500 uppercase">TYPE</div>
+										<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
+										<div className="text-xs font-semibold text-gray-500 uppercase">TOTAL</div>
+										<div className="text-xs font-semibold text-gray-500 uppercase">TIME</div>
+									</div>
+									
+									{isHistoryLoading ? (
+										<SkeletonLoader rows={7} />
+									) : paginatedHistory.length === 0 ? (
 										<div className="py-20 flex flex-col items-center justify-center gap-3 text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
 											<img
 												src={emptyStateIcon}
@@ -533,91 +570,98 @@ export default function ProfilePage() {
 												No activity found
 											</p>
 										</div>
-									</>
-								);
-							}
-
-							const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-							const paginatedHistory = filteredHistory.slice(
-								(activityPage - 1) * itemsPerPage,
-								activityPage * itemsPerPage,
-							);
-
-							return (
-								<>
-									<div className="grid grid-cols-[80px_1fr_170px_80px] gap-2 md:gap-4 px-4 md:px-6 py-4 border-b border-gray-400/25 bg-gray-50 dark:bg-gray-800/50">
-										<div className="text-xs font-semibold text-gray-500 uppercase">TYPE</div>
-										<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
-										<div className="text-xs font-semibold text-gray-500 uppercase">TOTAL</div>
-										<div className="text-xs font-semibold text-gray-500 uppercase">TIME</div>
-									</div>
-									<div className="divide-y divide-gray-100 dark:divide-gray-800">
-										{paginatedHistory.map((activity, i) => (
-											<div
-												key={activity.id}
-												className={`grid grid-cols-[80px_1fr_170px_80px] gap-2 md:gap-4 px-4 md:px-6 py-4 items-center text-xs md:text-sm transition-colors ${i % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'}`}
-											>
-												<div className="flex items-center">
-													<span
-														className={`text-xs font-bold flex items-center gap-1 ${activity.orderType === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
-													>
-														{activity.orderType === 'BUY' ? '+' : '-'} {activity.orderType}
-													</span>
-												</div>
-
-												<div className="flex items-center gap-3">
-													{activity.market?.thumbnail && (
-														<img
-															src={activity.market.thumbnail}
-															alt=""
-															className="w-8 h-8 rounded-md object-cover shrink-0"
-														/>
-													)}
-													<div className="flex flex-col">
-														<Link
-															to={`/events/${activity.market?.symbol}`}
-															className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 hover:underline cursor-pointer"
-															title={activity.market?.title}
+									) : (
+										<div className="divide-y divide-gray-100 dark:divide-gray-800">
+											{paginatedHistory.map((activity, i) => (
+												<div
+													key={activity.id}
+													className={`grid grid-cols-[80px_1fr_170px_80px] gap-2 md:gap-4 px-4 md:px-6 py-4 items-center text-xs md:text-sm transition-colors ${i % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+												>
+													<div className="flex items-center">
+														<span
+															className={`text-xs font-bold flex items-center gap-1 ${activity.orderType === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
 														>
-															{activity.market?.title || 'Unknown Market'}
-														</Link>
-														<span className="text-[11px] text-gray-500 mt-0.5">
-															{activity.quantity} shares • {activity.stockType}
+															{activity.orderType === 'BUY' ? '+' : '-'} {activity.orderType}
 														</span>
 													</div>
-												</div>
 
-												<div className="text-sm text-gray-900 dark:text-white font-medium">
-													₹{(activity.quantity * Number(activity.price || 0)).toFixed(2)}
+													<div className="flex items-center gap-3">
+														{activity.market?.thumbnail && (
+															<img
+																src={activity.market.thumbnail}
+																alt=""
+																className="w-8 h-8 rounded-md object-cover shrink-0"
+															/>
+														)}
+														<div className="flex flex-col">
+															<Link
+																to={`/events/${activity.market?.symbol}`}
+																className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 hover:underline cursor-pointer"
+																title={activity.market?.title}
+															>
+																{activity.market?.title || 'Unknown Market'}
+															</Link>
+															<span className="text-[11px] text-gray-500 mt-0.5">
+																{activity.quantity} shares • {activity.stockType}
+															</span>
+														</div>
+													</div>
+
+													<div className="text-sm text-gray-900 dark:text-white font-medium">
+														₹{(activity.quantity * Number(activity.price || 0)).toFixed(2)}
+													</div>
+													<div className="text-sm text-gray-500 flex">
+														{new Date(activity.createdAt).toLocaleTimeString([], {
+															hour: '2-digit',
+															minute: '2-digit',
+														})}
+													</div>
 												</div>
-												<div className="text-sm text-gray-500 flex">
-													{new Date(activity.createdAt).toLocaleTimeString([], {
-														hour: '2-digit',
-														minute: '2-digit',
-													})}
-												</div>
-											</div>
-										))}
-									</div>
+											))}
+										</div>
+									)}
 									{totalPages > 1 && (
-										<div className="flex items-center justify-center gap-4 px-6 py-4">
-											<button
-												onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
-												disabled={activityPage === 1}
-												className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-											>
-												<ChevronLeft size={16} /> Previous
-											</button>
-											<span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
-												Page {activityPage} of {totalPages}
-											</span>
-											<button
-												onClick={() => setActivityPage((p) => Math.min(totalPages, p + 1))}
-												disabled={activityPage === totalPages}
-												className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-											>
-												Next <ChevronRight size={16} />
-											</button>
+										<div
+											className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl bg-gray-50/80 dark:bg-[#111827]`}
+										>
+											<Pagination>
+												<PaginationContent>
+													<PaginationItem>
+														<PaginationPrevious
+															href="#"
+															onClick={(e) => {
+																e.preventDefault();
+																setActivityPage((p) => Math.max(1, p - 1));
+															}}
+															className={activityPage === 1 ? 'pointer-events-none opacity-50' : ''}
+														/>
+													</PaginationItem>
+													{[...Array(totalPages)].map((_, i) => (
+														<PaginationItem key={i}>
+															<PaginationLink
+																href="#"
+																isActive={activityPage === i + 1}
+																onClick={(e) => {
+																	e.preventDefault();
+																	setActivityPage(i + 1);
+																}}
+															>
+																{i + 1}
+															</PaginationLink>
+														</PaginationItem>
+													))}
+													<PaginationItem>
+														<PaginationNext
+															href="#"
+															onClick={(e) => {
+																e.preventDefault();
+																setActivityPage((p) => Math.min(totalPages, p + 1));
+															}}
+															className={activityPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+														/>
+													</PaginationItem>
+												</PaginationContent>
+											</Pagination>
 										</div>
 									)}
 								</>

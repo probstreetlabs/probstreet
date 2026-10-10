@@ -688,6 +688,8 @@ export const getMe = async (c: Context) => {
 				isNewUser: true,
 				onboardingStatus: true,
 				referralCode: true,
+				bio: true,
+				usernameChangedAt: true,
 				createdAt: true,
 			},
 		});

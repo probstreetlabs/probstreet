@@ -174,7 +174,7 @@ export default function EventsPage() {
 												<img
 													src={event.thumbnail || defaultThumbnail}
 													alt={event.title}
-													className="w-14 h-14 object-cover rounded-lg border border-gray-100 dark:border-gray-800 shrink-0"
+													className="w-14 h-14 object-cover rounded-lg shrink-0"
 												/>
 												<h2 className="md:text-base text-sm font-medium line-clamp-3 leading-snug overflow-hidden text-gray-900 dark:text-white">
 													{event.title}

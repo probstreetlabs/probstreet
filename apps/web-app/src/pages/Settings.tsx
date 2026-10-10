@@ -3,8 +3,9 @@ import api from '@/config/axios';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState, useRef } from 'react';
+import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
 import { UsernameModal } from '@/components/modals/UsernameModal';
-import { User, Bell, LogOut, Trash2, Wallet, Edit2, ChevronRight } from 'lucide-react';
+import { User, Bell, LogOut, Trash2, Wallet, Edit2, ChevronRight, X } from 'lucide-react';
 
 export default function Settings() {
 	const [activeTab, setActiveTab] = useState('profile');
@@ -27,6 +28,7 @@ export default function Settings() {
 	const [inAppTradeExecuted, setInAppTradeExecuted] = useState(true);
 	const [inAppPriceAlerts, setInAppPriceAlerts] = useState(false);
 	const [inAppMarketResolved, setInAppMarketResolved] = useState(true);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
 
 	useEffect(() => {
 		setUsername(user?.username || '');
@@ -135,19 +137,17 @@ export default function Settings() {
 	};
 
 	const handleDeleteAccount = async () => {
-		if (confirm('Permanently delete your account. This action cannot be undone. Are you sure?')) {
-			try {
-				await api.delete('/settings/account');
-				toast.success('Account deleted successfully');
-				logout();
-			} catch (error) {
-				toast.error('Failed to delete account');
-			}
+		try {
+			await api.delete('/settings/account');
+			toast.success('Account deleted successfully');
+			logout();
+		} catch (error) {
+			toast.error('Failed to delete account');
 		}
 	};
 
 	return (
-		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center py-4 md:py-8 transition-colors">
+		<div className="w-full min-h-[90vh] bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center py-4 md:py-8 transition-colors">
 			<div className="w-full max-w-236 px-6 flex flex-col gap-6">
 				<nav className="md:text-base text-sm mt-4 mb-6">
 					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">
@@ -346,21 +346,23 @@ export default function Settings() {
 									</div>
 								</div>
 
-								<div className="bg-red-50/50 dark:bg-[#150505] border border-red-100 dark:border-red-900/30 rounded-2xl p-6">
-									<div className="flex items-start justify-between gap-8">
+								<div className="bg-linear-to-br from-red-500/10 to-red-600/5 border border-red-500/20 dark:from-red-900/20 dark:to-red-950/10 dark:border-red-500/20 rounded-2xl p-6 relative overflow-hidden group">
+									<div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+									<div className="relative flex items-center justify-between gap-8">
 										<div>
-											<h3 className="text-lg font-bold text-red-600 dark:text-red-500 mb-1.5">
-												Delete account
+											<h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-1.5 flex items-center gap-2">
+												Danger Zone
 											</h3>
-											<p className="text-sm text-red-900/60 dark:text-red-400/80 font-medium">
-												Permanently delete your account. This action cannot be undone.
+											<p className="text-sm text-red-800/80 dark:text-red-400/80 font-medium leading-relaxed">
+												Permanently delete your account and all associated data. This action cannot
+												be undone.
 											</p>
 										</div>
 										<button
-											onClick={handleDeleteAccount}
-											className="shrink-0 flex items-center gap-2 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl font-bold text-sm hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors cursor-pointer"
+											onClick={() => setShowDeleteModal(true)}
+											className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm shadow-red-500/20 transition-all cursor-pointer"
 										>
-											<Trash2 size={16} /> Delete
+											<Trash2 size={16} /> Delete Account
 										</button>
 									</div>
 								</div>
@@ -368,7 +370,7 @@ export default function Settings() {
 						)}
 
 						{activeTab === 'notifications' && (
-							<div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+							<div className="space-y-8 animate-in mb-10 fade-in slide-in-from-bottom-2 duration-300">
 								<h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 									Notifications
 								</h2>
@@ -562,6 +564,38 @@ export default function Settings() {
 						onClose={() => setIsUsernameModalOpen(false)}
 						usernameChangedAt={user?.usernameChangedAt}
 					/>
+				)}
+				{showDeleteModal && (
+					<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+						<div className="bg-white dark:bg-[#111827] rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-white/5 animate-in zoom-in-95 duration-200 relative">
+							<button
+								onClick={() => setShowDeleteModal(false)}
+								className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors cursor-pointer"
+							>
+								<X size={20} />
+							</button>
+							<div className="p-8 flex flex-col items-center text-center">
+								<img
+									src={LogoutModalIcon}
+									alt="Delete Account"
+									className="w-20 h-20 object-contain mb-5"
+								/>
+								<h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+									Delete Account
+								</h3>
+								<p className="text-gray-500 dark:text-gray-400 text-[15px] leading-relaxed mb-8 px-2">
+									Are you sure you want to delete your account? This action cannot be undone and all
+									data will be lost.
+								</p>
+								<button
+									onClick={handleDeleteAccount}
+									className="w-full py-3.5 rounded-xl font-bold text-base bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-all cursor-pointer active:scale-[0.98]"
+								>
+									Delete Account
+								</button>
+							</div>
+						</div>
+					</div>
 				)}
 			</div>
 		</div>

@@ -39,7 +39,7 @@ export default function WalletPage() {
 	};
 
 	return (
-		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-6 md:px-4 md:pt-8 pt-4 pb-10 md:pb-0 transition-colors min-h-screen">
+		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-6 md:px-4 md:pt-8 pt-4 pb-10 transition-colors min-h-[88vh]">
 			<div className="w-full max-w-4xl flex flex-col gap-8">
 				<nav className="md:text-base text-sm mt-4 md:mb-3 mb-1">
 					<ol className="list-reset flex items-center text-gray-500 dark:text-gray-400 space-x-0.5">

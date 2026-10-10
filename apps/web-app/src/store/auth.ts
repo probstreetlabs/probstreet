@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '@/config/axios';
+import { queryClient } from '@/lib/queryClient';
 
 export type OnboardingStatus = 'PENDING_USERNAME' | 'PENDING_PREFERENCES' | 'COMPLETED';
 
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 		} catch (error) {
 			console.error('Logout failed on backend', error);
 		} finally {
+			queryClient.clear();
 			set({ user: null, isAuthenticated: false });
 		}
 	},

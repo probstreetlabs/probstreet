@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import api from '@/config/axios';
 import { socket } from '@/socket';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import logo from '@/assets/images/logo.avif';
@@ -9,18 +10,16 @@ import darkLogo from '@/assets/images/dark-logo.avif';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import emptyStateIcon from '@/assets/images/LogoutModal.svg';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import {
-	Loader2,
-	Eye,
-	EyeOff,
-	Search,
-	Download,
-	ChevronDown,
-	ChevronLeft,
-	ChevronRight,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Eye, EyeOff, Search, Download, ChevronDown } from 'lucide-react';
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface PortfolioData {
 	positions: any[];
@@ -33,7 +32,22 @@ interface PortfolioData {
 	totalCurrentValue?: number;
 	totalPnL?: number;
 	unrealizedPnL?: number;
+	positionsTotalPages?: number;
+	ordersTotalPages?: number;
+	historyTotalPages?: number;
 }
+
+const SkeletonLoader = ({ rows = 7 }: { rows?: number }) => (
+	<div className="w-full flex flex-col animate-pulse border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mt-4">
+		<div className="h-12 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800" />
+		{[...Array(rows)].map((_, i) => (
+			<div
+				key={i}
+				className="w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+			/>
+		))}
+	</div>
+);
 
 const generateMockChartData = () => {
 	const data = [];
@@ -59,10 +73,14 @@ export default function Portfolio() {
 	const [positionsPage, setPositionsPage] = useState(1);
 	const [openOrdersPage, setOpenOrdersPage] = useState(1);
 	const [historyPage, setHistoryPage] = useState(1);
-	const itemsPerPage = 10;
 	const [positionFilter, setPositionFilter] = useState('Active');
 	const [historyFilter, setHistoryFilter] = useState('All');
 	const [processing, setProcessing] = useState<string | null>(null);
+	const [refreshCounter, setRefreshCounter] = useState(0);
+
+	const [isPositionsLoading, setIsPositionsLoading] = useState(true);
+	const [isOrdersLoading, setIsOrdersLoading] = useState(true);
+	const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
 	const handleSell = async (row: any) => {
 		try {
@@ -146,21 +164,13 @@ export default function Portfolio() {
 	const totalPnL = Number(data?.totalPnL ?? 0);
 	const unrealizedPnL = Number(data?.unrealizedPnL || 0);
 	const pnlColor = totalPnL > 0 ? '#10b981' : totalPnL < 0 ? '#ef4444' : '#6b7280';
-	const [ordersLoaded, setOrdersLoaded] = useState(false);
-	const [historyLoaded, setHistoryLoaded] = useState(false);
 
 	useEffect(() => {
-		const fetchInitial = async () => {
-			try {
-				const [summaryRes, positionsRes] = await Promise.all([
-					api.get(`/portfolio/summary`),
-					api.get(`/portfolio/positions`),
-				]);
-
-				if (summaryRes.data.success && positionsRes.data.success) {
+		if (isAuthenticated) {
+			api.get(`/portfolio/summary`).then((summaryRes) => {
+				if (summaryRes.data.success) {
 					setData((prev) => ({
-						...(prev ?? { positions: [], activeOrders: [], recentActivity: [] }),
-						positions: positionsRes.data.data || [],
+						...(prev ?? ({ positions: [], activeOrders: [], recentActivity: [] } as any)),
 						walletBalance: summaryRes.data.data.walletBalance || 0,
 						walletLocked: summaryRes.data.data.walletLocked || 0,
 						grossWinnings: summaryRes.data.data.grossWinnings || 0,
@@ -169,16 +179,33 @@ export default function Portfolio() {
 						totalPnL: summaryRes.data.data.totalPnL ?? 0,
 						unrealizedPnL: summaryRes.data.data.unrealizedPnL || 0,
 					}));
+					setLoading(false);
 				}
-			} catch (err) {
-				console.error('Failed to fetch portfolio', err);
-			} finally {
-				setLoading(false);
-			}
-		};
+			});
+		}
+	}, [isAuthenticated]);
 
-		if (isAuthenticated) fetchInitial();
+	useEffect(() => {
+		if (isAuthenticated && activeTab === 'positions') {
+			setIsPositionsLoading(true);
+			api
+				.get(
+					`/portfolio/positions?positionsPage=${positionsPage}&q=${searchQuery}&filter=${positionFilter}`,
+				)
+				.then((res) => {
+					if (res.data.success) {
+						setData((prev) => ({
+							...(prev ?? ({ positions: [], activeOrders: [], recentActivity: [] } as any)),
+							positions: res.data.data || [],
+							positionsTotalPages: res.data.totalPages || 1,
+						}));
+					}
+				})
+				.finally(() => setIsPositionsLoading(false));
+		}
+	}, [isAuthenticated, positionsPage, searchQuery, positionFilter, activeTab, refreshCounter]);
 
+	useEffect(() => {
 		if (isAuthenticated && user?.id) {
 			const onConnect = () => {
 				socket.emit('SUBSCRIBE_USER', user.id);
@@ -194,14 +221,10 @@ export default function Portfolio() {
 
 			const handlePortfolioUpdate = async () => {
 				try {
-					const [summaryRes, positionsRes] = await Promise.all([
-						api.get(`/portfolio/summary`),
-						api.get(`/portfolio/positions`),
-					]);
-					if (summaryRes.data.success && positionsRes.data.success) {
+					const summaryRes = await api.get(`/portfolio/summary`);
+					if (summaryRes.data.success) {
 						setData((prev) => ({
-							...(prev ?? { positions: [], activeOrders: [], recentActivity: [] }),
-							positions: positionsRes.data.data || [],
+							...(prev ?? ({ positions: [], activeOrders: [], recentActivity: [] } as any)),
 							walletBalance: summaryRes.data.data.walletBalance || 0,
 							walletLocked: summaryRes.data.data.walletLocked || 0,
 							grossWinnings: summaryRes.data.data.grossWinnings || 0,
@@ -212,6 +235,7 @@ export default function Portfolio() {
 						}));
 					}
 				} catch {}
+				setRefreshCounter((prev) => prev + 1);
 				refetchBalance();
 			};
 
@@ -234,29 +258,50 @@ export default function Portfolio() {
 	}, [isAuthenticated, user?.id, refetchBalance]);
 
 	useEffect(() => {
-		if (activeTab === 'open' && !ordersLoaded && isAuthenticated) {
+		if (activeTab === 'open' && isAuthenticated) {
+			setIsOrdersLoading(true);
 			api
-				.get(`/portfolio/orders?ordersPage=1`)
+				.get(`/portfolio/orders?ordersPage=${openOrdersPage}&q=${searchQuery}`)
 				.then((res) => {
 					if (res.data.success) {
-						setData((prev) => (prev ? { ...prev, activeOrders: res.data.data || [] } : prev));
-						setOrdersLoaded(true);
+						setData((prev) =>
+							prev
+								? {
+										...prev,
+										activeOrders: res.data.data || [],
+										ordersTotalPages: res.data.totalPages || 1,
+									}
+								: prev,
+						);
 					}
 				})
-				.catch(() => {});
+				.finally(() => setIsOrdersLoading(false));
 		}
-		if (activeTab === 'history' && !historyLoaded && isAuthenticated) {
+	}, [activeTab, openOrdersPage, searchQuery, isAuthenticated, refreshCounter]);
+
+	useEffect(() => {
+		if (activeTab === 'history' && isAuthenticated) {
+			setIsHistoryLoading(true);
 			api
-				.get(`/portfolio/history?historyPage=1`)
+				.get(
+					`/portfolio/history?historyPage=${historyPage}&q=${searchQuery}&filter=${historyFilter}`,
+				)
 				.then((res) => {
 					if (res.data.success) {
-						setData((prev) => (prev ? { ...prev, recentActivity: res.data.data || [] } : prev));
-						setHistoryLoaded(true);
+						setData((prev) =>
+							prev
+								? {
+										...prev,
+										recentActivity: res.data.data || [],
+										historyTotalPages: res.data.totalPages || 1,
+									}
+								: prev,
+						);
 					}
 				})
-				.catch(() => {});
+				.finally(() => setIsHistoryLoading(false));
 		}
-	}, [activeTab, ordersLoaded, historyLoaded, isAuthenticated]);
+	}, [activeTab, historyPage, searchQuery, historyFilter, isAuthenticated, refreshCounter]);
 
 	if (loading) {
 		return (
@@ -470,51 +515,36 @@ export default function Portfolio() {
 				{/* --- POSITIONS TAB --- */}
 				{activeTab === 'positions' &&
 					(() => {
-						const filteredRows = (data?.positions || [])
-							.map((pos) => {
-								const market = pos.market;
-								const qty = Number(pos.yesQuantity > 0 ? pos.yesQuantity : pos.noQuantity) || 0;
-								const side = pos.yesQuantity > 0 ? 'YES' : 'NO';
-								const invested =
-									Number(pos.yesQuantity > 0 ? pos.yesInvested : pos.noInvested) || 0;
-								const avg = qty > 0 ? invested / qty : 0;
+						const paginatedRows = (data?.positions || []).map((pos) => {
+							const market = pos.market;
+							const qty = Number(pos.yesQuantity > 0 ? pos.yesQuantity : pos.noQuantity) || 0;
+							const side = pos.yesQuantity > 0 ? 'YES' : 'NO';
+							const invested = Number(pos.yesQuantity > 0 ? pos.yesInvested : pos.noInvested) || 0;
+							const avg = qty > 0 ? invested / qty : 0;
 
-								const isClosed = market?.status === 'CLOSED';
-								const sellValue =
-									side === 'YES' ? Number(pos.yesSellValue || 0) : Number(pos.noSellValue || 0);
-								const livePrice =
-									side === 'YES' ? Number(market?.yesPrice || 0) : Number(market?.noPrice || 0);
+							const isClosed = market?.status === 'CLOSED';
+							const sellValue =
+								side === 'YES' ? Number(pos.yesSellValue || 0) : Number(pos.noSellValue || 0);
+							const livePrice =
+								side === 'YES' ? Number(market?.yesPrice || 0) : Number(market?.noPrice || 0);
 
-								const currentPrice = isClosed ? (qty > 0 ? sellValue / qty : 0) : livePrice;
-								const currentValue = isClosed ? sellValue : qty * livePrice;
-								const pnl = currentValue - invested;
+							const currentPrice = isClosed ? (qty > 0 ? sellValue / qty : 0) : livePrice;
+							const currentValue = isClosed ? sellValue : qty * livePrice;
+							const pnl = currentValue - invested;
 
-								return {
-									...pos,
-									side,
-									qty,
-									invested,
-									avgPrice: avg,
-									currentPrice,
-									currentValue,
-									pnl,
-								};
-							})
-							.filter((row) => {
-								const matchesSearch = (row.market?.title || '')
-									.toLowerCase()
-									.includes(searchQuery.toLowerCase());
-								if (!matchesSearch) return false;
-								if (positionFilter === 'Active') return row.market?.status === 'OPEN';
-								if (positionFilter === 'Closed') return row.market?.status === 'CLOSED';
-								return true;
-							});
+							return {
+								...pos,
+								side,
+								qty,
+								invested,
+								avgPrice: avg,
+								currentPrice,
+								currentValue,
+								pnl,
+							};
+						});
 
-						const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-						const paginatedRows = filteredRows.slice(
-							(positionsPage - 1) * itemsPerPage,
-							positionsPage * itemsPerPage,
-						);
+						const totalPages = data?.positionsTotalPages || 1;
 
 						return (
 							<div className="w-full flex flex-col">
@@ -529,7 +559,9 @@ export default function Portfolio() {
 											<div className="text-xs font-semibold text-gray-500 uppercase">ACTION</div>
 										</div>
 
-										{filteredRows.length === 0 ? (
+										{isPositionsLoading ? (
+											<SkeletonLoader rows={7} />
+										) : paginatedRows.length === 0 ? (
 											<div className="py-20 flex flex-col items-center justify-center gap-3 text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
 												<img
 													src={emptyStateIcon}
@@ -634,25 +666,48 @@ export default function Portfolio() {
 
 								{/* Pagination Footer */}
 								<div
-									className={`w-full flex items-center justify-center gap-4 px-6 py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-white dark:bg-gray-900'}`}
+									className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-gray-50/80 dark:bg-[#111827]'}`}
 								>
-									<button
-										onClick={() => setPositionsPage((p) => Math.max(1, p - 1))}
-										disabled={positionsPage === 1}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										<ChevronLeft size={16} /> Previous
-									</button>
-									<span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
-										Page {positionsPage}
-									</span>
-									<button
-										onClick={() => setPositionsPage((p) => Math.min(totalPages, p + 1))}
-										disabled={positionsPage === totalPages}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										Next <ChevronRight size={16} />
-									</button>
+									<Pagination>
+										<PaginationContent>
+											<PaginationItem>
+												<PaginationPrevious
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setPositionsPage((p) => Math.max(1, p - 1));
+													}}
+													className={positionsPage === 1 ? 'pointer-events-none opacity-50' : ''}
+												/>
+											</PaginationItem>
+											{[...Array(totalPages)].map((_, i) => (
+												<PaginationItem key={i}>
+													<PaginationLink
+														href="#"
+														isActive={positionsPage === i + 1}
+														onClick={(e) => {
+															e.preventDefault();
+															setPositionsPage(i + 1);
+														}}
+													>
+														{i + 1}
+													</PaginationLink>
+												</PaginationItem>
+											))}
+											<PaginationItem>
+												<PaginationNext
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setPositionsPage((p) => Math.min(totalPages, p + 1));
+													}}
+													className={
+														positionsPage === totalPages ? 'pointer-events-none opacity-50' : ''
+													}
+												/>
+											</PaginationItem>
+										</PaginationContent>
+									</Pagination>
 								</div>
 							</div>
 						);
@@ -661,14 +716,8 @@ export default function Portfolio() {
 				{/* --- OPEN ORDERS TAB --- */}
 				{activeTab === 'open' &&
 					(() => {
-						const filteredOpenOrders = (data?.activeOrders || []).filter((order) =>
-							order.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()),
-						);
-						const totalPages = Math.ceil(filteredOpenOrders.length / itemsPerPage);
-						const paginatedOrders = filteredOpenOrders.slice(
-							(openOrdersPage - 1) * itemsPerPage,
-							openOrdersPage * itemsPerPage,
-						);
+						const paginatedOrders = data?.activeOrders || [];
+						const totalPages = data?.ordersTotalPages || 1;
 
 						return (
 							<div className="w-full flex flex-col">
@@ -684,7 +733,9 @@ export default function Portfolio() {
 											<div className="text-xs font-semibold text-gray-500 uppercase">ACTION</div>
 										</div>
 
-										{filteredOpenOrders.length === 0 ? (
+										{isOrdersLoading ? (
+											<SkeletonLoader rows={7} />
+										) : paginatedOrders.length === 0 ? (
 											<div className="py-20 flex flex-col items-center justify-center gap-3 text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
 												<img
 													src={emptyStateIcon}
@@ -753,25 +804,48 @@ export default function Portfolio() {
 								</div>
 
 								<div
-									className={`w-full flex items-center justify-center gap-4 px-6 py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-white dark:bg-gray-900'}`}
+									className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-gray-50/80 dark:bg-[#111827]'}`}
 								>
-									<button
-										onClick={() => setOpenOrdersPage((p) => Math.max(1, p - 1))}
-										disabled={openOrdersPage === 1}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										<ChevronLeft size={16} /> Previous
-									</button>
-									<span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
-										Page {openOrdersPage}
-									</span>
-									<button
-										onClick={() => setOpenOrdersPage((p) => Math.min(totalPages, p + 1))}
-										disabled={openOrdersPage === totalPages}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										Next <ChevronRight size={16} />
-									</button>
+									<Pagination>
+										<PaginationContent>
+											<PaginationItem>
+												<PaginationPrevious
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setOpenOrdersPage((p) => Math.max(1, p - 1));
+													}}
+													className={openOrdersPage === 1 ? 'pointer-events-none opacity-50' : ''}
+												/>
+											</PaginationItem>
+											{[...Array(totalPages)].map((_, i) => (
+												<PaginationItem key={i}>
+													<PaginationLink
+														href="#"
+														isActive={openOrdersPage === i + 1}
+														onClick={(e) => {
+															e.preventDefault();
+															setOpenOrdersPage(i + 1);
+														}}
+													>
+														{i + 1}
+													</PaginationLink>
+												</PaginationItem>
+											))}
+											<PaginationItem>
+												<PaginationNext
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setOpenOrdersPage((p) => Math.min(totalPages, p + 1));
+													}}
+													className={
+														openOrdersPage === totalPages ? 'pointer-events-none opacity-50' : ''
+													}
+												/>
+											</PaginationItem>
+										</PaginationContent>
+									</Pagination>
 								</div>
 							</div>
 						);
@@ -780,15 +854,8 @@ export default function Portfolio() {
 				{/* --- HISTORY TAB --- */}
 				{activeTab === 'history' &&
 					(() => {
-						const filteredHistory = (data?.recentActivity || [])
-							.filter((act) => act.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()))
-							.filter((act) => historyFilter === 'All' || act.orderType === historyFilter);
-
-						const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-						const paginatedHistory = filteredHistory.slice(
-							(historyPage - 1) * itemsPerPage,
-							historyPage * itemsPerPage,
-						);
+						const paginatedHistory = data?.recentActivity || [];
+						const totalPages = data?.historyTotalPages || 1;
 
 						return (
 							<div className="w-full flex flex-col">
@@ -801,7 +868,9 @@ export default function Portfolio() {
 											<div className="text-xs font-semibold text-gray-500 uppercase">TIME</div>
 										</div>
 
-										{filteredHistory.length === 0 ? (
+										{isHistoryLoading ? (
+											<SkeletonLoader rows={7} />
+										) : paginatedHistory.length === 0 ? (
 											<div className="py-20 flex flex-col items-center justify-center gap-3 text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
 												<img
 													src={emptyStateIcon}
@@ -873,25 +942,48 @@ export default function Portfolio() {
 								</div>
 
 								<div
-									className={`w-full flex items-center justify-center gap-4 px-6 py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-white dark:bg-gray-900'}`}
+									className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-gray-50/80 dark:bg-[#111827]'}`}
 								>
-									<button
-										onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-										disabled={historyPage === 1}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										<ChevronLeft size={16} /> Previous
-									</button>
-									<span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
-										Page {historyPage}
-									</span>
-									<button
-										onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
-										disabled={historyPage === totalPages}
-										className="flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										Next <ChevronRight size={16} />
-									</button>
+									<Pagination>
+										<PaginationContent>
+											<PaginationItem>
+												<PaginationPrevious
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setHistoryPage((p) => Math.max(1, p - 1));
+													}}
+													className={historyPage === 1 ? 'pointer-events-none opacity-50' : ''}
+												/>
+											</PaginationItem>
+											{[...Array(totalPages)].map((_, i) => (
+												<PaginationItem key={i}>
+													<PaginationLink
+														href="#"
+														isActive={historyPage === i + 1}
+														onClick={(e) => {
+															e.preventDefault();
+															setHistoryPage(i + 1);
+														}}
+													>
+														{i + 1}
+													</PaginationLink>
+												</PaginationItem>
+											))}
+											<PaginationItem>
+												<PaginationNext
+													href="#"
+													onClick={(e) => {
+														e.preventDefault();
+														setHistoryPage((p) => Math.min(totalPages, p + 1));
+													}}
+													className={
+														historyPage === totalPages ? 'pointer-events-none opacity-50' : ''
+													}
+												/>
+											</PaginationItem>
+										</PaginationContent>
+									</Pagination>
 								</div>
 							</div>
 						);

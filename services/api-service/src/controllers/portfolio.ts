@@ -143,8 +143,33 @@ export const getPortfolioPositions = async (c: Context) => {
 
 		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
 
+		const positionsPage = parseInt(c.req.query('positionsPage') || '1');
+		const q = c.req.query('q') || '';
+		const filter = c.req.query('filter') || 'All';
+		const take = 7;
+		const skip = (positionsPage - 1) * take;
+
+		const whereClause: any = { userId: user.id };
+		if (q) {
+			whereClause.market = {
+				title: { contains: q, mode: 'insensitive' },
+			};
+		}
+		if (filter !== 'All') {
+			if (filter === 'Active') {
+				whereClause.market = { ...whereClause.market, status: 'OPEN' };
+			} else if (filter === 'Closed') {
+				whereClause.market = { ...whereClause.market, status: 'CLOSED' };
+			}
+		}
+
+		const totalCount = await prisma.position.count({
+			where: whereClause,
+		});
+		const totalPages = Math.ceil(totalCount / take);
+
 		const positions = await prisma.position.findMany({
-			where: { userId: user.id },
+			where: whereClause,
 			include: {
 				market: {
 					select: {
@@ -159,9 +184,11 @@ export const getPortfolioPositions = async (c: Context) => {
 					},
 				},
 			},
+			take,
+			skip,
 		});
 
-		return c.json({ success: true, data: positions });
+		return c.json({ success: true, data: positions, totalPages });
 	} catch (error: any) {
 		captureError(error, { tags: { controller: 'portfolio', action: 'POSITIONS' } });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
@@ -175,17 +202,30 @@ export const getPortfolioOrders = async (c: Context) => {
 		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
 
 		const ordersPage = parseInt(c.req.query('ordersPage') || '1');
-		const take = 10;
+		const q = c.req.query('q') || '';
+		const take = 7;
 		const skip = (ordersPage - 1) * take;
 
+		const whereClause: any = {
+			userId: user.id,
+			status: { in: ['PENDING', 'PARTIAL'] },
+		};
+		if (q) {
+			whereClause.market = {
+				title: { contains: q, mode: 'insensitive' },
+			};
+		}
+
+		const totalCount = await prisma.order.count({
+			where: whereClause,
+		});
+		const totalPages = Math.ceil(totalCount / take);
+
 		const activeOrders = await prisma.order.findMany({
-			where: {
-				userId: user.id,
-				status: { in: ['PENDING', 'PARTIAL'] },
-			},
+			where: whereClause,
 			include: {
 				market: {
-					select: { id: true, title: true, symbol: true },
+					select: { id: true, title: true, symbol: true, thumbnail: true },
 				},
 			},
 			orderBy: { createdAt: 'desc' },
@@ -193,7 +233,7 @@ export const getPortfolioOrders = async (c: Context) => {
 			skip,
 		});
 
-		return c.json({ success: true, data: activeOrders });
+		return c.json({ success: true, data: activeOrders, totalPages });
 	} catch (error: any) {
 		captureError(error, { tags: { controller: 'portfolio', action: 'ORDERS' } });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
@@ -207,14 +247,31 @@ export const getPortfolioHistory = async (c: Context) => {
 		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
 
 		const historyPage = parseInt(c.req.query('historyPage') || '1');
-		const take = 10;
+		const q = c.req.query('q') || '';
+		const filter = c.req.query('filter') || 'All';
+		const take = 7;
 		const skip = (historyPage - 1) * take;
 
+		const whereClause: any = {
+			userId: user.id,
+			status: { not: 'FAILED' },
+		};
+		if (q) {
+			whereClause.market = {
+				title: { contains: q, mode: 'insensitive' },
+			};
+		}
+		if (filter !== 'All') {
+			whereClause.orderType = filter as any;
+		}
+
+		const totalCount = await prisma.order.count({
+			where: whereClause,
+		});
+		const totalPages = Math.ceil(totalCount / take);
+
 		const recentActivity = await prisma.order.findMany({
-			where: {
-				userId: user.id,
-				status: { not: 'FAILED' },
-			},
+			where: whereClause,
 			include: {
 				market: {
 					select: { id: true, title: true, symbol: true, thumbnail: true },
@@ -225,7 +282,7 @@ export const getPortfolioHistory = async (c: Context) => {
 			skip,
 		});
 
-		return c.json({ success: true, data: recentActivity });
+		return c.json({ success: true, data: recentActivity, totalPages });
 	} catch (error: any) {
 		captureError(error, { tags: { controller: 'portfolio', action: 'HISTORY' } });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
