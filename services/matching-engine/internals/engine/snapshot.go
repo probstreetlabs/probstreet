@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 
 	"matching-engine/internals/services/kafka"
@@ -23,7 +24,7 @@ type SnapshotData struct {
 	Markets   map[string]*types.Market `json:"markets"`
 }
 
-var snapshotDB *pgx.Conn
+var snapshotDB *pgxpool.Pool
 
 func InitSnapshotDB(dbURL string) {
 	if dbURL == "" {
@@ -31,22 +32,22 @@ func InitSnapshotDB(dbURL string) {
 		return
 	}
 
-	conn, err := pgx.Connect(context.Background(), dbURL)
+	conn, err := pgxpool.New(context.Background(), dbURL)
 
 	if err != nil {
 		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_DB_CONNECT"}, nil)
-		log.Error().Err(err).Msg("Failed to connect to snapshot DB")
+		log.Error().Err(err).Msg("Failed to connect to snapshot DB pool")
 		return
 	}
 
 	snapshotDB = conn
-	log.Info().Msg("Successfully connected to snapshot DB")
+	log.Info().Msg("Successfully connected to snapshot DB pool")
 }
 
 func CloseSnapshotDB() {
 	if snapshotDB != nil {
-		snapshotDB.Close(context.Background())
-		log.Info().Msg("Closed snapshot DB connection")
+		snapshotDB.Close()
+		log.Info().Msg("Closed snapshot DB connection pool")
 	}
 }
 
