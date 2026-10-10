@@ -289,70 +289,77 @@ export const getPublicProfile = async (c: Context) => {
 			historyWhere.orderType = filter as any;
 		}
 
-		const [tradeStats, openPositionsCount, netProfit, totalPositionsCount, positions, totalHistoryCount, recentActivity] =
-			await Promise.all([
-				prisma.trade.aggregate({
-					where: {
-						OR: [{ makerId: user.id }, { takerId: user.id }],
-					},
-					_count: { id: true },
+		const [
+			tradeStats,
+			openPositionsCount,
+			netProfit,
+			totalPositionsCount,
+			positions,
+			totalHistoryCount,
+			recentActivity,
+		] = await Promise.all([
+			prisma.trade.aggregate({
+				where: {
+					OR: [{ makerId: user.id }, { takerId: user.id }],
+				},
+				_count: { id: true },
+			}),
+
+			prisma.position.count({
+				where: {
+					userId: user.id,
+					OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
+				},
+			}),
+
+			redis
+				.zscore('leaderboard:all_time', user.id)
+				.then((score) => (score ? parseFloat(score) : 0))
+				.catch(() => {
+					logger.error({ context: 'GET_PUBLIC_PROFILE', message: 'Failed to get net profit' });
+					return 0;
 				}),
 
-				prisma.position.count({
-					where: {
-						userId: user.id,
-						OR: [{ yesQuantity: { gt: 0 } }, { noQuantity: { gt: 0 } }],
-					},
-				}),
+			prisma.position.count({
+				where: positionsWhere,
+			}),
 
-				redis
-					.zscore('leaderboard:all_time', user.id)
-					.then((score) => (score ? parseFloat(score) : 0))
-					.catch(() => {
-						logger.error({ context: 'GET_PUBLIC_PROFILE', message: 'Failed to get net profit' });
-						return 0;
-					}),
-
-				prisma.position.count({
-					where: positionsWhere,
-				}),
-
-				prisma.position.findMany({
-					where: positionsWhere,
-					take,
-					skip: skipPositions,
-					include: {
-						market: {
-							select: {
-								id: true,
-								title: true,
-								symbol: true,
-								yesPrice: true,
-								noPrice: true,
-								thumbnail: true,
-								status: true,
-								endTime: true,
-							},
+			prisma.position.findMany({
+				where: positionsWhere,
+				take,
+				skip: skipPositions,
+				include: {
+					market: {
+						select: {
+							id: true,
+							title: true,
+							symbol: true,
+							yesPrice: true,
+							noPrice: true,
+							thumbnail: true,
+							status: true,
+							endTime: true,
 						},
 					},
-				}),
+				},
+			}),
 
-				prisma.order.count({
-					where: historyWhere,
-				}),
+			prisma.order.count({
+				where: historyWhere,
+			}),
 
-				prisma.order.findMany({
-					where: historyWhere,
-					include: {
-						market: {
-							select: { id: true, title: true, symbol: true, thumbnail: true },
-						},
+			prisma.order.findMany({
+				where: historyWhere,
+				include: {
+					market: {
+						select: { id: true, title: true, symbol: true, thumbnail: true },
 					},
-					orderBy: { createdAt: 'desc' },
-					take,
-					skip: skipHistory,
-				}),
-			]);
+				},
+				orderBy: { createdAt: 'desc' },
+				take,
+				skip: skipHistory,
+			}),
+		]);
 
 		return c.json({
 			success: true,

@@ -5,14 +5,7 @@ import darkLogo from '@/assets/images/dark-logo.avif';
 import defaultThumbnail from '@/assets/images/logo.avif';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import {
-	Loader2,
-	Search,
-	ChevronDown,
-	Share2,
-	Copy,
-	BadgeCheck,
-} from 'lucide-react';
+import { Loader2, Search, ChevronDown, Share2, Copy, BadgeCheck } from 'lucide-react';
 import notFoundImg from '@/assets/images/404.avif';
 import emptyStateIcon from '@/assets/images/LogoutModal.svg';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -109,7 +102,9 @@ export default function ProfilePage() {
 				if (activeTab === 'positions') setIsPositionsLoading(true);
 				else setIsHistoryLoading(true);
 
-				const res = await api.get(`/profile/${username}?positionsPage=${positionsPage}&historyPage=${activityPage}&q=${searchQuery}&filter=${activityFilter}`);
+				const res = await api.get(
+					`/profile/${username}?positionsPage=${positionsPage}&historyPage=${activityPage}&q=${searchQuery}&filter=${activityFilter}`,
+				);
 				if (res.data?.success) {
 					setProfile(res.data.data);
 				} else {
@@ -385,110 +380,119 @@ export default function ProfilePage() {
 								<div className="divide-y divide-gray-100 dark:divide-gray-800">
 									{isPositionsLoading ? (
 										<SkeletonLoader rows={7} />
-									) : (() => {
-										const positionsRows = (profile?.positions || []).flatMap((pos) => {
-											const rows = [];
-											if (pos.yesQuantity > 0 || pos.yesInvested > 0) {
-												const qty = Number(pos.yesQuantity || 0);
-												const invested = Number(pos.yesInvested || 0);
-												const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
-												const isClosed = pos.market?.status === 'CLOSED';
-												const sellValue = Number(pos.yesSellValue || 0);
-												const livePrice = Number(pos.market?.yesPrice || 0);
-												const currentPrice = isClosed ? (qty > 0 ? sellValue / qty : 0) : livePrice;
-												const currentValue = isClosed ? sellValue : qty * livePrice;
-												const pnl = currentValue - invested;
-												rows.push({
-													...pos,
-													side: 'Yes',
-													qty,
-													invested,
-													avgPrice: avg,
-													currentPrice,
-													currentValue,
-													pnl,
-												});
-											}
-											if (pos.noQuantity > 0 || pos.noInvested > 0) {
-												const qty = Number(pos.noQuantity || 0);
-												const invested = Number(pos.noInvested || 0);
-												const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
-												const isClosed = pos.market?.status === 'CLOSED';
-												const sellValue = Number(pos.noSellValue || 0);
-												const livePrice = Number(pos.market?.noPrice || 0);
-												const currentPrice = isClosed ? (qty > 0 ? sellValue / qty : 0) : livePrice;
-												const currentValue = isClosed ? sellValue : qty * livePrice;
-												const pnl = currentValue - invested;
-												rows.push({
-													...pos,
-													side: 'No',
-													qty,
-													invested,
-													avgPrice: avg,
-													currentPrice,
-													currentValue,
-													pnl,
-												});
-											}
-											return rows;
-										});
+									) : (
+										(() => {
+											const positionsRows = (profile?.positions || []).flatMap((pos) => {
+												const rows = [];
+												if (pos.yesQuantity > 0 || pos.yesInvested > 0) {
+													const qty = Number(pos.yesQuantity || 0);
+													const invested = Number(pos.yesInvested || 0);
+													const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+													const isClosed = pos.market?.status === 'CLOSED';
+													const sellValue = Number(pos.yesSellValue || 0);
+													const livePrice = Number(pos.market?.yesPrice || 0);
+													const currentPrice = isClosed
+														? qty > 0
+															? sellValue / qty
+															: 0
+														: livePrice;
+													const currentValue = isClosed ? sellValue : qty * livePrice;
+													const pnl = currentValue - invested;
+													rows.push({
+														...pos,
+														side: 'Yes',
+														qty,
+														invested,
+														avgPrice: avg,
+														currentPrice,
+														currentValue,
+														pnl,
+													});
+												}
+												if (pos.noQuantity > 0 || pos.noInvested > 0) {
+													const qty = Number(pos.noQuantity || 0);
+													const invested = Number(pos.noInvested || 0);
+													const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+													const isClosed = pos.market?.status === 'CLOSED';
+													const sellValue = Number(pos.noSellValue || 0);
+													const livePrice = Number(pos.market?.noPrice || 0);
+													const currentPrice = isClosed
+														? qty > 0
+															? sellValue / qty
+															: 0
+														: livePrice;
+													const currentValue = isClosed ? sellValue : qty * livePrice;
+													const pnl = currentValue - invested;
+													rows.push({
+														...pos,
+														side: 'No',
+														qty,
+														invested,
+														avgPrice: avg,
+														currentPrice,
+														currentValue,
+														pnl,
+													});
+												}
+												return rows;
+											});
 
-										const totalPages = profile?.positionsTotalPages || 1;
-										const paginatedRows = positionsRows;
+											const totalPages = profile?.positionsTotalPages || 1;
+											const paginatedRows = positionsRows;
 
-										return (
-											<>
-												{paginatedRows.map((row, i) => {
-													const rowBg =
-														i % 2 === 0
-															? 'bg-white dark:bg-gray-900'
-															: 'bg-gray-50 dark:bg-gray-800/50';
-													return (
-														<Link
-															key={`${row.market.symbol}-${row.side}-${i}`}
-															to={`/events/${row.market.symbol}`}
-															className={`grid grid-cols-[1fr_70px_70px_110px] gap-2 md:gap-4 px-6 py-4 items-center transition-colors ${rowBg} hover:opacity-80`}
-														>
-															<div className="flex items-center gap-3">
-																{row.market?.thumbnail && (
-																	<img
-																		src={row.market.thumbnail || defaultThumbnail}
-																		alt=""
-																		className="w-8 h-8 rounded-md object-cover shrink-0"
-																	/>
-																)}
-																<div className="flex flex-col items-start">
-																	<h3
-																		className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2"
-																		title={row.market?.title}
+											return (
+												<>
+													{paginatedRows.map((row, i) => {
+														const rowBg =
+															i % 2 === 0
+																? 'bg-white dark:bg-gray-900'
+																: 'bg-gray-50 dark:bg-gray-800/50';
+														return (
+															<Link
+																key={`${row.market.symbol}-${row.side}-${i}`}
+																to={`/events/${row.market.symbol}`}
+																className={`grid grid-cols-[1fr_70px_70px_110px] gap-2 md:gap-4 px-6 py-4 items-center transition-colors ${rowBg} hover:opacity-80`}
+															>
+																<div className="flex items-center gap-3">
+																	{row.market?.thumbnail && (
+																		<img
+																			src={row.market.thumbnail || defaultThumbnail}
+																			alt=""
+																			className="w-8 h-8 rounded-md object-cover shrink-0"
+																		/>
+																	)}
+																	<div className="flex flex-col items-start">
+																		<h3
+																			className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2"
+																			title={row.market?.title}
+																		>
+																			{row.market?.title || 'Unknown Market'}
+																		</h3>
+																		<span className="text-[11px] text-gray-500 mt-0.5">
+																			{row.qty} shares • {row.side.toUpperCase()}
+																		</span>
+																	</div>
+																</div>
+
+																<div className="text-sm text-gray-900 dark:text-white font-medium">
+																	₹{row.avgPrice}
+																</div>
+																<div className="text-sm text-gray-900 dark:text-white font-medium">
+																	₹{row.currentPrice.toFixed(2)}
+																</div>
+																<div className="text-sm font-medium flex flex-col justify-center">
+																	<span className="font-bold text-gray-900 dark:text-white">
+																		₹{row.currentValue.toFixed(2)}
+																	</span>
+																	<span
+																		className={`text-xs font-bold ${row.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}
 																	>
-																		{row.market?.title || 'Unknown Market'}
-																	</h3>
-																	<span className="text-[11px] text-gray-500 mt-0.5">
-																		{row.qty} shares • {row.side.toUpperCase()}
+																		{row.pnl >= 0 ? '+' : '-'}₹{Math.abs(row.pnl).toFixed(2)}
 																	</span>
 																</div>
-															</div>
-
-															<div className="text-sm text-gray-900 dark:text-white font-medium">
-																₹{row.avgPrice}
-															</div>
-															<div className="text-sm text-gray-900 dark:text-white font-medium">
-																₹{row.currentPrice.toFixed(2)}
-															</div>
-															<div className="text-sm font-medium flex flex-col justify-center">
-																<span className="font-bold text-gray-900 dark:text-white">
-																	₹{row.currentValue.toFixed(2)}
-																</span>
-																<span
-																	className={`text-xs font-bold ${row.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}
-																>
-																	{row.pnl >= 0 ? '+' : '-'}₹{Math.abs(row.pnl).toFixed(2)}
-																</span>
-															</div>
-														</Link>
-													);
-												})}
+															</Link>
+														);
+													})}
 													<div
 														className={`w-full flex items-center justify-center py-4 border border-t-0 border-gray-200 dark:border-gray-800 rounded-b-xl ${totalPages <= 1 ? 'hidden' : 'bg-gray-50/80 dark:bg-[#111827]'}`}
 													>
@@ -501,7 +505,9 @@ export default function ProfilePage() {
 																			e.preventDefault();
 																			setPositionsPage((p) => Math.max(1, p - 1));
 																		}}
-																		className={positionsPage === 1 ? 'pointer-events-none opacity-50' : ''}
+																		className={
+																			positionsPage === 1 ? 'pointer-events-none opacity-50' : ''
+																		}
 																	/>
 																</PaginationItem>
 																{[...Array(totalPages)].map((_, i) => (
@@ -525,15 +531,20 @@ export default function ProfilePage() {
 																			e.preventDefault();
 																			setPositionsPage((p) => Math.min(totalPages, p + 1));
 																		}}
-																		className={positionsPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+																		className={
+																			positionsPage === totalPages
+																				? 'pointer-events-none opacity-50'
+																				: ''
+																		}
 																	/>
 																</PaginationItem>
 															</PaginationContent>
 														</Pagination>
 													</div>
-											</>
-										);
-									})()}
+												</>
+											);
+										})()
+									)}
 								</div>
 							)}
 						</div>
@@ -556,7 +567,7 @@ export default function ProfilePage() {
 										<div className="text-xs font-semibold text-gray-500 uppercase">TOTAL</div>
 										<div className="text-xs font-semibold text-gray-500 uppercase">TIME</div>
 									</div>
-									
+
 									{isHistoryLoading ? (
 										<SkeletonLoader rows={7} />
 									) : paginatedHistory.length === 0 ? (
@@ -657,7 +668,9 @@ export default function ProfilePage() {
 																e.preventDefault();
 																setActivityPage((p) => Math.min(totalPages, p + 1));
 															}}
-															className={activityPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+															className={
+																activityPage === totalPages ? 'pointer-events-none opacity-50' : ''
+															}
 														/>
 													</PaginationItem>
 												</PaginationContent>

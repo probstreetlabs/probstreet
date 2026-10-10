@@ -1415,7 +1415,7 @@ export const getMarketNews = async (c: Context) => {
 
 		const market = await prisma.market.findUnique({
 			where: { symbol },
-			select: { title: true, category: { select: { categoryName: true } } },
+			select: { title: true, thumbnail: true, category: { select: { categoryName: true } } },
 		});
 
 		if (!market) {
@@ -1432,30 +1432,57 @@ export const getMarketNews = async (c: Context) => {
 			setTimeout(() => reject(new Error('Tavily request timed out')), 65000),
 		);
 
-		const searchPromise = tavilyClient.search(`"${market.title}" news`, {
-			searchDepth: 'fast',
+		const searchPromise = tavilyClient.search(market.title, {
+			searchDepth: 'advanced',
 			topic: 'news',
+			days: 5,
 			includeImages: true,
-			maxResults: 5,
+			maxResults: 10,
 		});
 
 		const response: any = await Promise.race([searchPromise, timeoutPromise]);
 
-		const parsedNews = response.results.map((result: any, idx: number) => ({
-			title: result.title,
-			link: result.url,
-			source: result.url.split('/')[2]?.replace('www.', '') || 'News',
-			thumbnail: result.image || response.images?.[idx] || '',
-		}));
+		const parsedNews = response.results.map((result: any, idx: number) => {
+			let thumb = result.image || (response.images && response.images[idx]) || '';
+			if (typeof thumb === 'object' && thumb !== null) {
+				thumb = thumb.url || '';
+			}
+			return {
+				title: result.title,
+				link: result.url,
+				source: result.url.split('/')[2]?.replace('www.', '') || 'News',
+				thumbnail: thumb,
+			};
+		});
 
-		if (parsedNews.length > 0) {
-			await client.set(cacheKey, JSON.stringify(parsedNews), 'EX', 2 * 60 * 60);
+		// Keep all news articles, but if they have a broken or missing thumbnail, fallback to the market's thumbnail
+		let filteredNews = parsedNews.map((news: any) => {
+			let isBroken = false;
+			if (typeof news.thumbnail !== 'string' || news.thumbnail.trim() === '') {
+				isBroken = true;
+			} else if (
+				news.thumbnail.includes('lookaside.fbsbx.com') ||
+				news.thumbnail.includes('lookaside.instagram.com')
+			) {
+				isBroken = true;
+			}
+
+			if (isBroken) {
+				news.thumbnail = market.thumbnail || '';
+			}
+			return news;
+		});
+
+		filteredNews = filteredNews.slice(0, 5);
+
+		if (filteredNews.length > 0) {
+			await client.set(cacheKey, JSON.stringify(filteredNews), 'EX', 2 * 60 * 60);
 		}
 
 		return c.json({
 			success: true,
 			message: 'Market news fetched successfully',
-			data: parsedNews,
+			data: filteredNews,
 			source: 'tavily',
 		});
 	} catch (error: any) {
