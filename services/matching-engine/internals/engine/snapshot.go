@@ -244,6 +244,21 @@ func (e *Engine) LoadLatestSnapshot() {
 
 	e.UM.Lock()
 	e.User = data.Users
+	if e.User == nil {
+		e.User = make(map[string]*types.User)
+	}
+	for _, user := range e.User {
+		if user != nil {
+			if user.Balance == nil {
+				user.Balance = &types.Balance{
+					WalletBalance: types.WalletBalance{},
+					StockBalance:  make(map[string]types.StockBalance),
+				}
+			} else if user.Balance.StockBalance == nil {
+				user.Balance.StockBalance = make(map[string]types.StockBalance)
+			}
+		}
+	}
 	e.UM.Unlock()
 
 	e.MM.Lock()
@@ -256,6 +271,17 @@ func (e *Engine) LoadLatestSnapshot() {
 			log.Warn().Str("market_key", key).Msg("Found nil market in snapshot, skipping")
 			delete(e.Market, key)
 			continue
+		}
+		if market.Traders == nil {
+			market.Traders = make(map[string]struct{})
+		}
+		if market.OrderBook == nil {
+			market.OrderBook = &types.OrderBook{
+				YesBids: &types.BidHeap{OrderHeap: make(types.OrderHeap, 0)},
+				YesAsks: &types.AskHeap{OrderHeap: make(types.OrderHeap, 0)},
+				NoBids:  &types.BidHeap{OrderHeap: make(types.OrderHeap, 0)},
+				NoAsks:  &types.AskHeap{OrderHeap: make(types.OrderHeap, 0)},
+			}
 		}
 		market.Inbox = make(chan types.MarketMessage, 100)
 		go e.runMarket(market)

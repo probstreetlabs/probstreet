@@ -34,8 +34,13 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 		user.Balance.StockBalance = make(map[string]types.StockBalance)
 	}
 
-	// Risk Check
 	isMarketOrder := order.OrderType == types.MARKET
+
+	if !isMarketOrder && (order.Price < 0.5 || order.Price > 9.5) {
+		e.UM.Unlock()
+		msg.ReplyChan <- types.OrderResponse{Success: false, Message: "limit price must be between 0.5 and 9.5", Data: order.Price}
+		return
+	}
 	if order.Action == types.BUY {
 		if isMarketOrder {
 			order.Price = 10.0
@@ -93,6 +98,9 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	e.UM.Unlock()
 
 	market.Mu.Lock()
+	if market.Traders == nil {
+		market.Traders = make(map[string]struct{})
+	}
 	if _, exists := market.Traders[order.UserId]; !exists {
 		market.Traders[order.UserId] = struct{}{}
 		market.NumberOfTraders++
