@@ -32,8 +32,9 @@ export const rateLimiter = ({
 
 	return async (c: Context, next: Next) => {
 		const key =
-			c.req.header('x-forwarded-for') ||
 			c.req.header('cf-connecting-ip') ||
+			c.req.header('x-real-ip') ||
+			c.req.header('x-forwarded-for')?.split(',')[0].trim() ||
 			c.req.header('host') ||
 			'unknown-ip';
 

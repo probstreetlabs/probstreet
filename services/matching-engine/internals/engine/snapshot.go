@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -52,7 +53,7 @@ func CloseSnapshotDB() {
 }
 
 func (e *Engine) StartSnapshotRoutine() {
-	ticker := time.NewTicker(6 * time.Hour)
+	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
 		for {
 			<-ticker.C
@@ -66,12 +67,27 @@ func (e *Engine) PerformSnapshot() {
 
 	e.UM.Lock()
 
-	// 1. Evict inactive users (> 3 days)
-	evictionThreshold := time.Now().Add(-3 * 24 * time.Hour)
+	evictionThreshold := time.Now().Add(-90 * 24 * time.Hour)
 	evictedCount := 0
 
 	for userId, user := range e.User {
 		if !user.LastActive.IsZero() && user.LastActive.Before(evictionThreshold) {
+			if user.Balance != nil {
+				if math.Abs(user.Balance.WalletBalance.Amount) > 1e-6 || user.Balance.WalletBalance.Locked > 1e-6 {
+					continue
+				}
+
+				hasShares := false
+				for _, stock := range user.Balance.StockBalance {
+					if stock.Yes > 0 || stock.No > 0 || stock.LockedYes > 0 || stock.LockedNo > 0 {
+						hasShares = true
+						break
+					}
+				}
+				if hasShares {
+					continue
+				}
+			}
 			delete(e.User, userId)
 			evictedCount++
 		}
@@ -113,7 +129,7 @@ func (e *Engine) PerformSnapshot() {
 	}
 
 	jsonData, err := json.Marshal(data)
-	e.UM.Unlock() // Unlock after serialization
+	e.UM.Unlock() 
 
 	if err != nil {
 		utils.CaptureError(err, map[string]string{"controller": "engine", "action": "SNAPSHOT_MARSHAL"}, nil)
@@ -132,7 +148,6 @@ func (e *Engine) PerformSnapshot() {
 		return
 	}
 
-	// 3. Compress for storage
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
 	if _, err := gz.Write(jsonData); err != nil {
@@ -148,7 +163,6 @@ func (e *Engine) PerformSnapshot() {
 
 	compressedData := b.Bytes()
 
-	// 4. Save to DB
 	ctx := context.Background()
 	tx, err := snapshotDB.Begin(ctx)
 	if err != nil {

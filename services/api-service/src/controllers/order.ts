@@ -5,6 +5,27 @@ import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 
+const syncUserToEngine = async (userId: string) => {
+	const dbUser = await prisma.user.findUnique({
+		where: { id: userId },
+		include: { wallet: true },
+	});
+	if (dbUser) {
+		await pushToQueue(EVENTS.CREATE_USER, {
+			id: dbUser.id,
+			name: dbUser.username || '',
+			phone: dbUser.phone,
+			kycVerificationStatus: dbUser.kycVerificationStatus,
+			paymentVerificationStatus: dbUser.paymentVerificationStatus,
+		});
+		await pushToQueue(EVENTS.INIT_BALANCE, {
+			userId: dbUser.id,
+			amount: Number(dbUser.wallet?.balance || 0),
+			locked: Number(dbUser.wallet?.locked || 0),
+		});
+	}
+};
+
 /**
  * Buy order controller which push event to engine for Buy a yes or no stock
  * @param c Hono Context
@@ -54,7 +75,7 @@ export const buy = async (c: Context) => {
 			},
 		});
 
-		const response = await pushToQueue(EVENTS.PLACE_ORDER, {
+		const orderPayload = {
 			orderId: order.id,
 			userId: userId,
 			marketId: body.marketId,
@@ -64,7 +85,14 @@ export const buy = async (c: Context) => {
 			action: 'BUY',
 			orderType: body.orderType.toUpperCase(),
 			quantity: Number(body.quantity),
-		});
+		};
+
+		let response = await pushToQueue(EVENTS.PLACE_ORDER, orderPayload);
+
+		if (!response.success && (response.message?.toLowerCase().includes('user not found') || response.error?.toLowerCase().includes('user not found'))) {
+			await syncUserToEngine(userId);
+			response = await pushToQueue(EVENTS.PLACE_ORDER, orderPayload);
+		}
 
 		if (!response.success) {
 			await prisma.order.update({
@@ -174,7 +202,7 @@ export const sell = async (c: Context) => {
 			},
 		});
 
-		const response = await pushToQueue(EVENTS.SELL_ORDER, {
+		const orderPayload = {
 			orderId: order.id,
 			userId: userId,
 			marketId: body.marketId,
@@ -184,7 +212,14 @@ export const sell = async (c: Context) => {
 			action: 'SELL',
 			orderType: body.orderType.toUpperCase(),
 			quantity: Number(body.quantity),
-		});
+		};
+
+		let response = await pushToQueue(EVENTS.SELL_ORDER, orderPayload);
+
+		if (!response.success && (response.message?.toLowerCase().includes('user not found') || response.error?.toLowerCase().includes('user not found'))) {
+			await syncUserToEngine(userId);
+			response = await pushToQueue(EVENTS.SELL_ORDER, orderPayload);
+		}
 
 		if (!response.success) {
 			await prisma.order.update({

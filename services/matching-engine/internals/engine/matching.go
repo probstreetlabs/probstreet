@@ -111,6 +111,29 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 		}
 
 		if matchOrder.UserId == order.UserId {
+			// Self-trade: release locked funds/stock before removing from book
+			e.UM.Lock()
+			if matchOrder.Action == types.BUY {
+				refund := matchOrder.Price * float64(matchOrder.Quantity-matchOrder.Filled)
+				e.User[matchOrder.UserId].Balance.WalletBalance.Locked -= refund
+				e.User[matchOrder.UserId].Balance.WalletBalance.Amount += refund
+				e.UM.Unlock()
+				kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": matchOrder.UserId, "orderId": matchOrder.OrderId, "refund": refund, "type": "INR", "marketId": market.MarketId})
+			} else {
+				refund := matchOrder.Quantity - matchOrder.Filled
+				stock := e.User[matchOrder.UserId].Balance.StockBalance[market.Symbol]
+				if matchOrder.Side == types.Yes {
+					stock.Yes += refund
+					e.User[matchOrder.UserId].Balance.StockBalance[market.Symbol] = stock
+					e.UM.Unlock()
+					kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": matchOrder.UserId, "orderId": matchOrder.OrderId, "refund": refund, "type": "YES_STOCK", "marketId": market.MarketId})
+				} else {
+					stock.No += refund
+					e.User[matchOrder.UserId].Balance.StockBalance[market.Symbol] = stock
+					e.UM.Unlock()
+					kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": matchOrder.UserId, "orderId": matchOrder.OrderId, "refund": refund, "type": "NO_STOCK", "marketId": market.MarketId})
+				}
+			}
 			popOrderFromHeap(market, matchOrder)
 			continue
 		}
