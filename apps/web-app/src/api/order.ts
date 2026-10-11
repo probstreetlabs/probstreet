@@ -8,9 +8,14 @@ export const placeOrder = (
 	orderType: string,
 	quantity: number,
 	marketId: string,
+	idempotencyKey?: string,
 ) => {
 	const endpoint = action.toLowerCase() === 'sell' ? '/order/sell' : '/order/buy';
-	return api.post(endpoint, { side, symbol, action, price, orderType, quantity, marketId });
+	return api.post(
+		endpoint,
+		{ side, symbol, action, price, orderType, quantity, marketId },
+		idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined,
+	);
 };
 
 export const cancelOrder = (orderId: string, marketId: string) => {

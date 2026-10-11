@@ -4,6 +4,7 @@ import { EVENTS } from '@/config/constants';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
+import { orderSchema, cancelOrderSchema } from '@/validations/order';
 
 const syncUserToEngine = async (userId: string) => {
 	const dbUser = await prisma.user.findUnique({
@@ -52,14 +53,26 @@ export const buy = async (c: Context) => {
 			);
 		}
 
-		const body = await c.req.json<{
-			side: string;
-			symbol: string;
-			price: number;
-			orderType: string;
-			quantity: number;
-			marketId: string;
-		}>();
+		const rawBody = await c.req.json().catch(() => null);
+		if (!rawBody) {
+			return c.json({ success: false, error: 'Invalid JSON request body' }, 400);
+		}
+
+		const validateData = orderSchema.safeParse(rawBody);
+		if (!validateData.success) {
+			const firstError = validateData.error.issues[0]?.message || 'Validation failed';
+			return c.json(
+				{
+					success: false,
+					error: firstError,
+					message: firstError,
+					issues: validateData.error.issues,
+				},
+				400,
+			);
+		}
+
+		const body = validateData.data;
 
 		const order = await prisma.order.create({
 			data: {
@@ -89,7 +102,11 @@ export const buy = async (c: Context) => {
 
 		let response = await pushToQueue(EVENTS.PLACE_ORDER, orderPayload);
 
-		if (!response.success && (response.message?.toLowerCase().includes('user not found') || response.error?.toLowerCase().includes('user not found'))) {
+		if (
+			!response.success &&
+			(response.message?.toLowerCase().includes('user not found') ||
+				response.error?.toLowerCase().includes('user not found'))
+		) {
 			await syncUserToEngine(userId);
 			response = await pushToQueue(EVENTS.PLACE_ORDER, orderPayload);
 		}
@@ -179,14 +196,26 @@ export const sell = async (c: Context) => {
 			);
 		}
 
-		const body = await c.req.json<{
-			side: string;
-			symbol: string;
-			price: number;
-			orderType: string;
-			quantity: number;
-			marketId: string;
-		}>();
+		const rawBody = await c.req.json().catch(() => null);
+		if (!rawBody) {
+			return c.json({ success: false, error: 'Invalid JSON request body' }, 400);
+		}
+
+		const validateData = orderSchema.safeParse(rawBody);
+		if (!validateData.success) {
+			const firstError = validateData.error.issues[0]?.message || 'Validation failed';
+			return c.json(
+				{
+					success: false,
+					error: firstError,
+					message: firstError,
+					issues: validateData.error.issues,
+				},
+				400,
+			);
+		}
+
+		const body = validateData.data;
 
 		const order = await prisma.order.create({
 			data: {
@@ -216,7 +245,11 @@ export const sell = async (c: Context) => {
 
 		let response = await pushToQueue(EVENTS.SELL_ORDER, orderPayload);
 
-		if (!response.success && (response.message?.toLowerCase().includes('user not found') || response.error?.toLowerCase().includes('user not found'))) {
+		if (
+			!response.success &&
+			(response.message?.toLowerCase().includes('user not found') ||
+				response.error?.toLowerCase().includes('user not found'))
+		) {
 			await syncUserToEngine(userId);
 			response = await pushToQueue(EVENTS.SELL_ORDER, orderPayload);
 		}
@@ -285,10 +318,26 @@ export const cancel = async (c: Context) => {
 		const userId = c.get('user').id;
 		if (!userId) return c.json({ success: false, error: 'Unauthorized' }, 401);
 
-		const body = await c.req.json<{ orderId: string; marketId: string }>();
-		if (!body.orderId || !body.marketId) {
-			return c.json({ success: false, error: 'Missing orderId or marketId' }, 400);
+		const rawBody = await c.req.json().catch(() => null);
+		if (!rawBody) {
+			return c.json({ success: false, error: 'Invalid JSON request body' }, 400);
 		}
+
+		const validateData = cancelOrderSchema.safeParse(rawBody);
+		if (!validateData.success) {
+			const firstError = validateData.error.issues[0]?.message || 'Validation failed';
+			return c.json(
+				{
+					success: false,
+					error: firstError,
+					message: firstError,
+					issues: validateData.error.issues,
+				},
+				400,
+			);
+		}
+
+		const body = validateData.data;
 
 		// Check if order exists
 		const order = await prisma.order.findUnique({ where: { id: body.orderId } });

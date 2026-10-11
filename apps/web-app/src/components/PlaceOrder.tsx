@@ -2,9 +2,10 @@ import { toast } from 'sonner';
 import { api } from '@/lib/axios';
 import { useAuthStore } from '@/store/auth';
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import SwipeToConfirm from '@/components/ui/SwipeToConfirm';
 import { usePlaceOrderMutation } from '@/hooks/mutations/order';
 import { useSplitSharesMutation, useMergeSharesMutation } from '@/hooks/mutations/event';
 
@@ -37,8 +38,12 @@ export default function PlaceOrder({
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	const [yesOrderPrice, setYesOrderPrice] = useState<string | number>(yOrderPrice || 5.0);
-	const [noOrderPrice, setNoOrderPrice] = useState<string | number>(nOrderPrice || 5.0);
+	const [yesOrderPrice, setYesOrderPrice] = useState<string | number>(
+		Math.min(9.5, Math.max(0.5, yOrderPrice || 5.0)),
+	);
+	const [noOrderPrice, setNoOrderPrice] = useState<string | number>(
+		Math.min(9.5, Math.max(0.5, nOrderPrice || 5.0)),
+	);
 	const [amount, setAmount] = useState<number | string>('');
 	const [shares, setShares] = useState<number | string>(0);
 
@@ -76,8 +81,10 @@ export default function PlaceOrder({
 	const isMarket = orderType === 'MARKET';
 
 	useEffect(() => {
-		if (yOrderPrice && activeTab === 'YES') setYesOrderPrice(yOrderPrice);
-		if (nOrderPrice && activeTab === 'NO') setNoOrderPrice(nOrderPrice);
+		if (yOrderPrice && activeTab === 'YES')
+			setYesOrderPrice(Math.min(9.5, Math.max(0.5, yOrderPrice)));
+		if (nOrderPrice && activeTab === 'NO')
+			setNoOrderPrice(Math.min(9.5, Math.max(0.5, nOrderPrice)));
 	}, [yOrderPrice, nOrderPrice, activeTab]);
 
 	useEffect(() => {
@@ -116,7 +123,7 @@ export default function PlaceOrder({
 	const totalCost = estimatedCost + fee;
 	const isActionPending = placeOrder.isPending || splitShares.isPending || mergeShares.isPending;
 
-	const handleAction = () => {
+	const handleAction = (idempotencyKey?: string) => {
 		if (isSplitMerge) {
 			if (numShares <= 0) {
 				toast.error('Please enter a valid quantity');
@@ -137,7 +144,12 @@ export default function PlaceOrder({
 							toast.error(res.data?.error || `Failed to ${orderType.toLowerCase()}`);
 						}
 					},
-					onError: () => toast.error(`Error processing ${orderType.toLowerCase()}`),
+					onError: (err: any) =>
+						toast.error(
+							err?.response?.data?.error ||
+								err?.response?.data?.message ||
+								`Error processing ${orderType.toLowerCase()}`,
+						),
 				},
 			);
 			return;
@@ -157,6 +169,7 @@ export default function PlaceOrder({
 					orderType: 'MARKET',
 					quantity: displayShares,
 					marketId,
+					idempotencyKey,
 				},
 				{
 					onSuccess: (res) => {
@@ -174,14 +187,19 @@ export default function PlaceOrder({
 							);
 						}
 					},
-					onError: () => toast.error('Network error. Please check your connection and try again'),
+					onError: (err: any) =>
+						toast.error(
+							err?.response?.data?.error ||
+								err?.response?.data?.message ||
+								'Network error. Please check your connection and try again',
+						),
 				},
 			);
 		} else {
 			// Limit
 			const limitPrice = Number(activePrice) || 0;
-			if (limitPrice <= 0) {
-				toast.error('Please enter a valid limit price');
+			if (limitPrice < 0.5 || limitPrice > 9.5) {
+				toast.error('Limit price must be between ₹0.5 and ₹9.5');
 				return;
 			}
 			if (numShares <= 0) {
@@ -197,6 +215,7 @@ export default function PlaceOrder({
 					orderType: 'LIMIT',
 					quantity: numShares,
 					marketId,
+					idempotencyKey,
 				},
 				{
 					onSuccess: (res) => {
@@ -214,7 +233,12 @@ export default function PlaceOrder({
 							);
 						}
 					},
-					onError: () => toast.error('Network error. Please check your connection and try again'),
+					onError: (err: any) =>
+						toast.error(
+							err?.response?.data?.error ||
+								err?.response?.data?.message ||
+								'Network error. Please check your connection and try again',
+						),
 				},
 			);
 		}
@@ -384,7 +408,6 @@ export default function PlaceOrder({
 				</div>
 			)}
 
-			{/* YES / NO Outcome Buttons */}
 			{!isSplitMerge && (
 				<div className="flex gap-2 mb-6">
 					<button
@@ -447,10 +470,12 @@ export default function PlaceOrder({
 						<div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden">
 							<button
 								onClick={() => {
-									if (activeTab === 'YES') setYesOrderPrice(Number(activePrice) - 0.5);
-									else setNoOrderPrice(Number(activePrice) - 0.5);
+									const next = Math.max(0.5, Math.round((Number(activePrice) - 0.5) * 10) / 10);
+									if (activeTab === 'YES') setYesOrderPrice(next);
+									else setNoOrderPrice(next);
 								}}
-								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+								disabled={Number(activePrice) <= 0.5}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								−
 							</button>
@@ -459,10 +484,12 @@ export default function PlaceOrder({
 							</div>
 							<button
 								onClick={() => {
-									if (activeTab === 'YES') setYesOrderPrice(Number(activePrice) + 0.5);
-									else setNoOrderPrice(Number(activePrice) + 0.5);
+									const next = Math.min(9.5, Math.round((Number(activePrice) + 0.5) * 10) / 10);
+									if (activeTab === 'YES') setYesOrderPrice(next);
+									else setNoOrderPrice(next);
 								}}
-								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+								disabled={Number(activePrice) >= 9.5}
+								className="px-3 py-2 text-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								+
 							</button>
@@ -567,23 +594,23 @@ export default function PlaceOrder({
 				</div>
 			)}
 
-			<button
-				onClick={handleAction}
-				disabled={
-					isActionPending ||
-					(isMarket ? numAmount <= 0 : isSplitMerge ? numShares <= 0 : numShares <= 0)
-				}
-				className={`w-full py-3.5 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-					isActionPending || (isMarket ? numAmount <= 0 : numShares <= 0)
-						? 'bg-black text-white dark:bg-white dark:text-black opacity-30 cursor-not-allowed'
-						: 'bg-black text-white dark:bg-white dark:text-black opacity-90 hover:opacity-100 cursor-pointer'
-				}`}
-			>
-				{isActionPending && <Loader2 size={16} className="animate-spin" />}
-				{isSplitMerge
-					? `${orderType} Shares`
-					: `${action === 'BUY' ? 'Buy' : 'Sell'} ${activeTab === 'YES' ? 'Yes' : 'No'}`}
-			</button>
+			{isSplitMerge ? (
+				<SwipeToConfirm
+					label={`Swipe to ${orderType === 'SPLIT' ? 'Split' : 'Merge'} Shares`}
+					variant="default"
+					disabled={numShares <= 0}
+					isPending={isActionPending}
+					onConfirmed={(key) => handleAction(key)}
+				/>
+			) : (
+				<SwipeToConfirm
+					label={`Swipe to ${action === 'BUY' ? 'Buy' : 'Sell'} ${activeTab}`}
+					variant={activeTab === 'YES' ? 'yes' : 'no'}
+					disabled={isMarket ? numAmount <= 0 : numShares <= 0}
+					isPending={placeOrder.isPending}
+					onConfirmed={(key) => handleAction(key)}
+				/>
+			)}
 		</div>
 	);
 }

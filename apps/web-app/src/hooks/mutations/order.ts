@@ -12,6 +12,7 @@ export const usePlaceOrderMutation = () => {
 			orderType,
 			quantity,
 			marketId,
+			idempotencyKey,
 		}: {
 			side: string;
 			symbol: string;
@@ -20,6 +21,7 @@ export const usePlaceOrderMutation = () => {
 			orderType: string;
 			quantity: number;
 			marketId: string;
-		}) => placeOrder(side, symbol, action, price, orderType, quantity, marketId),
+			idempotencyKey?: string;
+		}) => placeOrder(side, symbol, action, price, orderType, quantity, marketId, idempotencyKey),
 	});
 };

@@ -35,9 +35,15 @@ app.use(logger());
 app.use(
 	cors({
 		origin: ENV.CORS_ORIGIN.split(',').map((o) => o.trim()),
-		allowHeaders: ['Content-Type', 'Authorization', 'X-Custom-Header'],
+		allowHeaders: [
+			'Content-Type',
+			'Authorization',
+			'X-Custom-Header',
+			'Idempotency-Key',
+			'idempotency-key',
+		],
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-		exposeHeaders: ['Content-Length', 'X-Custom-Header'],
+		exposeHeaders: ['Content-Length', 'X-Custom-Header', 'Idempotency-Key', 'Idempotent-Replayed'],
 		maxAge: 86400,
 		credentials: true,
 	}),

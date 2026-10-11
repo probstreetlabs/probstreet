@@ -91,7 +91,7 @@ export default function Portfolio() {
 				row.side,
 				row.market.symbol,
 				'SELL',
-				row.currentPrice,
+				Math.min(9.5, Math.max(0.5, row.currentPrice || 5.0)),
 				'LIMIT',
 				row.qty,
 				row.marketId,
