@@ -194,6 +194,7 @@ model User {
 
   authProviders     LinkedAccount[]
   sessions          Session[]
+  apiKeys           ApiKey[]
   notificationPrefs NotificationSettings?
   notifications     Notification[]
   auditLogs         AuditLog[]
@@ -590,4 +591,24 @@ model MarketComment {
   @@index([marketId, createdAt(sort: Desc)])
   @@index([userId])
   @@map("market_comments")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  name       String    @db.VarChar(50)
+  keyPrefix  String    @map("key_prefix") @db.VarChar(32)
+  keyHash    String    @unique @map("key_hash") @db.VarChar(64)
+  scopes     String[]
+  isActive   Boolean   @default(true) @map("is_active")
+  lastUsedAt DateTime? @map("last_used_at")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([keyHash])
+  @@map("api_keys")
 }
