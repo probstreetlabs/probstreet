@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { isAdmin } from '@/middlewares/isAdmin';
-import { getSportsFixtures } from '@/controllers/sports';
 import { authorization } from '@/middlewares/authorization';
 import {
 	resolveMarket,
@@ -8,6 +7,7 @@ import {
 	getUsers,
 	getTransactions,
 	getMarkets,
+	getSportsFixtures,
 } from '@/controllers/admin';
 import {
 	getPendingVerifications,

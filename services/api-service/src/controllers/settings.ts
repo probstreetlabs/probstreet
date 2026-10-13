@@ -1,9 +1,13 @@
 import { Context } from 'hono';
+import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
+import { generateApiKey } from '@/utils/apiKey';
 import { pushToQueue } from '@/libs/redis/queue';
+import { client } from '@/libs/redis/connection';
 import { generateAvatarUploadSignature } from '@/libs/cloudinary/upload';
+import { createApiKeySchema, updateApiKeySchema } from '@/validations/api-keys';
 
 /**
  * @desc Get all settings (profile, notification preferences)
@@ -216,7 +220,235 @@ export async function deleteAccount(c: Context) {
 				action: 'DELETEACCOUNT',
 			},
 		});
-		console.error('Error in deleteAccount:', error);
+		logger.error({ error }, 'Error in deleteAccount');
 		return c.json({ error: 'Failed to delete account' }, 500);
 	}
 }
+
+export const createApiKey = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user?.id) {
+			return c.json({ success: false, message: 'Unauthorized' }, 401);
+		}
+
+		if (user.apiKeyId) {
+			return c.json(
+				{ success: false, message: 'Cannot generate API keys using an existing API key' },
+				403,
+			);
+		}
+
+		const rawBody = await c.req.json().catch(() => null);
+		if (!rawBody) {
+			return c.json({ success: false, message: 'Invalid JSON body' }, 400);
+		}
+
+		const validation = createApiKeySchema.safeParse(rawBody);
+		if (!validation.success) {
+			return c.json(
+				{
+					success: false,
+					message: validation.error.issues[0]?.message || 'Validation failed',
+					issues: validation.error.issues,
+				},
+				400,
+			);
+		}
+
+		const { name, scopes, expiresInDays } = validation.data;
+
+		const existingCount = await prisma.apiKey.count({
+			where: { userId: user.id },
+		});
+		if (existingCount >= 10) {
+			return c.json(
+				{
+					success: false,
+					message: 'Maximum limit of 10 API keys reached. Please revoke unused keys.',
+				},
+				400,
+			);
+		}
+
+		const { rawKey, keyPrefix, keyHash } = generateApiKey();
+
+		let expiresAt: Date | null = null;
+		if (expiresInDays) {
+			expiresAt = new Date();
+			expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+		}
+
+		const record = await prisma.apiKey.create({
+			data: {
+				userId: user.id,
+				name,
+				keyPrefix,
+				keyHash,
+				scopes,
+				expiresAt,
+				isActive: true,
+			},
+		});
+
+		return c.json(
+			{
+				success: true,
+				message:
+					'API key generated successfully. Store this key safely — it will not be displayed again.',
+				data: {
+					id: record.id,
+					name: record.name,
+					apiKey: rawKey, // Shown once
+					keyPrefix: record.keyPrefix,
+					scopes: record.scopes,
+					expiresAt: record.expiresAt,
+					createdAt: record.createdAt,
+				},
+			},
+			201,
+		);
+	} catch (error) {
+		captureError(error, { tags: { controller: 'settings', action: 'CREATE_API_KEY' } });
+		return c.json({ success: false, message: 'Failed to create API key' }, 500);
+	}
+};
+
+export const listApiKeys = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user?.id) {
+			return c.json({ success: false, message: 'Unauthorized' }, 401);
+		}
+
+		const keys = await prisma.apiKey.findMany({
+			where: { userId: user.id },
+			select: {
+				id: true,
+				name: true,
+				keyPrefix: true,
+				scopes: true,
+				isActive: true,
+				lastUsedAt: true,
+				expiresAt: true,
+				createdAt: true,
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
+		return c.json(
+			{
+				success: true,
+				data: keys,
+			},
+			200,
+		);
+	} catch (error) {
+		captureError(error, { tags: { controller: 'settings', action: 'LIST_API_KEYS' } });
+		return c.json({ success: false, message: 'Failed to fetch API keys' }, 500);
+	}
+};
+
+export const revokeApiKey = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user?.id) {
+			return c.json({ success: false, message: 'Unauthorized' }, 401);
+		}
+
+		const keyId = c.req.param('id');
+		if (!keyId) {
+			return c.json({ success: false, message: 'Key ID is required' }, 400);
+		}
+
+		const key = await prisma.apiKey.findFirst({
+			where: { id: keyId, userId: user.id },
+		});
+
+		if (!key) {
+			return c.json({ success: false, message: 'API key not found' }, 404);
+		}
+
+		await prisma.apiKey.delete({
+			where: { id: keyId },
+		});
+
+		const cacheKey = `apikey:cache:${key.keyHash}`;
+		await client.del(cacheKey).catch(() => null);
+
+		return c.json(
+			{
+				success: true,
+				message: 'API key revoked successfully',
+			},
+			200,
+		);
+	} catch (error) {
+		captureError(error, { tags: { controller: 'settings', action: 'REVOKE_API_KEY' } });
+		return c.json({ success: false, message: 'Failed to revoke API key' }, 500);
+	}
+};
+
+export const updateApiKey = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user?.id) {
+			return c.json({ success: false, message: 'Unauthorized' }, 401);
+		}
+
+		const keyId = c.req.param('id');
+		const rawBody = await c.req.json().catch(() => null);
+
+		const validation = updateApiKeySchema.safeParse(rawBody);
+
+		if (!validation.success) {
+			return c.json(
+				{
+					success: false,
+					message: validation.error.issues[0]?.message || 'Validation failed',
+				},
+				400,
+			);
+		}
+
+		const key = await prisma.apiKey.findFirst({
+			where: { id: keyId, userId: user.id },
+		});
+
+		if (!key) {
+			return c.json({ success: false, message: 'API key not found' }, 404);
+		}
+
+		const updated = await prisma.apiKey.update({
+			where: { id: keyId },
+			data: {
+				...(validation.data.name !== undefined && { name: validation.data.name }),
+				...(validation.data.isActive !== undefined && { isActive: validation.data.isActive }),
+			},
+			select: {
+				id: true,
+				name: true,
+				keyPrefix: true,
+				scopes: true,
+				isActive: true,
+				lastUsedAt: true,
+				expiresAt: true,
+			},
+		});
+
+		const cacheKey = `apikey:cache:${key.keyHash}`;
+		await client.del(cacheKey).catch(() => null);
+
+		return c.json(
+			{
+				success: true,
+				message: 'API key updated successfully',
+				data: updated,
+			},
+			200,
+		);
+	} catch (error) {
+		captureError(error, { tags: { controller: 'settings', action: 'UPDATE_API_KEY' } });
+		return c.json({ success: false, message: 'Failed to update API key' }, 500);
+	}
+};

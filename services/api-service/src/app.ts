@@ -39,6 +39,8 @@ app.use(
 			'Content-Type',
 			'Authorization',
 			'X-Custom-Header',
+			'X-API-Key',
+			'x-api-key',
 			'Idempotency-Key',
 			'idempotency-key',
 		],

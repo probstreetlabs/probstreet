@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { isAdmin } from '@/middlewares/isAdmin';
+import { requireScope } from '@/middlewares/scope';
 import { idempotency } from '@/middlewares/idempotency';
 import { authorization } from '@/middlewares/authorization';
 import {
@@ -33,8 +34,20 @@ marketRoutes.post('/create', authorization, isAdmin, createMarket);
 marketRoutes.post('/liquidity-add', authorization, idempotency, addLiquidity);
 marketRoutes.post('/resolve', authorization, isAdmin, idempotency, resolveMarket);
 marketRoutes.post('/generate-url', authorization, isAdmin, generatePresignedUrlRoute);
-marketRoutes.post('/:symbol/split', authorization, idempotency, splitShares);
-marketRoutes.post('/:symbol/merge', authorization, idempotency, mergeShares);
+marketRoutes.post(
+	'/:symbol/split',
+	authorization,
+	requireScope('orders:write'),
+	idempotency,
+	splitShares,
+);
+marketRoutes.post(
+	'/:symbol/merge',
+	authorization,
+	requireScope('orders:write'),
+	idempotency,
+	mergeShares,
+);
 
 marketRoutes.get('/search', searchMarkets);
 marketRoutes.get('/:symbol', getMarketDetails);

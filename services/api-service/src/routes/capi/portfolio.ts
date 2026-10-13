@@ -6,12 +6,23 @@ import {
 	getPortfolioHistory,
 	getPortfolioPositions,
 } from '@/controllers/portfolio';
+import { requireScope } from '@/middlewares/scope';
 import { authorization } from '@/middlewares/authorization';
 
 export const portfolioRoutes = new Hono();
 
-portfolioRoutes.get('/orders', authorization, getPortfolioOrders);
-portfolioRoutes.get('/history', authorization, getPortfolioHistory);
-portfolioRoutes.get('/summary', authorization, getPortfolioSummary);
-portfolioRoutes.get('/positions', authorization, getPortfolioPositions);
-portfolioRoutes.get('/position/:marketId', authorization, getMarketPosition);
+portfolioRoutes.get('/orders', authorization, requireScope('orders:read'), getPortfolioOrders);
+portfolioRoutes.get('/history', authorization, requireScope('orders:read'), getPortfolioHistory);
+portfolioRoutes.get('/summary', authorization, requireScope('wallet:read'), getPortfolioSummary);
+portfolioRoutes.get(
+	'/positions',
+	authorization,
+	requireScope('wallet:read', 'orders:read'),
+	getPortfolioPositions,
+);
+portfolioRoutes.get(
+	'/position/:marketId',
+	authorization,
+	requireScope('wallet:read', 'orders:read'),
+	getMarketPosition,
+);
