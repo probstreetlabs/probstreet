@@ -49,7 +49,6 @@ k6 run -e TEST_TYPE=stress -e BASE_URL=http://localhost:3000 scripts/orders-crea
 
 > **Note:** The `--out json=results/...` flag is crucial. It saves the raw output which is needed to construct the final benchmark tables.
 
-
 ## Important Note on Environment
 
 These scripts are currently designed to run locally. If the load generator (k6) and the system under test are running on the same machine (e.g., Apple M4), they will compete for CPU and memory resources. This means the metrics collected are a _lower bound_ on real capacity. Production on dedicated infrastructure should do better, not worse. This must be explicitly documented in published metrics. (Later i runed tests one by one to get better results)

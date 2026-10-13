@@ -135,10 +135,20 @@ INIT_BALANCE event dispatched to Go engine (balance available in-memory immediat
 #### Placing a Trade
 
 ```
-User clicks "Buy Yes @ ₹6"
+User swipes "Buy Yes @ ₹6"  OR  Algo Bot sends POST /order/buy
         │
         ▼
-API Service validates JWT
+SwipeToConfirm / Bot emits client-generated Idempotency-Key (UUID)
+        │
+        ▼
+API Service validates Auth:
+  ├── Web Session → Validates HTTP-only JWT Cookie
+  └── Bot Trader  → Validates X-API-Key (prob_live_...) & enforces required scopes
+        │
+        ▼
+Acquires in-flight Redis lock (SET NX EX 30)
+  ├── Lock collision (in-flight retry) → 409 Conflict (no duplicate trade)
+  └── Lock acquired → Proceed
         │
         ▼
 Order pushed to Redis Queue          ← no DB touch here
@@ -288,6 +298,69 @@ A theoretical **8.4 million orders** might fit inside the database snapshot calc
 Instead of immediately adding S3 or R2 to the infrastructure, PostgreSQL `BYTEA` gives a simple, inexpensive recovery mechanism that's good enough for the current scale. The important part wasn't that PostgreSQL was somehow better than object storage — it wasn't. **The important part was choosing the architecture based on the actual constraints of the project.**
 
 At production scale, large snapshot artifacts would move to S3 or R2, with the database responsible for metadata, versions, checksums, and recovery pointers.
+
+---
+
+### In-Flight Idempotency & Concurrency Locking
+
+In high-throughput prediction markets, network blips and rapid user actions introduce severe consistency hazards:
+
+- A user double-swipes or taps repeatedly on an unsteady mobile connection.
+- An HTTP request executes on the server, but the mobile client drops connection before receiving the 200 response, prompting the client or browser network layer to retry.
+
+Without strict deduplication, this causes **double-spending and duplicate orders** — debiting the user's wallet twice and posting duplicate resting contracts into the orderbook.
+
+#### The Architecture
+
+1. **Client-Side Intent Generation**: Every physical interaction with the `SwipeToConfirm` component generates a unique UUID (`crypto.randomUUID()`) attached as the `Idempotency-Key` header on `/order/buy`, `/order/sell`, `/order/split`, and `/order/merge`.
+2. **Distributed In-Flight Lock**: Before touching Postgres or the engine queue, the API middleware atomically claims a per-user distributed lock in Redis:
+   ```redis
+   SET idempotency:{userId}:{idempotencyKey} "PROCESSING" EX 30 NX
+   ```
+3. **Instant Collision Handling**:
+   - If a duplicate request arrives while the first operation is in flight, Redis returns `nil` (`NX` failed). The API immediately rejects it with `409 Conflict: Request is currently being processed. Please wait.`, completely preventing parallel database writes or duplicate matching engine events.
+4. **Lean Lifecycle (Zero Response Bloat)**:
+   - Traditional payment gateways (e.g. Stripe) often cache complete serialized HTTP response bodies in Redis for 24+ hours. In high-frequency order placement, that wastes significant RAM.
+   - Probstreet treats idempotency as an **in-flight concurrency lock and collision barrier**: once an order succeeds (2xx), the key transitions to `COMPLETED` for 30 seconds to suppress immediate double-submits, then cleanly expires. If the request fails (4xx/5xx/exception), the lock is deleted immediately so the user can correct their input and retry without artificial timeouts.
+
+---
+
+### Programmatic Trading — Opening the Engine to Bots
+
+Once the web UI was working and the matching engine was handling orders smoothly, I realized something was missing: **real prediction markets don't just run on humans clicking buttons in a browser**.
+
+If someone wants to run an arbitrage strategy, connect an automated trading script, or build a market-maker bot on top of Probstreet, they can't be dealing with browser cookie sessions or CSRF tokens. They need a clean API key.
+
+Building this sounds simple at first — generate a random key, check it on each request, and let them trade. But once you look at it from a security and latency perspective, three problems come up fast:
+
+#### 1. Never store raw keys in the database
+
+Just like passwords, raw keys should never touch the database. If the database is ever compromised, an attacker shouldn't get a list of active trading credentials.
+
+When a user generates a key in **Settings → API Keys**, the server creates a random 40-character token prefixed with `prob_live_` (e.g. `prob_live_9f8a...`). It shows the full secret to the user **exactly once**, hashes it with SHA-256, and stores only the hash in Postgres alongside a masked prefix (`prob_live_xxxxxxxx••••••••`) for display. If the user loses it, they revoke it and make a new one.
+
+#### 2. Querying PostgreSQL on every bot request is too slow
+
+A trading bot might poll orderbooks and place orders multiple times a second. If every single HTTP request has to hit Postgres with `SELECT * FROM api_keys WHERE key_hash = ...`, the database quickly becomes the bottleneck.
+
+To keep authentication fast:
+
+- When a request arrives with `X-API-Key`, the backend checks **Redis first** (`apikey:cache:{hash}` with a 5-minute TTL).
+- If it's cached, auth takes **under 1ms** without touching the database at all.
+- If the user toggles a key off or revokes it in their dashboard, the Redis cache entry is deleted instantly so the key stops working immediately.
+
+#### 3. Granular permissions (Don't give bots full account access)
+
+If someone runs an open-source bot script on a VPS, that script shouldn't have permission to withdraw money, delete the account, or change notification settings.
+
+I added permission scopes so keys only have access to what they actually need:
+
+- `orders:write` — place and cancel limit orders.
+- `orders:read` — view active orders and trade history.
+- `market:read` — read live orderbooks and market prices.
+- `wallet:read` — check available balance and portfolio positions.
+
+If an order-placing script ever leaks its key, an attacker can't touch the user's wallet or settings — any unauthorized endpoint immediately rejects the request with a `403 Forbidden`.
 
 ---
 
@@ -605,6 +678,14 @@ I eventually found **Cashfree Secured ID**, their KYC and verification API produ
 - For ambiguous provider responses, the system falls back to manual admin review.
 
 The integration is currently running in **test mode** against Cashfree's sandbox environment. Switching to production is a configuration change. The original in-house manual KYC system code still exists in the codebase — it's just disabled.
+
+### Programmatic Trading & API Keys
+
+Users can generate API keys directly in **Settings → API Keys** to connect automated trading bots and scripts:
+
+- **Scoped access**: Select only the permissions needed (`orders:write`, `market:read`, `wallet:read`, etc.).
+- **One-time secret display**: The raw key (`prob_live_...`) is shown once with copyable Python and cURL code snippets.
+- **Interactive docs**: Explore and test endpoints directly in Swagger UI at `/docs` using your API key.
 
 ---
 
