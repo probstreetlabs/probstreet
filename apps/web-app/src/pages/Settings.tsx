@@ -5,7 +5,8 @@ import { useAuthStore } from '@/store/auth';
 import { useEffect, useState, useRef } from 'react';
 import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
 import { UsernameModal } from '@/components/modals/UsernameModal';
-import { User, Bell, LogOut, Trash2, Wallet, Edit2, ChevronRight, X } from 'lucide-react';
+import { User, Bell, LogOut, Trash2, Wallet, Edit2, ChevronRight, KeyRound } from 'lucide-react';
+import { ApiKeysTab } from '@/components/settings/ApiKeysTab';
 
 export default function Settings() {
 	const [activeTab, setActiveTab] = useState('profile');
@@ -172,7 +173,7 @@ export default function Settings() {
 									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
 							}`}
 						>
-							<User size={18} /> Profile
+							<User size={19} /> Profile
 						</button>
 						<button
 							onClick={() => setActiveTab('account')}
@@ -182,7 +183,7 @@ export default function Settings() {
 									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
 							}`}
 						>
-							<Wallet size={18} /> Account
+							<Wallet size={19} /> Account
 						</button>
 						<button
 							onClick={() => setActiveTab('notifications')}
@@ -192,11 +193,20 @@ export default function Settings() {
 									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
 							}`}
 						>
-							<Bell size={18} /> Notifications
+							<Bell size={19} /> Notifications
+						</button>
+						<button
+							onClick={() => setActiveTab('api-keys')}
+							className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer rounded-xl text-sm font-semibold transition-colors ${
+								activeTab === 'api-keys'
+									? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
+									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+							}`}
+						>
+							<KeyRound size={19} /> API Keys
 						</button>
 					</div>
 
-					{/* Content */}
 					<div className="flex-1 max-w-3xl">
 						{activeTab === 'profile' && (
 							<div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -318,8 +328,8 @@ export default function Settings() {
 							<div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
 								<h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Account</h2>
 
-								<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-									<h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1.5">
+								<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl p-6">
+									<h3 className="text-md font-semibold text-gray-900 dark:text-white mb-1">
 										Device Management
 									</h3>
 									<p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">
@@ -340,27 +350,26 @@ export default function Settings() {
 												</p>
 											</div>
 										</div>
-										<button className="text-sm text-gray-500 dark:text-gray-400 font-bold hover:text-black dark:hover:text-white transition-colors cursor-pointer">
+										<button className="text-sm text-gray-500 dark:text-gray-400 font-semibold hover:text-black dark:hover:text-white transition-colors cursor-pointer">
 											Log out
 										</button>
 									</div>
 								</div>
 
-								<div className="bg-linear-to-br from-red-500/10 to-red-600/5 border border-red-500/20 dark:from-red-900/20 dark:to-red-950/10 dark:border-red-500/20 rounded-2xl p-6 relative overflow-hidden group">
-									<div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-									<div className="relative flex items-center justify-between gap-8">
+								<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl p-6">
+									<div className="flex items-center justify-between gap-8">
 										<div>
-											<h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-1.5 flex items-center gap-2">
-												Danger Zone
+											<h3 className="text-md font-semibold text-gray-900 dark:text-white mb-1.5 flex items-center gap-2">
+												Delete Account
 											</h3>
-											<p className="text-sm text-red-800/80 dark:text-red-400/80 font-medium leading-relaxed">
+											<p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
 												Permanently delete your account and all associated data. This action cannot
 												be undone.
 											</p>
 										</div>
 										<button
 											onClick={() => setShowDeleteModal(true)}
-											className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm shadow-red-500/20 transition-all cursor-pointer"
+											className="shrink-0 flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 px-3 py-2.5 rounded-md font-semibold text-xs transition-all cursor-pointer"
 										>
 											<Trash2 size={16} /> Delete Account
 										</button>
@@ -375,14 +384,13 @@ export default function Settings() {
 									Notifications
 								</h2>
 
-								{/* Email Notifications */}
 								<div>
 									<div className="flex items-center gap-2 px-2 mb-3">
 										<h3 className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 											Email Notifications
 										</h3>
 									</div>
-									<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
+									<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5">
 										<div className="p-6 flex items-center justify-between gap-8">
 											<div>
 												<h4 className="text-sm font-bold text-gray-900 dark:text-white">
@@ -454,14 +462,13 @@ export default function Settings() {
 									</div>
 								</div>
 
-								{/* In-App Notifications */}
 								<div>
 									<div className="flex items-center gap-2 px-2 mb-3">
 										<h3 className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 											In-App Notifications
 										</h3>
 									</div>
-									<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
+									<div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5">
 										<div className="p-6 flex items-center justify-between gap-8">
 											<div>
 												<h4 className="text-sm font-bold text-gray-900 dark:text-white">
@@ -557,6 +564,7 @@ export default function Settings() {
 								</div>
 							</div>
 						)}
+						{activeTab === 'api-keys' && <ApiKeysTab />}
 					</div>
 				</div>
 				{isUsernameModalOpen && (
@@ -568,12 +576,6 @@ export default function Settings() {
 				{showDeleteModal && (
 					<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
 						<div className="bg-white dark:bg-[#111827] rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-white/5 animate-in zoom-in-95 duration-200 relative">
-							<button
-								onClick={() => setShowDeleteModal(false)}
-								className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors cursor-pointer"
-							>
-								<X size={20} />
-							</button>
 							<div className="p-8 flex flex-col items-center text-center">
 								<img
 									src={LogoutModalIcon}
@@ -587,12 +589,20 @@ export default function Settings() {
 									Are you sure you want to delete your account? This action cannot be undone and all
 									data will be lost.
 								</p>
-								<button
-									onClick={handleDeleteAccount}
-									className="w-full py-3.5 rounded-xl font-bold text-base bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-all cursor-pointer active:scale-[0.98]"
-								>
-									Delete Account
-								</button>
+								<div className="flex items-center gap-3 w-full">
+									<button
+										onClick={() => setShowDeleteModal(false)}
+										className="flex-1 py-3 rounded-md font-semibold text-xs border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all cursor-pointer"
+									>
+										Cancel
+									</button>
+									<button
+										onClick={handleDeleteAccount}
+										className="flex-1 py-3 rounded-md font-semibold text-xs bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
+									>
+										Delete Account
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>

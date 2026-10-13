@@ -13,5 +13,11 @@ export default defineConfig({
 	server: {
 		allowedHosts: true,
 		host: true,
+		proxy: {
+			'/docs': {
+				target: 'http://localhost:3000',
+				changeOrigin: true,
+			},
+		},
 	},
 });
