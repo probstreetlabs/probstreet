@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-	NODE_ENV: z.enum(['development', 'production', 'staging']).default('development'),
+	NODE_ENV: z.enum(['development', 'production', 'staging', 'test']).default('development'),
 	LOG_LEVEL: z.string().default('info'),
 
 	PORT: z.string().min(1).default('8004'),
@@ -17,6 +17,10 @@ const envSchema = z.object({
 	NEW_RELIC_API_KEY: z.string().min(1),
 
 	OTEL_EXPORTER_OTLP_ENDPOINT: z.url(),
+
+	ACCESS_TOKEN_SECRET: z.string().min(1).default('probstreet-access-token-secret'),
+
+	DATABASE_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(Bun.env);
