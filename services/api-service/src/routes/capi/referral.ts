@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { rateLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
+import { rateLimiter, interactionLimiter } from '@/middlewares/limiter';
 import {
 	getReferralCode,
 	referralLeaderboard,
@@ -13,7 +13,7 @@ export const referralRoutes = new Hono();
 
 referralRoutes.get('/', authorization, getReferralCode);
 referralRoutes.get('/info', authorization, getReferralInfo);
-referralRoutes.post('/submit', authorization, submitReferral);
+referralRoutes.post('/submit', authorization, interactionLimiter, submitReferral);
 referralRoutes.get(
 	'/referral-earnings',
 	authorization,

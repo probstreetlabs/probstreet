@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { generalLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
 import {
 	getSettings,
@@ -14,7 +15,7 @@ import {
 
 export const settingsRoutes = new Hono();
 
-settingsRoutes.use('/*', authorization);
+settingsRoutes.use('/*', authorization, generalLimiter);
 
 settingsRoutes.get('/', getSettings);
 settingsRoutes.put('/profile', updateProfile);

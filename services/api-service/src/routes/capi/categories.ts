@@ -1,11 +1,12 @@
 import { Context, Hono } from 'hono';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probstreet/database';
 import { captureError } from '@/libs/sentry';
+import { prisma } from '@probstreet/database';
+import { generalLimiter } from '@/middlewares/limiter';
 
 export const categoriesRoutes = new Hono();
 
-categoriesRoutes.get('/', async (c: Context) => {
+categoriesRoutes.get('/', generalLimiter, async (c: Context) => {
 	try {
 		const categories = await prisma.category.findMany({
 			select: {

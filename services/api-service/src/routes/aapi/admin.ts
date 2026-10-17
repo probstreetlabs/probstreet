@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { isAdmin } from '@/middlewares/isAdmin';
+import { adminLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
 import {
 	resolveMarket,
@@ -18,7 +19,7 @@ import { getOraclePending, confirmOracleResolution } from '@/controllers/oracle'
 
 export const aapiRoutes = new Hono();
 
-aapiRoutes.use('*', authorization, isAdmin);
+aapiRoutes.use('*', authorization, isAdmin, adminLimiter);
 
 aapiRoutes.get('/users', getUsers);
 aapiRoutes.get('/markets', getMarkets);

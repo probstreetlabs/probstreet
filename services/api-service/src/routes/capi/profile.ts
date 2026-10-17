@@ -8,9 +8,12 @@ import {
 	getUserTrades,
 	getPublicProfile,
 } from '@/controllers/profile';
+import { generalLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
 
 export const profileRoutes = new Hono();
+
+profileRoutes.use('/*', generalLimiter);
 
 profileRoutes.get('/get', authorization, getProfile);
 profileRoutes.patch('/update', authorization, updateProfile);

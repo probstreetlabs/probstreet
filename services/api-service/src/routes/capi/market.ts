@@ -25,11 +25,12 @@ import {
 	deleteMarketComment,
 } from '@/controllers/market';
 import { optionalAuthorization } from '@/middlewares/optionalAuthorization';
+import { generalLimiter, orderLimiter, interactionLimiter } from '@/middlewares/limiter';
 
 export const marketRoutes = new Hono();
 
-marketRoutes.get('/', getAllMarket);
-marketRoutes.get('/category/:categoryParam', getMarketsByCategory);
+marketRoutes.get('/', generalLimiter, getAllMarket);
+marketRoutes.get('/category/:categoryParam', generalLimiter, getMarketsByCategory);
 marketRoutes.post('/create', authorization, isAdmin, createMarket);
 marketRoutes.post('/liquidity-add', authorization, idempotency, addLiquidity);
 marketRoutes.post('/resolve', authorization, isAdmin, idempotency, resolveMarket);
@@ -38,6 +39,7 @@ marketRoutes.post(
 	'/:symbol/split',
 	authorization,
 	requireScope('orders:write'),
+	orderLimiter,
 	idempotency,
 	splitShares,
 );
@@ -45,19 +47,25 @@ marketRoutes.post(
 	'/:symbol/merge',
 	authorization,
 	requireScope('orders:write'),
+	orderLimiter,
 	idempotency,
 	mergeShares,
 );
 
-marketRoutes.get('/search', searchMarkets);
-marketRoutes.get('/:symbol', getMarketDetails);
-marketRoutes.get('/:symbol/live', getMarketLiveStatus);
-marketRoutes.get('/:symbol/klines', getMarketKlines);
-marketRoutes.get('/:symbol/proxy-klines', getMarketProxyKlines);
-marketRoutes.get('/:symbol/trades', getMarketTrades);
-marketRoutes.get('/:symbol/stats', getMarketStats);
-marketRoutes.get('/:symbol/news', getMarketNews);
+marketRoutes.get('/search', generalLimiter, searchMarkets);
+marketRoutes.get('/:symbol', generalLimiter, getMarketDetails);
+marketRoutes.get('/:symbol/live', generalLimiter, getMarketLiveStatus);
+marketRoutes.get('/:symbol/klines', generalLimiter, getMarketKlines);
+marketRoutes.get('/:symbol/proxy-klines', generalLimiter, getMarketProxyKlines);
+marketRoutes.get('/:symbol/trades', generalLimiter, getMarketTrades);
+marketRoutes.get('/:symbol/stats', generalLimiter, getMarketStats);
+marketRoutes.get('/:symbol/news', generalLimiter, getMarketNews);
 
-marketRoutes.get('/:symbol/comments', optionalAuthorization, getMarketComments);
-marketRoutes.post('/:symbol/comments', authorization, postMarketComment);
-marketRoutes.delete('/:symbol/comments/:commentId', authorization, deleteMarketComment);
+marketRoutes.get('/:symbol/comments', optionalAuthorization, generalLimiter, getMarketComments);
+marketRoutes.post('/:symbol/comments', authorization, interactionLimiter, postMarketComment);
+marketRoutes.delete(
+	'/:symbol/comments/:commentId',
+	authorization,
+	interactionLimiter,
+	deleteMarketComment,
+);
