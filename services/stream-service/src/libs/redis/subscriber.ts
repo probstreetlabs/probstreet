@@ -43,9 +43,11 @@ export const startStreamSubscriber = async () => {
 				io.to(`market:${symbol}`).emit('ACTIVITY', data);
 				io.to(symbol).emit('MESSAGE', data);
 			} else if (type === 'PORTFOLIO_UPDATE') {
+				// Private event: `symbol` is a userId. It must only ever be delivered to the
+				// authenticated owner's room (`user:<id>`). Never emit it to the raw
+				// `<userId>` room — any client can join that room via the generic
+				// SUBSCRIBE event, which would leak another user's portfolio activity.
 				io.to(`user:${symbol}`).emit('PORTFOLIO_UPDATE', data);
-				io.to(symbol).emit('PORTFOLIO_UPDATE', data);
-				io.to(symbol).emit('MESSAGE', data);
 			} else if (type === 'NOTIFICATION') {
 				io.to(`user:${symbol}`).emit('NOTIFICATION', data);
 			} else {

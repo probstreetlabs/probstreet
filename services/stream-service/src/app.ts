@@ -60,7 +60,6 @@ io.on('connection', (socket) => {
 
 	if (initialUser) {
 		socket.join(`user:${initialUser.id}`);
-		socket.join(initialUser.id);
 		logger.debug(
 			`Authenticated client connected: ${socket.id} (User: ${initialUser.id}, API Key: ${!!initialUser.isApiKey})`,
 		);
@@ -81,7 +80,6 @@ io.on('connection', (socket) => {
 			if (user) {
 				socket.data.user = user;
 				socket.join(`user:${user.id}`);
-				socket.join(user.id);
 				logger.debug(
 					`Client authenticated via event: ${socket.id} (User: ${user.id}, API Key: ${!!user.isApiKey})`,
 				);
@@ -130,13 +128,11 @@ io.on('connection', (socket) => {
 		}
 
 		socket.join(`user:${userId}`);
-		socket.join(userId);
 		socket.emit('SUBSCRIBED_USER', { userId });
 	});
 
 	socket.on('UNSUBSCRIBE_USER', (userId: string) => {
 		socket.leave(`user:${userId}`);
-		socket.leave(userId);
 	});
 
 	socket.on('SUBSCRIBE', (room: string) => {
