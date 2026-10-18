@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from '@/config/axios';
 import { queryClient } from '@/lib/queryClient';
+import { authenticateSocket, deauthenticateSocket } from '@/socket';
 
 export type OnboardingStatus = 'PENDING_USERNAME' | 'PENDING_PREFERENCES' | 'COMPLETED';
 
@@ -21,7 +22,7 @@ interface AuthState {
 	user: User | null;
 	isAuthenticated: boolean;
 	isHydrated: boolean;
-	login: (user: User) => void;
+	login: (user: User, streamToken?: string) => void;
 	logout: () => void;
 	updateUser: (data: Partial<User>) => void;
 	hydrate: () => Promise<void>;
@@ -32,8 +33,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 	isAuthenticated: false,
 	isHydrated: false,
 
-	login: (user) => {
+	login: (user, streamToken) => {
 		set({ user, isAuthenticated: true });
+		if (streamToken) {
+			authenticateSocket(streamToken);
+		} else {
+			authenticateSocket();
+		}
 	},
 
 	logout: async () => {
@@ -44,6 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 		} finally {
 			queryClient.clear();
 			set({ user: null, isAuthenticated: false });
+			deauthenticateSocket();
 		}
 	},
 
@@ -63,12 +70,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 					isAuthenticated: true,
 					isHydrated: true,
 				});
+				if (response.data.streamToken) {
+					authenticateSocket(response.data.streamToken);
+				} else {
+					authenticateSocket();
+				}
 			} else {
 				set({ user: null, isAuthenticated: false, isHydrated: true });
+				deauthenticateSocket();
 			}
 		} catch (error) {
 			// 401 means not authenticated, which is fine, just means no session
 			set({ user: null, isAuthenticated: false, isHydrated: true });
+			deauthenticateSocket();
 		}
 	},
 }));

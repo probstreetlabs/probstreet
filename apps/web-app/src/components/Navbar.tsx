@@ -14,6 +14,7 @@ import {
 	Trophy,
 	Moon,
 	Activity,
+	Download,
 } from 'lucide-react';
 import SearchInput from './SearchInput';
 import CategoryNav from './CategoryNav';
@@ -33,6 +34,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import notificationSound from '@/assets/audio/notification.wav';
 import { getNotifications, markNotificationsAsRead } from '@/api/notifications';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 
 function timeAgo(dateInput: string | Date) {
 	const date = new Date(dateInput);
@@ -80,6 +82,7 @@ export default function Navbar() {
 	const { openOnboardModal } = useModalStore();
 	const { theme, toggleTheme } = useThemeStore();
 	const { data: balance, isLoading: balanceLoading } = useBalanceQuery();
+	const { isInstallable, isInstalled, promptInstall } = usePwaInstall();
 
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -128,6 +131,7 @@ export default function Navbar() {
 			}
 
 			socket.on('connect', onConnect);
+			socket.on('AUTHENTICATED', onConnect);
 
 			const playNotificationSound = () => {
 				try {
@@ -157,6 +161,7 @@ export default function Navbar() {
 			return () => {
 				socket.off('NOTIFICATION', handleNotification);
 				socket.off('connect', onConnect);
+				socket.off('AUTHENTICATED', onConnect);
 				socket.emit('UNSUBSCRIBE_USER', userId);
 			};
 		}
@@ -179,6 +184,19 @@ export default function Navbar() {
 			toast.error('Logout failed. Please try again.');
 		}
 	};
+
+	// PWA "Install App" entry for the dropdown menus. Only shown while the browser
+	// has fired `beforeinstallprompt` and the app isn't already installed.
+	const installMenuItem =
+		isInstallable && !isInstalled ? (
+			<button
+				onClick={() => promptInstall()}
+				className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+			>
+				<Download size={16} className="text-black dark:text-white" />
+				{t('Install App')}
+			</button>
+		) : null;
 
 	return (
 		<>
@@ -298,6 +316,8 @@ export default function Navbar() {
 															<div className="h-px bg-gray-100 dark:bg-slate-800 my-1 mx-2" />
 
 															<LanguageSelector />
+
+															{installMenuItem}
 														</div>
 													</motion.div>
 												</div>
@@ -558,6 +578,8 @@ export default function Navbar() {
 
 															<LanguageSelector />
 
+															{installMenuItem}
+
 															<button
 																onClick={handleLogout}
 																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium text-red-600 dark:text-red-400 transition-colors w-full text-left"
@@ -630,6 +652,7 @@ export default function Navbar() {
 																</div>
 															</button>
 															<div className="h-px bg-gray-100 dark:bg-white/5 my-1 mx-2" />
+															{installMenuItem}
 															<button
 																onClick={handleLogout}
 																className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer"

@@ -218,6 +218,7 @@ export default function Portfolio() {
 			}
 
 			socket.on('connect', onConnect);
+			socket.on('AUTHENTICATED', onConnect);
 
 			const handlePortfolioUpdate = async () => {
 				try {
@@ -253,6 +254,7 @@ export default function Portfolio() {
 				socket.off('PORTFOLIO_UPDATE', handlePortfolioUpdate);
 				socket.off('MESSAGE', handleMessage);
 				socket.off('connect', onConnect);
+				socket.off('AUTHENTICATED', onConnect);
 			};
 		}
 	}, [isAuthenticated, user?.id, refetchBalance]);

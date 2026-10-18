@@ -284,6 +284,35 @@ export default function EventDetails() {
 		fetchMarketDetails();
 	}, [fetchMarketDetails]);
 
+	useEffect(() => {
+		if (!market) return;
+		document.title = `${market.title} | Probstreet`;
+
+		const updateMeta = (prop: string, content: string) => {
+			let el =
+				document.querySelector(`meta[property="${prop}"]`) ||
+				document.querySelector(`meta[name="${prop}"]`);
+			if (!el) {
+				el = document.createElement('meta');
+				el.setAttribute(prop.startsWith('twitter:') ? 'name' : 'property', prop);
+				document.head.appendChild(el);
+			}
+			el.setAttribute('content', content);
+		};
+
+		const yesPercent = Math.round(((Number(market.yesPrice) || 5.0) / 10) * 100);
+		const desc = `Yes: ₹${market.yesPrice} (${yesPercent}%) • No: ₹${market.noPrice} (${100 - yesPercent}%) • Trade live on Probstreet.`;
+
+		updateMeta('og:title', market.title);
+		updateMeta('og:description', desc);
+		updateMeta('twitter:title', market.title);
+		updateMeta('twitter:description', desc);
+		if (market.thumbnail) {
+			updateMeta('og:image', market.thumbnail);
+			updateMeta('twitter:image', market.thumbnail);
+		}
+	}, [market]);
+
 	const checkBookmark = async (marketId: string) => {
 		try {
 			const res = await api.get('/profile/watchlist');
@@ -1031,6 +1060,7 @@ export default function EventDetails() {
 				category={market.category}
 				volume={market.volume}
 				traders={market.traders}
+				thumbnail={market.thumbnail}
 			/>
 
 			{market && (

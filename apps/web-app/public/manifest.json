@@ -1,0 +1,61 @@
+{
+	"name": "ProbStreet — Prediction Market",
+	"short_name": "ProbStreet",
+	"description": "Trade YES or NO shares on real-world events — a risk-free, paper trading prediction market.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait-primary",
+	"background_color": "#090C1A",
+	"theme_color": "#090C1A",
+	"icons": [
+		{
+			"src": "/icons/icon-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icons/icon-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icons/icon-maskable-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "/icons/icon-maskable-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	],
+	"categories": ["finance", "trading", "games"],
+	"shortcuts": [
+		{
+			"name": "Live Markets",
+			"short_name": "Markets",
+			"description": "Browse live prediction markets",
+			"url": "/events",
+			"icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+		},
+		{
+			"name": "Portfolio",
+			"short_name": "Portfolio",
+			"description": "View your open positions and trade history",
+			"url": "/portfolio",
+			"icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+		},
+		{
+			"name": "Wallet",
+			"short_name": "Wallet",
+			"description": "View balances and recharge",
+			"url": "/wallet",
+			"icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+		}
+	]
+}

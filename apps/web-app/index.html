@@ -2,23 +2,51 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="icon" type="image/avif" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+		/>
+
+		<!-- PWA Primary Meta Tags -->
+		<link rel="manifest" href="/manifest.json" />
+		<meta name="theme-color" content="#090C1A" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="ProbStreet" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+		<!-- Telegram WebApp Script -->
 		<script src="https://telegram.org/js/telegram-web-app.js"></script>
-		<title>Probstreet — Paper Trading · Predict Real Events</title>
+
+		<!-- SEO & Social Graph (Open Graph + Twitter Card) -->
+		<title>Probstreet — Prediction Market · Predict Real Events</title>
 		<meta
 			name="description"
 			content="Probstreet is a paper trading prediction market platform. Trade YES or NO shares on real-world events — risk-free, no real money involved."
 		/>
-		<meta property="og:title" content="Probstreet — Paper Trading · Predict Real Events" />
+		<meta property="og:site_name" content="Probstreet" />
+		<meta property="og:title" content="Probstreet — Prediction Market · Predict Real Events" />
 		<meta
 			property="og:description"
-			content="Trade YES or NO shares on real-world events on Probstreet — a risk-free, paper trading prediction market platform."
+			content="Trade YES or NO shares on real-world events on Probstreet — a risk-free, paper trading prediction market."
 		/>
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content="https://probstreet.com" />
-		<meta property="og:image" content="https://probstreet.com/og-image.jpg" />
+		<meta property="og:image" content="https://probstreet.com/og-image.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Probstreet — Prediction Market" />
 		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Probstreet — Prediction Market" />
+		<meta
+			name="twitter:description"
+			content="Trade YES or NO shares on real-world events on Probstreet — a risk-free, paper trading prediction market."
+		/>
+		<meta name="twitter:image" content="https://probstreet.com/og-image.png" />
 	</head>
 	<body>
 		<div id="root"></div>

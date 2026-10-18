@@ -14,6 +14,7 @@
 		"db:generate": "bun run --filter=@probstreet/database db:generate",
 		"web:dev": "bun run --filter=@probstreet/web-app dev",
 		"web:build": "bun run --filter=@probstreet/web-app build",
+		"assets:generate": "bun scripts/generate-pwa-assets.mjs",
 		"start:api-service": "bun --filter @probstreet/api-service start",
 		"start:stream-service": "bun --filter @probstreet/stream-service start",
 		"start:processor-service": "bun --filter @probstreet/processor-service start",

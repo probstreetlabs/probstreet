@@ -25,4 +25,21 @@ if (window.opener && window.location.hash.includes('access_token')) {
 			</GoogleOAuthProvider>
 		</>,
 	);
+
+	// Register PWA Service Worker for offline support & app install
+	if (
+		'serviceWorker' in navigator &&
+		(import.meta.env.PROD || window.location.hostname === 'localhost')
+	) {
+		window.addEventListener('load', () => {
+			navigator.serviceWorker
+				.register('/sw.js')
+				.then((reg) => {
+					console.log('[PWA] Service worker registered with scope:', reg.scope);
+				})
+				.catch((err) => {
+					console.warn('[PWA] Service worker registration error:', err);
+				});
+		});
+	}
 }
