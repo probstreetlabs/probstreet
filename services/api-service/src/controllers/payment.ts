@@ -24,6 +24,32 @@ export const initPayment = async (c: Context) => {
 			);
 		}
 
+		const DAILY_DEPOSIT_LIMIT = 1000000;
+		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+		const dailyDepositTx = await prisma.transaction.aggregate({
+			_sum: { amount: true },
+			where: {
+				userId,
+				type: 'DEPOSIT',
+				status: 'SUCCESS',
+				createdAt: { gte: oneDayAgo },
+			},
+		});
+
+		const currentDayDepositTotal = Number(dailyDepositTx._sum.amount || 0);
+
+		if (currentDayDepositTotal + amount > DAILY_DEPOSIT_LIMIT) {
+			const remaining = Math.max(0, DAILY_DEPOSIT_LIMIT - currentDayDepositTotal);
+			return c.json(
+				{
+					success: false,
+					error: `Daily deposit limit of ₹${DAILY_DEPOSIT_LIMIT.toLocaleString('en-IN')} reached. Remaining quota for 24h: ₹${remaining.toLocaleString('en-IN')}`,
+				},
+				400,
+			);
+		}
+
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 		});

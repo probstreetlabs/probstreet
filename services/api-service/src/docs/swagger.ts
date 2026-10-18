@@ -542,56 +542,6 @@ export const swaggerDocument = {
 			},
 		},
 		'/api/v1/capi/balance/deposit': {
-			post: {
-				summary: 'POST /api/v1/capi/balance/deposit',
-				tags: ['balance'],
-				responses: {
-					'200': {
-						description: 'Successful response',
-						content: {
-							'application/json': {
-								schema: {
-									$ref: '#/components/schemas/SuccessResponse',
-								},
-							},
-						},
-					},
-					'400': {
-						description: 'Bad Request / Validation Error',
-						content: {
-							'application/json': {
-								schema: {
-									$ref: '#/components/schemas/ErrorResponse',
-								},
-							},
-						},
-					},
-					'500': {
-						description: 'Internal Server Error',
-						content: {
-							'application/json': {
-								schema: {
-									$ref: '#/components/schemas/ErrorResponse',
-								},
-							},
-						},
-					},
-				},
-				requestBody: {
-					content: {
-						'application/json': {
-							schema: {
-								$ref: '#/components/schemas/GenericRequest',
-							},
-						},
-					},
-				},
-				security: [
-					{
-						bearerAuth: [],
-					},
-				],
-			},
 			get: {
 				summary: 'GET /api/v1/capi/balance/deposit',
 				tags: ['balance'],

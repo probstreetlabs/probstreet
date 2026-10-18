@@ -5,14 +5,8 @@ import { EVENTS } from '@/config/constants';
 import { captureError } from '@/libs/sentry';
 import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
-import { balanceSchema } from '@/validations/balance';
 import { triggerCashfreePayout } from '@/libs/cashfree/payouts';
-
-/**
- * Get user's balance from engine
- * @param c Hono context
- * @returns Json response with user balance
- */
+import { sendNotification } from '@/libs/notification/dispatcher';
 
 export const getBalance = async (c: Context) => {
 	try {
@@ -119,198 +113,6 @@ export const getBalance = async (c: Context) => {
 	}
 };
 
-/**
- * Deposite or Onramp balance to user wallet
- * @param c Hono context
- * @returns Json response
- */
-
-export const deposit = async (c: Context) => {
-	try {
-		const userId = c.get('user').id;
-
-		if (!userId) {
-			logger.warn(
-				{
-					context: 'DEPOSIT_UNAUTHORIZED',
-				},
-				'Unauthorized access attempt to deposit',
-			);
-			return c.json(
-				{
-					success: false,
-					error: 'Unauthorized',
-				},
-				401,
-			);
-		}
-
-		const user = await prisma.user.findUnique({
-			where: {
-				id: userId,
-			},
-		});
-
-		if (!user) {
-			logger.warn(
-				{
-					context: 'DEPOSIT_USER_NOT_FOUND',
-					userId,
-				},
-				'User not found in database',
-			);
-			return c.json(
-				{
-					success: false,
-					message: 'User not found',
-				},
-				404,
-			);
-		}
-
-		const data = await c.req.json<{ amount: string }>();
-
-		const validateData = balanceSchema.safeParse(data);
-
-		if (!validateData.success) {
-			logger.warn(
-				{
-					context: 'DEPOSIT_VALIDATION_FAILED',
-					error: validateData.error.issues,
-				},
-				'Invalid amount input during deposit',
-			);
-			return c.json(
-				{
-					success: false,
-					message: 'Validation failed',
-					error: validateData.error.issues,
-				},
-				400,
-			);
-		}
-
-		try {
-			await prisma.$transaction(async (tx) => {
-				await tx.wallet.update({
-					where: { userId },
-					data: {
-						balance: {
-							increment: validateData.data.amount,
-						},
-					},
-				});
-
-				await tx.transaction.create({
-					data: {
-						userId: userId,
-						type: 'DEPOSIT',
-						status: 'SUCCESS',
-						amount: validateData.data.amount,
-						remarks: 'Wallet recharge successful',
-					},
-				});
-			});
-
-			logger.info({ userId }, 'Deposit DB transaction succeeded');
-		} catch (error) {
-			captureError(error, {
-				tags: {
-					controller: 'balance',
-					action: 'DEPOSIT_TX_FAIL',
-					userId,
-				},
-				contexts: {
-					transaction: {
-						amount:
-							typeof validateData !== 'undefined' && validateData.success
-								? validateData.data.amount
-								: undefined,
-					},
-				},
-			});
-			logger.error(
-				{
-					alert: true,
-					context: 'DEPOSIT_TX_FAIL',
-					error,
-					userId,
-				},
-				'Database transaction failed',
-			);
-			return c.json(
-				{
-					success: false,
-					message: 'Failed to process deposit',
-				},
-				500,
-			);
-		}
-
-		let response = await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
-			userId: userId,
-			amount: validateData.data.amount,
-		});
-
-		if (!response.success && response.retryable) {
-			for (let i = 0; i < 3; i++) {
-				response = await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
-					userId: userId,
-					amount: validateData.data.amount,
-				});
-				if (response.success) {
-					logger.info({ attempt: i + 1, userId }, 'Engine sync succeeded on retry');
-					break;
-				}
-			}
-		}
-
-		if (response.success) {
-			logger.info({ userId }, 'Engine sync done');
-		} else {
-			logger.warn({ userId, alert: true }, 'Engine sync failed after retries');
-		}
-
-		return c.json(
-			{
-				success: true,
-				message: response.message,
-				data: response.data,
-			},
-			200,
-		);
-	} catch (error) {
-		captureError(error, {
-			tags: {
-				controller: 'balance',
-				action: 'DEPOSIT',
-				userId: (c.get('user') as any)?.id,
-			},
-		});
-		logger.error(
-			{
-				alert: true,
-				context: 'DEPOSIT_CONTROLLER_FAIL',
-				error,
-			},
-			'Unhandled error in deposit controller',
-		);
-		return c.json(
-			{
-				success: false,
-				error: 'Internal server error',
-			},
-			500,
-		);
-	}
-};
-
-/**
- * Get Deposit amount for a user
- * @param c Hono context
- * @returns Json response
- */
-
 export const getDepositAmount = async (c: Context) => {
 	try {
 		const userId = (c.get('user') as any).id;
@@ -402,12 +204,6 @@ export const getDepositAmount = async (c: Context) => {
 	}
 };
 
-/**
- * Withdraw money for user
- * @param c Hono context
- * @returns Json response
- */
-
 export const withdraw = async (c: Context) => {
 	try {
 		const userId = (c.get('user') as any).id;
@@ -471,12 +267,59 @@ export const withdraw = async (c: Context) => {
 			);
 		}
 
+		const DAILY_WITHDRAWAL_LIMIT = 100000;
+		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+		const dailyWithdrawalTx = await prisma.transaction.aggregate({
+			_sum: { amount: true },
+			where: {
+				userId,
+				type: 'WITHDRAWAL',
+				status: { in: ['SUCCESS', 'PENDING'] },
+				createdAt: { gte: oneDayAgo },
+			},
+		});
+
+		const currentDayWithdrawalTotal = Number(dailyWithdrawalTx._sum.amount || 0);
+
+		if (currentDayWithdrawalTotal + amount > DAILY_WITHDRAWAL_LIMIT) {
+			const remaining = Math.max(0, DAILY_WITHDRAWAL_LIMIT - currentDayWithdrawalTotal);
+			return c.json(
+				{
+					success: false,
+					message: `Daily withdrawal limit of ₹${DAILY_WITHDRAWAL_LIMIT.toLocaleString('en-IN')} reached. Remaining quota for 24h: ₹${remaining.toLocaleString('en-IN')}`,
+				},
+				400,
+			);
+		}
+
 		const paymentMethod = await prisma.paymentMethod.findUnique({
 			where: { id: reqBody.paymentMethodId, userId },
 		});
 
 		if (!paymentMethod || paymentMethod.status !== 'VERIFIED') {
 			return c.json({ success: false, message: 'Invalid or unverified payment method' }, 400);
+		}
+
+		// Security: 24-hour cooling-off period on newly added or reviewed payout methods
+		const methodEffectiveTime = new Date(
+			paymentMethod.reviewedAt || paymentMethod.submittedAt,
+		).getTime();
+		const coolingOffMs = 24 * 60 * 60 * 1000;
+		const elapsedSinceMethod = Date.now() - methodEffectiveTime;
+
+		if (elapsedSinceMethod < coolingOffMs) {
+			const hoursRemaining = Math.max(
+				1,
+				Math.ceil((coolingOffMs - elapsedSinceMethod) / (60 * 60 * 1000)),
+			);
+			return c.json(
+				{
+					success: false,
+					message: `Security cooling-off period active: Newly registered payout methods cannot withdraw funds for 24 hours. Please retry in approximately ${hoursRemaining} hour(s).`,
+				},
+				400,
+			);
 		}
 
 		const transferId = `w_${uuidv4().replace(/-/g, '')}`;
@@ -589,6 +432,16 @@ export const withdraw = async (c: Context) => {
 					},
 					500,
 				);
+			}
+
+			if (user.email) {
+				sendNotification({
+					type: 'withdrawal.success',
+					data: {
+						email: user.email,
+						amount,
+					},
+				}).catch((err) => logger.error({ err, userId }, 'Failed to dispatch withdrawal.success'));
 			}
 		}
 
