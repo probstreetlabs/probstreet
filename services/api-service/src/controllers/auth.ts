@@ -15,6 +15,7 @@ import {
 	generateRefreshTokenString,
 	hashRefreshToken,
 	setAuthCookies,
+	clearAuthCookies,
 } from '@/utils/token';
 import {
 	sendEmailOtpSchema,
@@ -295,6 +296,7 @@ export const verifyOtp = async (c: Context) => {
 
 		return c.json({
 			success: true,
+			streamToken: accessToken,
 			data: {
 				id: user.id,
 				email: user.email,
@@ -374,6 +376,7 @@ export const googleCallback = async (c: Context) => {
 
 		return c.json({
 			success: true,
+			streamToken: accessToken,
 			data: {
 				id: user.id,
 				email: user.email,
@@ -440,6 +443,7 @@ export const discordCallback = async (c: Context) => {
 
 		return c.json({
 			success: true,
+			streamToken: accessToken,
 			data: {
 				id: user.id,
 				email: user.email,
@@ -541,6 +545,7 @@ export const telegramCallback = async (c: Context) => {
 
 		return c.json({
 			success: true,
+			streamToken: accessToken,
 			data: {
 				id: user.id,
 				email: user.email,
@@ -583,8 +588,7 @@ export const logout = async (c: Context) => {
 			});
 		}
 
-		deleteCookie(c, 'accessToken', { path: '/' });
-		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
+		clearAuthCookies(c);
 		return c.json({
 			success: true,
 			message: 'Logged out successfully',
@@ -661,8 +665,7 @@ export const refresh = async (c: Context) => {
 			},
 		});
 		logger.error({ error }, 'Refresh token failed');
-		deleteCookie(c, 'accessToken', { path: '/' });
-		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
+		clearAuthCookies(c);
 		return c.json({ success: false, error: 'Invalid or expired session' }, 401);
 	}
 };
@@ -694,7 +697,8 @@ export const getMe = async (c: Context) => {
 			},
 		});
 		if (!user) return c.json({ success: false, error: 'User not found' }, 404);
-		return c.json({ success: true, data: user });
+		const streamToken = await generateAccessToken(user.id, user.role, user.email);
+		return c.json({ success: true, data: user, streamToken });
 	} catch (error) {
 		captureError(error, {
 			tags: {
@@ -756,8 +760,7 @@ export const logoutAll = async (c: Context) => {
 			where: { userId: user.id, isRevoked: false },
 			data: { isRevoked: true },
 		});
-		deleteCookie(c, 'accessToken', { path: '/' });
-		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
+		clearAuthCookies(c);
 		return c.json({ success: true, message: 'Logged out of all devices' });
 	} catch (error) {
 		captureError(error, {
@@ -768,6 +771,39 @@ export const logoutAll = async (c: Context) => {
 			},
 		});
 		logger.error({ error }, 'Logout all failed');
+		return c.json({ success: false, error: 'Internal server error' }, 500);
+	}
+};
+
+/**
+ * @desc Mints a stream-service JWT token for authenticated users.
+ * Used for authenticating WebSocket connections across different domains/servers
+ * where cookies cannot be forwarded cross-origin.
+ * @param c Hono Context
+ * @returns JSON response with { success: true, token: string, userId: string }
+ */
+export const getWsToken = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user || !user.id) {
+			return c.json({ success: false, error: 'Unauthorized' }, 401);
+		}
+
+		const token = await generateAccessToken(user.id, user.role, user.email);
+		return c.json({
+			success: true,
+			token,
+			userId: user.id,
+		});
+	} catch (error) {
+		captureError(error, {
+			tags: {
+				controller: 'auth',
+				action: 'GET_WS_TOKEN',
+				userId: c.get('user')?.id,
+			},
+		});
+		logger.error({ error }, 'Failed to generate WS token');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 };

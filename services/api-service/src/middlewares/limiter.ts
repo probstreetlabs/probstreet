@@ -29,7 +29,7 @@ export const resolveCallerIdentity = (c: Context): CallerIdentity => {
 	const user = c.get('user');
 
 	if (user?.apiKeyId) {
-		return { key: `apikey:${user.apiKxeyId}`, tier: 'apiKey' };
+		return { key: `apikey:${user.apiKeyId}`, tier: 'apiKey' };
 	}
 
 	if (user?.id) {
@@ -140,8 +140,6 @@ export const rateLimiter = ({
 				await next();
 				return;
 			}
-
-			captureError(_err, { tags: { controller: 'limiter', action: 'RATE_LIMIT' } });
 
 			const retrySeconds = Math.max(1, Math.ceil(err.msBeforeNext / 1000));
 

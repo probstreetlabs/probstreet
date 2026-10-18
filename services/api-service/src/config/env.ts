@@ -15,6 +15,8 @@ const envSchema = z.object({
 	CORS_ORIGIN: z.string().min(1),
 	FRONTEND_URL: z.url(),
 
+	COOKIE_DOMAIN: z.string().optional(),
+
 	REDIS_HOST: z.string().min(1),
 	REDIS_PORT: z.string().min(1),
 

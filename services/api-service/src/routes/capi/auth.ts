@@ -10,13 +10,13 @@ import {
 	getMe,
 	getSessions,
 	logoutAll,
+	getWsToken,
 } from '@/controllers/auth';
-import { rateLimiter, generalLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
+import { rateLimiter, generalLimiter } from '@/middlewares/limiter';
 
 export const authRoutes = new Hono();
 
-// 10 OTP requests per 5 minutes per IP to prevent email bombing
 const authLimiter = rateLimiter({
 	keyPrefix: 'rl:auth:init',
 	points: 10,
@@ -24,7 +24,6 @@ const authLimiter = rateLimiter({
 	blockDuration: 300,
 });
 
-// 15 OTP verification attempts per 5 minutes per IP with 10-minute block to prevent brute-force
 const loginLimiter = rateLimiter({
 	keyPrefix: 'rl:auth:otp',
 	points: 15,
@@ -32,7 +31,6 @@ const loginLimiter = rateLimiter({
 	blockDuration: 600,
 });
 
-// 30 OAuth callbacks per 5 minutes per IP
 const oauthLimiter = rateLimiter({
 	keyPrefix: 'rl:auth:oauth',
 	points: 30,
@@ -51,5 +49,6 @@ authRoutes.use('/*', authorization);
 authRoutes.post('/refresh', generalLimiter, refresh);
 
 authRoutes.get('/me', generalLimiter, getMe);
+authRoutes.get('/ws-token', generalLimiter, getWsToken);
 authRoutes.get('/sessions', generalLimiter, getSessions);
 authRoutes.post('/logout-all', generalLimiter, logoutAll);

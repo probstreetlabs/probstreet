@@ -12,20 +12,38 @@ import { authorization } from '@/middlewares/authorization';
 
 export const portfolioRoutes = new Hono();
 
-portfolioRoutes.use('/*', generalLimiter);
-
-portfolioRoutes.get('/orders', authorization, requireScope('orders:read'), getPortfolioOrders);
-portfolioRoutes.get('/history', authorization, requireScope('orders:read'), getPortfolioHistory);
-portfolioRoutes.get('/summary', authorization, requireScope('wallet:read'), getPortfolioSummary);
+portfolioRoutes.get(
+	'/orders',
+	authorization,
+	requireScope('orders:read'),
+	generalLimiter,
+	getPortfolioOrders,
+);
+portfolioRoutes.get(
+	'/history',
+	authorization,
+	requireScope('orders:read'),
+	generalLimiter,
+	getPortfolioHistory,
+);
+portfolioRoutes.get(
+	'/summary',
+	authorization,
+	requireScope('wallet:read'),
+	generalLimiter,
+	getPortfolioSummary,
+);
 portfolioRoutes.get(
 	'/positions',
 	authorization,
 	requireScope('wallet:read', 'orders:read'),
+	generalLimiter,
 	getPortfolioPositions,
 );
 portfolioRoutes.get(
 	'/position/:marketId',
 	authorization,
 	requireScope('wallet:read', 'orders:read'),
+	generalLimiter,
 	getMarketPosition,
 );

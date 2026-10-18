@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
-import { setCookie } from 'hono/cookie';
 import { sign, verify } from 'hono/jwt';
+import { setCookie, deleteCookie } from 'hono/cookie';
 
 export interface AccessTokenPayload {
 	[key: string]: unknown;
@@ -40,19 +40,30 @@ export const hashRefreshToken = (token: string): string => {
 };
 
 export const setAuthCookies = (c: Context, accessToken: string, refreshToken: string) => {
+	const cookieDomain = ENV.COOKIE_DOMAIN ? ENV.COOKIE_DOMAIN.trim() : undefined;
+	const isProd = process.env.NODE_ENV === 'production';
+
 	setCookie(c, 'accessToken', accessToken, {
-		secure: process.env.NODE_ENV === 'production',
+		secure: isProd,
 		httpOnly: true,
 		maxAge: Number(ENV.ACCESS_TOKEN_EXPIRY),
-		sameSite: 'Strict',
+		sameSite: cookieDomain ? 'Lax' : 'Strict',
+		domain: cookieDomain,
 		path: '/',
 	});
 
 	setCookie(c, 'refreshToken', refreshToken, {
-		secure: process.env.NODE_ENV === 'production',
+		secure: isProd,
 		httpOnly: true,
 		maxAge: Number(ENV.REFRESH_TOKEN_EXPIRY),
-		sameSite: 'Strict',
+		sameSite: cookieDomain ? 'Lax' : 'Strict',
+		domain: cookieDomain,
 		path: '/api/v1/auth',
 	});
+};
+
+export const clearAuthCookies = (c: Context) => {
+	const cookieDomain = ENV.COOKIE_DOMAIN ? ENV.COOKIE_DOMAIN.trim() : undefined;
+	deleteCookie(c, 'accessToken', { path: '/', domain: cookieDomain });
+	deleteCookie(c, 'refreshToken', { path: '/api/v1/auth', domain: cookieDomain });
 };
